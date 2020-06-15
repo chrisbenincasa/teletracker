@@ -6,6 +6,7 @@ import {
   Button,
   ButtonGroup,
   Card,
+  CardActions,
   CardActionArea,
   CardContent,
   CardMedia,
@@ -19,6 +20,7 @@ import {
   Badge,
   Tooltip,
 } from '@material-ui/core';
+import { Check, Close } from '@material-ui/icons';
 import {
   DeepReadonlyObject,
   PotentialMatch,
@@ -33,12 +35,8 @@ import { Link } from '@reach/router';
 
 const useStyles = makeStyles((theme) =>
   createStyles({
-    chip: {
-      margin: theme.spacing(0.5, 0.5, 0.5, 0),
-    },
-    wrapper: {
-      display: 'flex',
-      flexWrap: 'wrap',
+    badgeWrapper: {
+      height: '100%',
     },
     buttonWrapper: {
       flexDirection: 'row',
@@ -53,19 +51,53 @@ const useStyles = makeStyles((theme) =>
       width: '50%',
       margin: 4,
     },
+    posterWrapper: {
+      display: 'flex',
+      flexDirection: 'column',
+      position: 'relative',
+      paddingTop: '150%', // 150% is a magic number for our 1:1.5 expected poster aspect ratio
+    },
+    cardBadgeAlign: {
+      transform: 'scale(1.5) translate(-15%, -15%)',
+    },
+    cardContent: {
+      padding: theme.spacing(0.5),
+    },
     cardDescription: {
       height: 'auto',
       overflow: 'scroll',
     },
+
+    cardPoster: {
+      width: '100%',
+      objectFit: 'cover',
+      height: '100%',
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      bottom: 0,
+      right: 0,
+    },
     cardWrapper: {
       display: 'flex',
       flexGrow: 1,
-      height: 600,
+      height: '95%',
+    },
+    chip: {
+      margin: theme.spacing(0.5, 0.5, 0.5, 0),
+    },
+    chipTitle: {
+      flexGrow: 1,
+      display: 'flex',
+      backgroundColor: '#3f51b5',
+      color: '#fff',
+      fontWeight: 700,
+      borderRadius: 0,
+      margin: '-4px -4px 4px -4px',
     },
     dataType: {
       color: '#fff',
       backgroundColor: '#3f51b5',
-      marginLeft: -16,
       paddingLeft: 8,
     },
     fallbackImageWrapper: {
@@ -75,12 +107,21 @@ const useStyles = makeStyles((theme) =>
       fontSize: '10rem',
       width: '100%',
       objectFit: 'cover',
-      height: 275,
+      height: '100%',
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      bottom: 0,
+      right: 0,
     },
     fallbackImageIcon: {
       alignSelf: 'center',
       margin: '0 auto',
       display: 'inline-block',
+    },
+    navigationType: {
+      marginBottom: theme.spacing(2),
+      display: 'block',
     },
     paper: {
       display: 'flex',
@@ -89,17 +130,15 @@ const useStyles = makeStyles((theme) =>
       margin: 8,
       padding: 8,
       flexWrap: 'wrap',
-      height: 650,
-    },
-    navigationType: {
-      marginBottom: theme.spacing(2),
+      // height: 650,
     },
     totalItemsWrapper: {
       textAlign: 'center',
       marginBottom: theme.spacing(2),
     },
-    cardBadgeAlign: {
-      transform: 'scale(1.5) translate(-15%, -15%)',
+    wrapper: {
+      display: 'flex',
+      flexWrap: 'wrap',
     },
   }),
 );
@@ -202,6 +241,7 @@ export default function Matching(props: Props) {
     );
 
     const ttLink = `https://qa.teletracker.tv/${representativeItem.potential.type}s/${representativeItem.potential.id}`;
+    const rawStorageLink = `https://search.internal.qa.teletracker.tv/items_live/_doc/${representativeItem.potential?.id}`;
     const scrapedPoster = representativeItem.scraped.item.posterImageUrl;
 
     let networkSet = new Set<string>();
@@ -219,75 +259,94 @@ export default function Matching(props: Props) {
     );
 
     return (
-      <Grid item xs={4} key={id}>
+      <Grid item key={id} xs={12} sm={6} md={6} lg={6} xl={4}>
         <Badge
           badgeContent={badgeContent}
           color="primary"
           anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
           classes={{ anchorOriginTopLeftRectangle: classes.cardBadgeAlign }}
+          className={classes.badgeWrapper}
         >
           <Paper elevation={3} className={classes.paper}>
             <div className={classes.cardWrapper}>
               <Card className={classes.card}>
-                <CardActionArea component="a" href={ttLink} target="_blank">
+                <div className={classes.posterWrapper}>
                   <CardMedia
                     component="img"
-                    height="275"
+                    height="auto"
+                    className={classes.cardPoster}
                     image={
                       poster?.id
                         ? `https://image.tmdb.org/t/p/w342${poster!.id}`
                         : ''
                     }
                   />
-                  <CardContent>
-                    <Typography
-                      gutterBottom
-                      variant="h5"
-                      component="h2"
-                      className={classes.dataType}
+                </div>
+                <CardContent className={classes.cardContent}>
+                  <Chip label="Potential" className={classes.chipTitle} />
+                  {representativeItem.potential.type && (
+                    <Chip
+                      label={representativeItem.potential.type}
+                      className={classes.chip}
+                    />
+                  )}
+                  {representativeItem?.potential?.release_date && (
+                    <Chip
+                      label={representativeItem?.potential?.release_date?.substring(
+                        0,
+                        4,
+                      )}
+                      className={classes.chip}
+                    />
+                  )}
+                  <Typography gutterBottom variant="h5" component="h2">
+                    {representativeItem.potential.title}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    component="p"
+                    className={classes.cardDescription}
+                  >
+                    {`${representativeItem.potential?.description?.substr(
+                      0,
+                      175,
+                    )}...`}
+                  </Typography>
+                  <CardActions>
+                    <Button
+                      size="small"
+                      color="primary"
+                      component="a"
+                      href={ttLink}
+                      target="_blank"
+                      variant={'outlined'}
+                      fullWidth
                     >
-                      Potential
-                    </Typography>
-                    <Typography gutterBottom variant="h5" component="h2">
-                      {representativeItem.potential.title}
-                    </Typography>
-                    {representativeItem.potential.type && (
-                      <Chip
-                        label={representativeItem.potential.type}
-                        className={classes.chip}
-                      />
-                    )}
-                    {representativeItem?.potential?.release_date && (
-                      <Chip
-                        label={representativeItem?.potential?.release_date?.substring(
-                          0,
-                          4,
-                        )}
-                        className={classes.chip}
-                      />
-                    )}
-                    <Typography
-                      variant="body2"
-                      color="textSecondary"
-                      component="p"
-                      className={classes.cardDescription}
+                      View on TT
+                    </Button>
+                    <Button
+                      size="small"
+                      color="primary"
+                      component="a"
+                      href={rawStorageLink}
+                      target="_blank"
+                      variant={'outlined'}
+                      fullWidth
                     >
-                      {representativeItem.potential?.description}
-                    </Typography>
-                  </CardContent>
-                </CardActionArea>
+                      View Raw JSON
+                    </Button>
+                  </CardActions>
+                </CardContent>
               </Card>
               <Card className={classes.card}>
-                <CardActionArea
-                  component="a"
-                  href={representativeItem.scraped.item.url}
-                  target="_blank"
-                >
+                <div className={classes.posterWrapper}>
                   {scrapedPoster ? (
                     <CardMedia
                       component="img"
-                      height="275"
+                      height="auto"
                       image={scrapedPoster}
+                      className={classes.cardPoster}
                     />
                   ) : (
                     <div className={classes.fallbackImageWrapper}>
@@ -299,47 +358,56 @@ export default function Matching(props: Props) {
                       </Icon>
                     </div>
                   )}
+                </div>
 
-                  <CardContent>
-                    <Typography
-                      gutterBottom
-                      variant="h5"
-                      component="h2"
-                      className={classes.dataType}
-                    >
-                      Scraped
-                    </Typography>
-                    <Typography gutterBottom variant="h5" component="h2">
-                      {representativeItem.scraped.item.title}
-                    </Typography>
-                    {representativeItem.scraped.item.itemType && (
-                      <Chip
-                        label={representativeItem.scraped.item.itemType}
-                        className={classes.chip}
-                      />
-                    )}
-                    {representativeItem.scraped.item.releaseYear && (
-                      <Chip
-                        label={representativeItem.scraped.item.releaseYear}
-                        className={classes.chip}
-                      />
-                    )}
-                    {representativeItem.scraped.item.network && (
-                      <Chip
-                        label={representativeItem.scraped.item.network}
-                        className={classes.chip}
-                      />
-                    )}
-                    <Typography
-                      variant="body2"
-                      color="textSecondary"
-                      component="p"
-                      className={classes.cardDescription}
-                    >
-                      {representativeItem.scraped.item.description}
-                    </Typography>
-                  </CardContent>
-                </CardActionArea>
+                <CardContent className={classes.cardContent}>
+                  <Chip label="Scraped" className={classes.chipTitle} />
+                  {representativeItem.scraped.item.itemType && (
+                    <Chip
+                      label={representativeItem.scraped.item.itemType}
+                      className={classes.chip}
+                    />
+                  )}
+                  {representativeItem.scraped.item.releaseYear && (
+                    <Chip
+                      label={representativeItem.scraped.item.releaseYear}
+                      className={classes.chip}
+                    />
+                  )}
+                  {representativeItem.scraped.item.network && (
+                    <Chip
+                      label={representativeItem.scraped.item.network}
+                      className={classes.chip}
+                    />
+                  )}
+                  <Typography gutterBottom variant="h5" component="h2">
+                    {representativeItem.scraped.item.title}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    component="p"
+                    className={classes.cardDescription}
+                  >
+                    {`${representativeItem?.scraped?.item?.description?.substr(
+                      0,
+                      175,
+                    )}...`}
+                  </Typography>
+                </CardContent>
+                <CardActions>
+                  <Button
+                    size="small"
+                    color="primary"
+                    component="a"
+                    href={representativeItem.scraped.item.url}
+                    target="_blank"
+                    variant="outlined"
+                    fullWidth
+                  >
+                    {`View on ${representativeItem.scraped.item.network}`}
+                  </Button>
+                </CardActions>
               </Card>
             </div>
             <div className={classes.buttonWrapper}>
@@ -350,6 +418,7 @@ export default function Matching(props: Props) {
                 fullWidth
                 className={classes.button}
                 onClick={() => markItemsAsNonMatch(items.map((i) => i.id))}
+                startIcon={<Close />}
               >
                 Not a Match
               </Button>
@@ -360,6 +429,7 @@ export default function Matching(props: Props) {
                 fullWidth
                 className={classes.button}
                 onClick={() => markItemsAsMatch(items.map((i) => i.id))}
+                startIcon={<Check />}
               >
                 Hooray, a Match!
               </Button>
@@ -414,7 +484,7 @@ export default function Matching(props: Props) {
         className={classes.navigationType}
       >
         <Button
-          variant={!networkScraper ? 'contained' : undefined}
+          variant={networkScraper === 'all' ? 'contained' : undefined}
           component={Link}
           to={`/matching/${status}/all`}
           onClick={() => setNetworkScraper(undefined)}
