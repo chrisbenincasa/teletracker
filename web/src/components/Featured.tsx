@@ -9,18 +9,13 @@ import {
   Typography,
   useTheme,
 } from '@material-ui/core';
-import { Rating } from '@material-ui/lab';
 import RouterLink from 'next/link';
 import imagePlaceholder from '../../public/images/imagePlaceholder.png';
 import ResponsiveImage from './ResponsiveImage';
 import { Item } from '../types/v2/Item';
 import AddToListDialog from './Dialogs/AddToListDialog';
-import {
-  formatRuntime,
-  getVoteAverage,
-  getVoteCountFormatted,
-  truncateText,
-} from '../utils/textHelper';
+import Rating from './Rating';
+import { formatRuntime, truncateText } from '../utils/textHelper';
 import { hexToRGB } from '../utils/style-utils';
 import { AccessTime } from '@material-ui/icons';
 import dequal from 'dequal';
@@ -51,20 +46,6 @@ const useStyles = makeStyles((theme: Theme) => ({
     height: '100%',
     padding: theme.spacing(2),
     top: theme.spacing(0),
-  },
-  ratingContainer: {
-    display: 'flex',
-    flexDirection: 'row',
-  },
-  ratingVoteCount: {
-    marginRight: theme.spacing(1),
-    fontStyle: 'italic',
-    fontSize: 12,
-    alignSelf: 'center',
-    opacity: 0.5,
-    [theme.breakpoints.down('sm')]: {
-      display: 'none',
-    },
   },
   title: {
     textAlign: 'right',
@@ -124,8 +105,6 @@ function Featured(props: Props) {
   }, [featuredItems]);
 
   const renderTitle = (item: Item) => {
-    const voteAverage = getVoteAverage(item);
-    const voteCount = getVoteCountFormatted(item);
     const runtime =
       (item.runtime && formatRuntime(item.runtime, item.type)) || null;
     const itemType = item.type || 'item';
@@ -135,16 +114,7 @@ function Featured(props: Props) {
         <Typography color="inherit" variant="h4" itemProp="name">
           {truncateText(item.canonicalTitle, 200)}
         </Typography>
-        <div className={classes.ratingContainer}>
-          <Rating value={voteAverage} precision={0.1} readOnly />
-          <Typography
-            color="inherit"
-            variant="body1"
-            className={classes.ratingVoteCount}
-          >
-            {`(${voteCount})`}
-          </Typography>
-        </div>
+        <Rating itemId={item.id} />
         {runtime ? (
           <Typography
             className={classes.runtimeContainer}

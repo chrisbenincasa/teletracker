@@ -26,7 +26,6 @@ import {
   Storage,
   Theaters,
 } from '@material-ui/icons';
-import { Rating } from '@material-ui/lab';
 import _ from 'lodash';
 import moment from 'moment';
 import { useRouter } from 'next/router';
@@ -36,6 +35,7 @@ import {
   itemPrefetchSuccess,
 } from '../actions/item-detail';
 import imagePlaceholder from '../../public/images/imagePlaceholder.png';
+import Rating from '../components/Rating';
 import Availability from '../components/Availability';
 import MarkAsWatched from '../components/Buttons/MarkAsWatched';
 import Cast from '../components/Cast';
@@ -46,11 +46,7 @@ import Recommendations from '../components/Recommendations';
 import ResponsiveImage from '../components/ResponsiveImage';
 import { useWidth } from '../hooks/useWidth';
 import { Item } from '../types/v2/Item';
-import {
-  formatRuntime,
-  getVoteAverage,
-  getVoteCountFormatted,
-} from '../utils/textHelper';
+import { formatRuntime } from '../utils/textHelper';
 import Login from './Login';
 import Link from 'next/link';
 import { extractItem } from '../utils/item-utils';
@@ -366,8 +362,6 @@ function ItemDetails(props: Props) {
   };
 
   const renderInformation = (item: Item) => {
-    const voteAverage = getVoteAverage(item);
-    const voteCount = getVoteCountFormatted(item);
     const runtime =
       (item.runtime && formatRuntime(item.runtime, item.type)) || '';
     const releaseDate =
@@ -381,16 +375,7 @@ function ItemDetails(props: Props) {
 
     return (
       <div className={classes.informationContainer}>
-        <div style={{ display: 'flex', flexDirection: 'row' }}>
-          <Rating value={voteAverage} precision={0.1} readOnly />
-          <Typography
-            color="inherit"
-            variant="body1"
-            className={classes.voteCount}
-          >
-            {`(${voteCount})`}
-          </Typography>
-        </div>
+        <Rating itemId={item.id} />
         <div
           style={{
             display: 'flex',
