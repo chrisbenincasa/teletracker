@@ -148,10 +148,25 @@ const ResponsiveImage = ({
     // Allow placeholder to fade in
     handleOnLoad();
 
+    let icon;
+    switch (imageType) {
+      case 'backdrop':
+        icon = null;
+        break;
+      case 'poster':
+        icon = 'broken_image';
+        break;
+      case 'profile':
+        icon = 'person';
+        break;
+      default:
+        icon = 'broken_image';
+    }
+
     return (
       <div className={classes.fallbackImageWrapper} style={imageStyle}>
         <Icon className={classes.fallbackImageIcon} fontSize="inherit">
-          {imageType === 'profile' ? 'person' : 'broken_image'}
+          {icon}
         </Icon>
       </div>
     );

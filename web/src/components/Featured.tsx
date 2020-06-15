@@ -30,7 +30,7 @@ import selectItems from '../selectors/selectItems';
 
 const useStyles = makeStyles((theme: Theme) => ({
   backdropContainer: {
-    height: 'auto',
+    height: '100%',
     overflow: 'hidden',
     top: 0,
     width: '100%',
@@ -47,9 +47,9 @@ const useStyles = makeStyles((theme: Theme) => ({
     marginTop: theme.spacing(1),
   },
   posterContainer: {
-    display: 'flex',
-    flex: '0 1 auto',
-    flexDirection: 'column',
+    // display: 'flex',
+    // flex: '0 1 auto',
+    // flexDirection: 'column',
     position: 'absolute',
     height: '100%',
     padding: theme.spacing(2),
@@ -261,7 +261,7 @@ function Featured(props: Props) {
       className={classes.wrapper}
       style={{ paddingTop: `${56.25 / items.length}%` }}
     >
-      <div style={{ position: 'absolute', top: 0 }}>
+      <div style={{ position: 'absolute', top: 0, display: 'flex' }}>
         {renderFeaturedItems()}
       </div>
     </div>
