@@ -34,6 +34,9 @@ import { Link } from '@reach/router';
 
 const useStyles = makeStyles((theme) =>
   createStyles({
+    badgeWrapper: {
+      height: '100%',
+    },
     buttonWrapper: {
       flexDirection: 'row',
       display: 'flex',
@@ -43,24 +46,41 @@ const useStyles = makeStyles((theme) =>
     button: {
       margin: 4,
     },
+    card: {
+      width: '50%',
+      margin: 4,
+    },
+    posterWrapper: {
+      display: 'flex',
+      flexDirection: 'column',
+      position: 'relative',
+      paddingTop: '150%', // 150% is a magic number for our 1:1.5 expected poster aspect ratio
+    },
     cardBadgeAlign: {
       transform: 'scale(1.5) translate(-15%, -15%)',
     },
     cardContent: {
       padding: theme.spacing(0.5),
     },
-    card: {
-      width: '50%',
-      margin: 4,
-    },
     cardDescription: {
       height: 'auto',
       overflow: 'scroll',
     },
+
+    cardPoster: {
+      width: '100%',
+      objectFit: 'cover',
+      height: '100%',
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      bottom: 0,
+      right: 0,
+    },
     cardWrapper: {
       display: 'flex',
       flexGrow: 1,
-      height: 600,
+      height: '95%',
     },
     chip: {
       margin: theme.spacing(0.5, 0.5, 0.5, 0),
@@ -84,7 +104,12 @@ const useStyles = makeStyles((theme) =>
       fontSize: '10rem',
       width: '100%',
       objectFit: 'cover',
-      height: 275,
+      height: '100%',
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      bottom: 0,
+      right: 0,
     },
     fallbackImageIcon: {
       alignSelf: 'center',
@@ -102,7 +127,7 @@ const useStyles = makeStyles((theme) =>
       margin: 8,
       padding: 8,
       flexWrap: 'wrap',
-      height: 650,
+      // height: 650,
     },
     totalItemsWrapper: {
       textAlign: 'center',
@@ -237,19 +262,23 @@ export default function Matching(props: Props) {
           color="primary"
           anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
           classes={{ anchorOriginTopLeftRectangle: classes.cardBadgeAlign }}
+          className={classes.badgeWrapper}
         >
           <Paper elevation={3} className={classes.paper}>
             <div className={classes.cardWrapper}>
               <Card className={classes.card}>
-                <CardMedia
-                  component="img"
-                  height="275"
-                  image={
-                    poster?.id
-                      ? `https://image.tmdb.org/t/p/w342${poster!.id}`
-                      : ''
-                  }
-                />
+                <div className={classes.posterWrapper}>
+                  <CardMedia
+                    component="img"
+                    height="auto"
+                    className={classes.cardPoster}
+                    image={
+                      poster?.id
+                        ? `https://image.tmdb.org/t/p/w342${poster!.id}`
+                        : ''
+                    }
+                  />
+                </div>
                 <CardContent className={classes.cardContent}>
                   <Chip label="Potential" className={classes.chipTitle} />
                   {representativeItem.potential.type && (
@@ -306,22 +335,25 @@ export default function Matching(props: Props) {
                 </CardContent>
               </Card>
               <Card className={classes.card}>
-                {scrapedPoster ? (
-                  <CardMedia
-                    component="img"
-                    height="275"
-                    image={scrapedPoster}
-                  />
-                ) : (
-                  <div className={classes.fallbackImageWrapper}>
-                    <Icon
-                      className={classes.fallbackImageIcon}
-                      fontSize="inherit"
-                    >
-                      broken_image
-                    </Icon>
-                  </div>
-                )}
+                <div className={classes.posterWrapper}>
+                  {scrapedPoster ? (
+                    <CardMedia
+                      component="img"
+                      height="auto"
+                      image={scrapedPoster}
+                      className={classes.cardPoster}
+                    />
+                  ) : (
+                    <div className={classes.fallbackImageWrapper}>
+                      <Icon
+                        className={classes.fallbackImageIcon}
+                        fontSize="inherit"
+                      >
+                        broken_image
+                      </Icon>
+                    </div>
+                  )}
+                </div>
 
                 <CardContent className={classes.cardContent}>
                   <Chip label="Scraped" className={classes.chipTitle} />
