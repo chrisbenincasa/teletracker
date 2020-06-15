@@ -84,10 +84,7 @@ export default function makeItemDetailWrapper(type: ItemType) {
           <meta property="og:image:type" content="image/jpg" />
           <meta property="og:image:width" content={imageWidth} />
           <meta property="og:image:height" content={imageHeight} />
-          <meta
-            property="og:url"
-            content={`${process.env.REACT_APP_TELETRACKER_BASE_URL}${router.asPath}`}
-          />
+          <meta property="og:url" content={`${domain}${router.asPath}`} />
           <meta name="twitter:card" content={summaryType} />
           <meta
             name="twitter:title"
@@ -103,10 +100,7 @@ export default function makeItemDetailWrapper(type: ItemType) {
             name="keywords"
             content={`${item?.canonicalTitle}, ${item?.type}, stream, streaming, rent, buy, watch, track`}
           />
-          <link
-            rel="canonical"
-            href={`${process.env.REACT_APP_TELETRACKER_BASE_URL}${router.asPath}`}
-          />
+          <link rel="canonical" href={`${domain}${router.asPath}`} />
         </Head>
         <AppWrapper>
           <ItemDetail

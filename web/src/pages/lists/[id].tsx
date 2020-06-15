@@ -37,11 +37,45 @@ function ListDetailWrapper(props: Props) {
   );
 
   let listName = list?.name || '';
+  const domain = process.env.REACT_APP_TELETRACKER_BASE_URL;
 
   return (
     <React.Fragment>
       <Head>
-        <title>{listName !== '' ? 'List - ' + listName : 'Not Found'}</title>
+        <title>
+          {listName !== ''
+            ? `List - ${listName} | Where to stream, rent, or buy`
+            : 'Not Found'}
+        </title>
+        {list?.isPublic && (
+          <React.Fragment>
+            <meta
+              name="title"
+              property="og:title"
+              content={`${listName} | Where to stream, rent, or buy`}
+            />
+            <meta
+              name="description"
+              property="og:description"
+              content={`${listName}. Find out where to stream, rent, or buy content on ${domain}.`}
+            />
+            <meta property="og:url" content={`${domain}${router.asPath}`} />
+            <meta name="twitter:card" content={listName} />
+            <meta
+              name="twitter:title"
+              content={`${listName} - Where to Stream, Rent, or Buy Online`}
+            />
+            <meta
+              name="twitter:description"
+              content={`${listName} - Where to Stream, Rent, or Buy Online`}
+            />
+            <meta name="twitter:domain" content={domain} />
+            <meta
+              name="keywords"
+              content={`list, stream, streaming, rent, buy, watch, track`}
+            />
+          </React.Fragment>
+        )}
       </Head>
       <AppWrapper>
         <ListDetail preloaded={props.preloaded} />
@@ -58,21 +92,19 @@ ListDetailWrapper.getInitialProps = async ctx => {
     let token = await currentUserJwt();
 
     // Load the list and a few items
-    let listResponseFut: Promise<TeletrackerResponse<ApiList>> = TeletrackerApi.instance.getList(token, ctx.query.id)
+    let listResponseFut: Promise<TeletrackerResponse<
+      ApiList
+    >> = TeletrackerApi.instance.getList(token, ctx.query.id);
 
     let itemsResponseFut: Promise<TeletrackerResponse<
       ApiItem[]
-    >> = TeletrackerApi.instance.getListItems(
-      token,
-      ctx.query.id,
-      {
-        sort: filterParams.sortOrder,
-        itemTypes: filterParams.itemTypes,
-        genres: filterParams.genresFilter,
-        networks: filterParams.networks,
-        limit: 6,
-      }
-    );
+    >> = TeletrackerApi.instance.getListItems(token, ctx.query.id, {
+      sort: filterParams.sortOrder,
+      itemTypes: filterParams.itemTypes,
+      genres: filterParams.genresFilter,
+      networks: filterParams.networks,
+      limit: 6,
+    });
 
     // Load page metadata (needed for filter calculation)
     let metadataFut = TeletrackerApi.instance.getMetadata();
@@ -101,15 +133,17 @@ ListDetailWrapper.getInitialProps = async ctx => {
             list: list,
           }),
         ),
-        ctx.store.dispatch(retrieveListItemsSucceeded({
-          listId: list.id,
-          items: itemsResponse.data!.data.map(ItemFactory.create),
-          append: false,
-          paging: itemsResponse.data!.paging,
-          forFilters: list.isDynamic
-            ? { ...defaultFilters, ...filterParams }
-            : filterParams,
-        })),
+        ctx.store.dispatch(
+          retrieveListItemsSucceeded({
+            listId: list.id,
+            items: itemsResponse.data!.data.map(ItemFactory.create),
+            append: false,
+            paging: itemsResponse.data!.paging,
+            forFilters: list.isDynamic
+              ? { ...defaultFilters, ...filterParams }
+              : filterParams,
+          }),
+        ),
         ctx.store.dispatch(peopleFetchSuccess(people)),
         ctx.store.dispatch(
           loadMetadataSuccess({
