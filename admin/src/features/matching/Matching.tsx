@@ -20,6 +20,7 @@ import {
   Badge,
   Tooltip,
 } from '@material-ui/core';
+import { Check, Close } from '@material-ui/icons';
 import {
   DeepReadonlyObject,
   PotentialMatch,
@@ -91,6 +92,8 @@ const useStyles = makeStyles((theme) =>
       backgroundColor: '#3f51b5',
       color: '#fff',
       fontWeight: 700,
+      borderRadius: 0,
+      margin: '-4px -4px 4px -4px',
     },
     dataType: {
       color: '#fff',
@@ -318,6 +321,7 @@ export default function Matching(props: Props) {
                       href={ttLink}
                       target="_blank"
                       variant={'outlined'}
+                      fullWidth
                     >
                       View on TT
                     </Button>
@@ -328,6 +332,7 @@ export default function Matching(props: Props) {
                       href={rawStorageLink}
                       target="_blank"
                       variant={'outlined'}
+                      fullWidth
                     >
                       View Raw JSON
                     </Button>
@@ -397,9 +402,10 @@ export default function Matching(props: Props) {
                     component="a"
                     href={representativeItem.scraped.item.url}
                     target="_blank"
-                    variant={'outlined'}
+                    variant="outlined"
+                    fullWidth
                   >
-                    View on Network
+                    {`View on ${representativeItem.scraped.item.network}`}
                   </Button>
                 </CardActions>
               </Card>
@@ -412,6 +418,7 @@ export default function Matching(props: Props) {
                 fullWidth
                 className={classes.button}
                 onClick={() => markItemsAsNonMatch(items.map((i) => i.id))}
+                startIcon={<Close />}
               >
                 Not a Match
               </Button>
@@ -422,6 +429,7 @@ export default function Matching(props: Props) {
                 fullWidth
                 className={classes.button}
                 onClick={() => markItemsAsMatch(items.map((i) => i.id))}
+                startIcon={<Check />}
               >
                 Hooray, a Match!
               </Button>
