@@ -35,7 +35,7 @@ function ListDetailWrapper(props: Props) {
     state => selectList(state, listId),
     hookDeepEqual,
   );
-  console.log(list);
+
   let listName = list?.name || '';
   const domain = process.env.REACT_APP_TELETRACKER_BASE_URL;
 
@@ -59,15 +59,6 @@ function ListDetailWrapper(props: Props) {
               property="og:description"
               content={`${listName}. Find out where to stream, rent, or buy content on ${domain}.`}
             />
-            {/* 
-            <meta name="image" property="og:image" content={imageURL} />
-            <meta
-              property="og:type"
-              content={item?.type === 'movie' ? 'video.movie' : 'video.tv_show'}
-            />
-            <meta property="og:image:type" content="image/jpg" />
-            <meta property="og:image:width" content={imageWidth} />
-            <meta property="og:image:height" content={imageHeight} /> */}
             <meta property="og:url" content={`${domain}${router.asPath}`} />
             <meta name="twitter:card" content={listName} />
             <meta
@@ -78,7 +69,6 @@ function ListDetailWrapper(props: Props) {
               name="twitter:description"
               content={`${listName} - Where to Stream, Rent, or Buy Online`}
             />
-            {/* <meta name="twitter:image" content={imageURL} /> */}
             <meta name="twitter:domain" content={domain} />
             <meta
               name="keywords"
