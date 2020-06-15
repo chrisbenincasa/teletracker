@@ -40,7 +40,7 @@ import { List as ListType } from '../types';
 import _ from 'lodash';
 import Link from 'next/link';
 import { useWidth } from '../hooks/useWidth';
-import { useIsSmallScreen } from '../hooks/useIsMobile';
+import useIsMobile from '../hooks/useIsMobile';
 import { useRouter } from 'next/router';
 import { useWithUserContext } from '../hooks/useWithUser';
 import useStateSelector, {
@@ -228,7 +228,7 @@ export default function Drawer(props: Props) {
   );
 
   const width = useWidth();
-  const isSmallScreen = useIsSmallScreen();
+  const isMobile = useIsMobile();
   const router = useRouter();
 
   const dispatchLogout = useDispatchSideEffect(logout);
@@ -275,7 +275,7 @@ export default function Drawer(props: Props) {
   };
 
   const toggleAuthModal = (initialForm?: 'login' | 'signup') => {
-    if (isSmallScreen) {
+    if (isMobile) {
       setAuthModalOpen(false);
       setAuthModalScreen(undefined);
       router.push(`/${initialForm}`);
