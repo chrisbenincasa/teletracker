@@ -27,7 +27,7 @@ const useStyles = makeStyles((theme: Theme) =>
 
 interface OwnProps {
   readonly itemId: Id;
-  readonly showVoteCount: Boolean;
+  readonly showVoteCount: boolean;
 }
 
 type Props = OwnProps;
@@ -41,13 +41,15 @@ export default function StarRatings(props: Props) {
   return (
     <div className={classes.ratingContainer}>
       <Rating value={voteAverage} precision={0.1} readOnly />
-      <Typography
-        color="inherit"
-        variant="body1"
-        className={classes.ratingVoteCount}
-      >
-        {`(${voteCount})`}
-      </Typography>
+      {props.showVoteCount && (
+        <Typography
+          color="inherit"
+          variant="body1"
+          className={classes.ratingVoteCount}
+        >
+          {`(${voteCount})`}
+        </Typography>
+      )}
     </div>
   );
 }
