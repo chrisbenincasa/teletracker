@@ -1,26 +1,19 @@
 package com.teletracker.tasks.scraper.hulu
 
-import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.ExternalSource
-import com.teletracker.common.elasticsearch.{
-  ElasticsearchExecutor,
-  ItemLookup,
-  ItemUpdater
-}
+import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.model.scraping.ScrapeItemType
 import com.teletracker.common.model.scraping.hulu.HuluScrapeCatalogItem
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
-import com.teletracker.common.tasks.{TaskMessageHelper, TeletrackerTask}
+import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper.debug.{
   GenerateMatchCsv,
   GeneratePotentialMatchCsv
 }
-import com.teletracker.tasks.scraper.matching.ElasticsearchFallbackMatching
 import com.teletracker.tasks.scraper.{
   IngestJob,
-  IngestJobArgs,
   IngestJobParser,
   SubscriptionNetworkAvailability
 }

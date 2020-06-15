@@ -13,7 +13,7 @@ class ElasticsearchLookup @Inject()(
 
   override def toMethod[T <: ScrapedItem]: LookupMethod[T] = {
     new CustomElasticsearchLookup[T](
-      List(elasticsearchLookupBySlug, elasticsearchExactTitleLookup)
+      List(elasticsearchExactTitleLookup)
         .map(_.toMethod[T])
     )
   }

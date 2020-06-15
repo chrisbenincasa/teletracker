@@ -12,13 +12,11 @@ import com.teletracker.common.model.scraping.hbo.HboScrapedCatalogItem
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
 import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.util.NetworkCache
-import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper._
 import com.teletracker.tasks.scraper.debug.{
   GenerateMatchCsv,
   GeneratePotentialMatchCsv
 }
-import com.teletracker.tasks.scraper.matching.ElasticsearchFallbackMatching
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import java.net.URI
@@ -38,8 +36,6 @@ class IngestHboCatalog @Inject()(
 
   override protected def externalSources: List[ExternalSource] =
     List(ExternalSource.HboGo, ExternalSource.HboMax)
-
-  override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
   override protected def isAvailable(
     item: HboScrapedCatalogItem,

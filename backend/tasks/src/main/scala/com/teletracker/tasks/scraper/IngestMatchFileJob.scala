@@ -14,9 +14,6 @@ abstract class IngestMatchFileJob[T <: ScrapedItem: Codec]
     extends IngestJob[MatchInput[T]] {
   @Inject private[this] var directLookupMethod: DirectLookupMethod = _
 
-  override protected def parseMode: IngestJobParser.ParseMode =
-    IngestJobParser.JsonPerLine
-
   // Csst is safe because we know scrapedItem is not accessed
 
   override protected def lookupMethod(): LookupMethod[MatchInput[T]] =

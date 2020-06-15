@@ -5,20 +5,16 @@ import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.elasticsearch.model.EsItem
 import com.teletracker.common.elasticsearch.{
   ElasticsearchAccess,
-  ElasticsearchExecutor
+  ElasticsearchExecutor,
+  FuzzyItemLookupRequest,
+  ItemLookup
 }
 import com.teletracker.common.model.scraping.{NonMatchResult, ScrapedItem}
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Futures._
-import com.teletracker.tasks.scraper.{
-  model,
-  BaseIngestJob,
-  IngestJob,
-  IngestJobArgs,
-  IngestJobArgsLike
-}
+import com.teletracker.common.util.RelativeRange
+import com.teletracker.tasks.scraper.IngestJobArgsLike
 import io.circe.Codec
-import io.circe.syntax._
 import javax.inject.Inject
 import org.elasticsearch.action.search.{MultiSearchRequest, SearchRequest}
 import org.elasticsearch.index.query.{
@@ -28,10 +24,8 @@ import org.elasticsearch.index.query.{
   QueryBuilders
 }
 import org.elasticsearch.search.builder.SearchSourceBuilder
-import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
 import java.time.LocalDate
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Success
 
 case class ElasticsearchFallbackMatcherOptions(
   requireTypeMatch: Boolean,
@@ -48,6 +42,7 @@ object ElasticsearchFallbackMatcher {
 class ElasticsearchFallbackMatcher @Inject()(
   teletrackerConfig: TeletrackerConfig,
   elasticsearchExecutor: ElasticsearchExecutor,
+  itemLookup: ItemLookup,
   @Assisted options: ElasticsearchFallbackMatcherOptions
 )(implicit executionContext: ExecutionContext)
     extends ElasticsearchAccess {
@@ -61,35 +56,53 @@ class ElasticsearchFallbackMatcher @Inject()(
       .grouped(10)
       .toList
       .sequentially(group => {
-        performMultiSearchWithQuery(group, combinedQuery2[T])
-          .andThen {
-            case Success(potentialMatches) =>
-              recordPotentialMatches(potentialMatches)
-          }
-          .map(potentialMatches => {
+        val requests = group.map(item => {
+          val fuzzyReq = FuzzyItemLookupRequest(
+            title = item.title,
+            strictTitleMatch = false,
+            description = item.description,
+            itemType = item.thingType,
+            exactReleaseYear = item.releaseYear.map(_ -> 5.0f),
+            releaseYearTiers = Some(
+              Seq(
+                RelativeRange.forInt(1) -> 2.0f,
+                RelativeRange(5, -1) -> 1.0f,
+                RelativeRange(-1, 5) -> 1.0f
+              )
+            ),
+            looseReleaseYearMatching = false,
+            popularityThreshold = Some(1.0),
+            castNames = item.cast.filter(_.nonEmpty).map(_.map(_.name).toSet),
+            crewNames = item.crew.filter(_.nonEmpty).map(_.map(_.name).toSet),
+            limit = 1
+          )
+
+          item -> fuzzyReq
+        })
+
+        val itemToFuzzyRequest = requests.map {
+          case (t, request) => request.id -> t
+        }.toMap
+
+        itemLookup
+          .lookupFuzzyBatch(requests.map(_._2))
+          .map(results => {
+            val potentialMatches = itemToFuzzyRequest.toList.flatMap {
+              case (requestId, item) =>
+                results
+                  .get(requestId)
+                  .flatMap(_.items.headOption)
+                  .map(_ -> item)
+            }
+
+            recordPotentialMatches(potentialMatches)
+
             potentialMatches.map {
-              case (esItem, scrapedItem) =>
-                NonMatchResult(
-                  scrapedItem,
-                  scrapedItem,
-                  esItem
-                )
+              case (item, t) => NonMatchResult(t, t, item)
             }
           })
       })
       .map(_.flatten)
-  }
-
-  private def performFuzzyTitleMatchSearch[T <: ScrapedItem: Codec](
-    group: Iterable[T]
-  ) = {
-    performMultiSearchWithQuery(group, fuzzyTitleMatchQuery[T])
-  }
-
-  private def performDescriptionMatchSearch[T <: ScrapedItem: Codec](
-    group: Iterable[T]
-  ) = {
-    performMultiSearchWithQuery(group, fuzzyDescriptionQuery[T])
   }
 
   private def performMultiSearchWithQuery[T <: ScrapedItem: Codec](
@@ -122,62 +135,6 @@ class ElasticsearchFallbackMatcher @Inject()(
   protected def recordPotentialMatches[T <: ScrapedItem: Codec](
     potentialMatches: Iterable[(EsItem, T)]
   ): Unit = {}
-
-  private def combinedQuery[T <: ScrapedItem: Codec](nonMatch: T) = {
-    QueryBuilders
-      .boolQuery()
-      .must(
-        QueryBuilders
-          .boolQuery()
-          .should(
-            QueryBuilders
-              .multiMatchQuery(nonMatch.title)
-              .field("title", 1.2f)
-              .field("alternative_titles.title", 1.2f)
-              .field("original_title")
-              .boost(2)
-              .operator(Operator.OR)
-              .`type`(MultiMatchQueryBuilder.Type.BEST_FIELDS)
-              .minimumShouldMatch("1")
-          )
-          .applyOptional(nonMatch.description)((builder, desc) => {
-            builder.should(
-              QueryBuilders
-                .matchPhraseQuery("overview", desc)
-//                .operator(Operator.OR)
-            )
-          })
-          .minimumShouldMatch(1)
-      )
-      .must(
-        QueryBuilders.existsQuery("release_date")
-      )
-      .applyIf(options.requireTypeMatch && nonMatch.thingType.isDefined)(
-        _.filter(
-          QueryBuilders
-            .termQuery("type", nonMatch.thingType.get.getName.toLowerCase())
-        )
-      )
-      .applyOptional(nonMatch.releaseYear)(
-        (builder, ry) =>
-          builder
-            .should(
-              QueryBuilders
-                .rangeQuery("release_date")
-                .format("yyyy")
-                .gte(s"$ry||/y")
-                .lte(s"$ry||/y")
-                .boost(3)
-            )
-            .should(
-              QueryBuilders
-                .rangeQuery("release_date")
-                .format("yyyy")
-                .gte(s"${ry - 1}||/y")
-                .lte(s"${ry + 1}||/y")
-            )
-      )
-  }
 
   private def combinedQuery2[T <: ScrapedItem: Codec](nonMatch: T) = {
     QueryBuilders
@@ -242,89 +199,5 @@ class ElasticsearchFallbackMatcher @Inject()(
                 .lte(s"${ry + 5}||/y")
             )
       )
-  }
-
-  private def fuzzyTitleMatchQuery[T <: ScrapedItem: Codec](nonMatch: T) = {
-    QueryBuilders
-      .boolQuery()
-      .should(
-        QueryBuilders
-          .multiMatchQuery(nonMatch.title)
-          .field("title", 1.2f)
-          .field("original_title")
-          .operator(Operator.OR)
-      )
-      .minimumShouldMatch(1)
-      .applyIf(options.requireTypeMatch && nonMatch.thingType.isDefined)(
-        _.filter(
-          QueryBuilders
-            .termQuery("type", nonMatch.thingType.get.getName.toLowerCase())
-        )
-      )
-      .applyOptional(nonMatch.releaseYear)(
-        (builder, ry) =>
-          builder.filter(
-            QueryBuilders
-              .rangeQuery("release_date")
-              .format("yyyy")
-              .gte(s"${ry - 1}||/y")
-              .lte(s"${ry + 1}||/y")
-          )
-      )
-  }
-
-  private def fuzzyDescriptionQuery[T <: ScrapedItem: Codec](nonMatch: T) = {
-    QueryBuilders
-      .boolQuery()
-      .must(
-        QueryBuilders
-          .matchQuery("overview", nonMatch.description.get)
-          .operator(Operator.OR)
-      )
-      .applyIf(options.requireTypeMatch && nonMatch.thingType.isDefined)(
-        _.filter(
-          QueryBuilders
-            .termQuery("type", nonMatch.thingType.get.getName.toLowerCase())
-        )
-      )
-      .applyOptional(nonMatch.releaseYear)(
-        (builder, ry) =>
-          builder.should(
-            QueryBuilders
-              .rangeQuery("release_date")
-              .format("yyyy")
-              .gte(s"${ry - 1}||/y")
-              .lte(s"${ry + 1}||/y")
-          )
-      )
-  }
-}
-
-trait ElasticsearchFallbackMatching[T <: ScrapedItem, Args <: IngestJobArgsLike]
-    extends ElasticsearchAccess {
-  self: BaseIngestJob[T, Args] =>
-
-  protected def requireTypeMatch: Boolean = true
-
-  protected def teletrackerConfig: TeletrackerConfig
-  protected def elasticsearchExecutor: ElasticsearchExecutor
-
-  private lazy val matcher = new ElasticsearchFallbackMatcher(
-    teletrackerConfig,
-    elasticsearchExecutor,
-    ElasticsearchFallbackMatcherOptions(
-      requireTypeMatch,
-      getClass.getSimpleName
-    )
-  )(self.executionContext)
-
-  override protected def findPotentialMatches(
-    args: Args,
-    nonMatches: List[T]
-  ): Future[List[NonMatchResult[T]]] = {
-    matcher.handleNonMatches(
-      args,
-      nonMatches
-    )
   }
 }

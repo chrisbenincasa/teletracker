@@ -4,6 +4,8 @@ import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.model.scraping.{
   PartialEsItem,
   ScrapeItemType,
+  ScrapedCastMember,
+  ScrapedCrewMember,
   ScrapedItem
 }
 import com.teletracker.common.util.HasId
@@ -97,7 +99,19 @@ object EsScrapedItem {
       description = item.description,
       itemType = item.thingType.get,
       url = item.url,
-      posterImageUrl = item.posterImageUrl
+      posterImageUrl = item.posterImageUrl,
+      cast = item.cast.map(
+        _.map(
+          c =>
+            EsScrapedCastMember(name = c.name, order = c.order, role = c.role)
+        )
+      ),
+      crew = item.crew.map(
+        _.map(
+          c =>
+            EsScrapedCrewMember(name = c.name, order = c.order, role = c.role)
+        )
+      )
     )
   }
 }
@@ -113,9 +127,25 @@ case class EsScrapedItem(
   override val description: Option[String],
   itemType: ItemType,
   override val url: Option[String],
-  override val posterImageUrl: Option[String])
+  override val posterImageUrl: Option[String],
+  override val cast: Option[Seq[EsScrapedCastMember]],
+  override val crew: Option[Seq[EsScrapedCrewMember]])
     extends ScrapedItem {
   override def isMovie: Boolean = itemType == ItemType.Movie
   override def isTvShow: Boolean = itemType == ItemType.Show
   override val category: Option[String] = None
 }
+
+@JsonCodec
+case class EsScrapedCastMember(
+  override val name: String,
+  override val order: Option[Int],
+  override val role: Option[String])
+    extends ScrapedCastMember
+
+@JsonCodec
+case class EsScrapedCrewMember(
+  override val name: String,
+  override val order: Option[Int],
+  override val role: Option[String])
+    extends ScrapedCrewMember

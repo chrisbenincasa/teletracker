@@ -31,8 +31,6 @@ class IngestHboMaxCatalog @Inject()(
   override protected def externalSources: List[ExternalSource] =
     List(ExternalSource.HboMax)
 
-  override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
-
   override protected def isAvailable(
     item: HboMaxCatalogItem,
     today: LocalDate

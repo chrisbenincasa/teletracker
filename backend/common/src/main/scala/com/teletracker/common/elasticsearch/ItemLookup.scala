@@ -1,14 +1,24 @@
 package com.teletracker.common.elasticsearch
 
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.db.model.{ExternalSource, ItemType}
+import com.teletracker.common.db.model.{
+  ExternalSource,
+  ItemType,
+  PersonAssociationType
+}
 import com.teletracker.common.elasticsearch.cache.ExternalIdMappingCache
 import com.teletracker.common.elasticsearch.lookups.ElasticsearchExternalIdMappingStore
 import com.teletracker.common.elasticsearch.model.{EsExternalId, EsItem}
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Maps._
-import com.teletracker.common.util.{AsyncStream, Slug}
+import com.teletracker.common.util.{
+  AsyncStream,
+  ClosedNumericRange,
+  RelativeRange,
+  Slug
+}
 import javax.inject.Inject
+import org.apache.lucene.search.join.ScoreMode
 import org.elasticsearch.action.get.{GetRequest, MultiGetRequest}
 import org.elasticsearch.action.search.{MultiSearchRequest, SearchRequest}
 import org.elasticsearch.index.query
@@ -16,10 +26,12 @@ import org.elasticsearch.index.query.{
   BoolQueryBuilder,
   MultiMatchQueryBuilder,
   Operator,
-  QueryBuilders
+  QueryBuilders,
+  RangeQueryBuilder
 }
 import org.elasticsearch.index.query.QueryBuilders.{
   boolQuery,
+  matchPhraseQuery,
   matchQuery,
   multiMatchQuery,
   termQuery
@@ -199,13 +211,7 @@ class ItemLookup @Inject()(
   def lookupFuzzy(
     request: FuzzyItemLookupRequest
   ): Future[ElasticsearchItemsResponse] = {
-    val query = fuzzyMatchQuery(
-      title = request.title,
-      thingType = request.itemType,
-      description = request.description,
-      releaseYear = request.releaseYearRange,
-      looseYearMatching = request.looseReleaseYearMatching
-    )
+    val query = fuzzyMatchQuery(request)
 
     val searchSource =
       new SearchSourceBuilder().query(query).size(request.limit)
@@ -361,37 +367,113 @@ class ItemLookup @Inject()(
       )
   }
 
-  private def fuzzyMatchQuery(
-    title: String,
-    thingType: Option[ItemType],
-    description: Option[String],
-    releaseYear: Option[Range],
-    looseYearMatching: Boolean
-  ) = {
+  private def fuzzyMatchQuery(request: FuzzyItemLookupRequest) = {
     boolQuery()
       .must(
-        multiMatchQuery(title)
+        multiMatchQuery(request.title)
           .field("title", 10.0f)
           .field("alternative_titles.title", 2.5f)
           .field("original_title")
           .`type`(MultiMatchQueryBuilder.Type.BEST_FIELDS)
-          .operator(Operator.AND)
+          .operator(if (request.strictTitleMatch) Operator.AND else Operator.OR)
       )
-      .applyOptional(description)(
+      .applyOptional(request.description)(
         (builder, desc) =>
           builder.should(
-            matchQuery("overview", desc).boost(1.5f)
+            matchPhraseQuery("overview", desc).boost(1.5f)
           )
       )
-      .applyOptional(thingType)(
+      .applyOptional(request.itemType)(
         (builder, typ) =>
           builder.filter(
             termQuery("type", typ.toString).boost(1.5f)
           )
       )
-      .applyOptional(releaseYear)(
-        releaseYearRangeQuery(_, _, looseYearMatching)
+      .applyOptional(request.exactReleaseYear) {
+        case (builder, (year, boost)) =>
+          tieredReleaseYearMatch(
+            builder,
+            year,
+            boost,
+            request.releaseYearTiers.map(_.toStream).getOrElse(Stream.empty),
+            requireMatch = !request.looseReleaseYearMatching
+          )
+      }
+      .applyOptional(request.castNames.filter(_.nonEmpty))(
+        creditsIncludeNames(_, PersonAssociationType.Cast, _)
       )
+      .applyOptional(request.crewNames.filter(_.nonEmpty))(
+        creditsIncludeNames(_, PersonAssociationType.Crew, _)
+      )
+      .applyOptional(request.popularityThreshold)(
+        (builder, popularity) =>
+          builder.should(
+            QueryBuilders.rangeQuery("popularity").gt(popularity)
+          )
+      )
+  }
+
+  private def creditsIncludeNames(
+    builder: BoolQueryBuilder,
+    personAssociationType: PersonAssociationType,
+    names: Set[String]
+  ) = {
+    def makeNested(name: String) = {
+      personAssociationType match {
+        case PersonAssociationType.Cast =>
+          QueryBuilders.nestedQuery(
+            "cast",
+            matchQuery("cast.name", name),
+            ScoreMode.Avg
+          )
+        case PersonAssociationType.Crew =>
+          QueryBuilders.nestedQuery(
+            "crew",
+            matchQuery("crew.name", name),
+            ScoreMode.Avg
+          )
+      }
+    }
+
+    names.foldLeft(builder)((b, name) => b.should(makeNested(name)))
+  }
+
+  private def tieredReleaseYearMatch(
+    builder: BoolQueryBuilder,
+    releaseYear: Int,
+    boost: Float,
+    relativeRanges: Seq[(RelativeRange[Int], Float)],
+    requireMatch: Boolean
+  ): BoolQueryBuilder = {
+    def makeRange(
+      min: Int,
+      max: Int,
+      boost: Float
+    ): RangeQueryBuilder = {
+      QueryBuilders
+        .rangeQuery("release_date")
+        .format("yyyy")
+        .gte(s"${min}||/y")
+        .lte(s"${max}||/y")
+        .boost(boost)
+    }
+
+    val releaseQuery = relativeRanges.foldLeft(
+      boolQuery()
+        .should(makeRange(releaseYear, releaseYear, boost))
+        .minimumShouldMatch(1)
+    ) {
+      case (query, (r, boost)) =>
+        query.should(
+          makeRange(releaseYear - r.minus, releaseYear + r.plus, boost)
+        )
+    }
+
+    if (requireMatch) {
+      builder.must(releaseQuery)
+    } else {
+      builder.should(releaseQuery)
+    }
   }
 
   private def releaseYearRangeQuery(
@@ -495,10 +577,17 @@ case class ItemLookupResponse(
   materializedRecommendations: ElasticsearchItemsResponse)
 
 case class FuzzyItemLookupRequest(
-  id: UUID = UUID.randomUUID(), // Unique id for the request to match results later
   title: String,
+  strictTitleMatch: Boolean,
   description: Option[String],
   itemType: Option[ItemType],
-  releaseYearRange: Option[Range],
+  exactReleaseYear: Option[(Int, Float)], // Year and boost
+  releaseYearTiers: Option[Seq[(RelativeRange[Int], Float)]], // Relative years and boosts
   looseReleaseYearMatching: Boolean,
-  limit: Int = 5)
+  popularityThreshold: Option[Double],
+  castNames: Option[Set[String]],
+  crewNames: Option[Set[String]],
+  limit: Int = 5) {
+
+  val id = UUID.randomUUID() // Unique id for the request to match results later
+}

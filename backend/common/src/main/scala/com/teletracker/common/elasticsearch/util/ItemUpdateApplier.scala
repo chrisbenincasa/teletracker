@@ -1,5 +1,6 @@
 package com.teletracker.common.elasticsearch.util
 
+import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.db.model.ExternalSource
 import com.teletracker.common.elasticsearch.model.EsAvailability.AvailabilityKey
 import com.teletracker.common.elasticsearch.model.{
@@ -49,6 +50,21 @@ object ItemUpdateApplier {
 
       case None =>
         newAvailabilities
+    }
+  }
+
+  def removeAvailabilitiesForNetworks(
+    esItem: EsItem,
+    networks: Set[StoredNetwork]
+  ) = {
+    val ids = networks.map(_.id)
+    esItem.availability match {
+      case Some(value) =>
+        esItem.copy(
+          availability =
+            Some(value.filterNot(av => ids.contains(av.network_id)))
+        )
+      case None => esItem
     }
   }
 

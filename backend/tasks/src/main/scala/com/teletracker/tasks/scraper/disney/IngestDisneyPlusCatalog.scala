@@ -5,7 +5,6 @@ import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.model.scraping.ScrapeItemType
 import com.teletracker.common.model.scraping.disney.DisneyPlusCatalogItem
 import com.teletracker.common.util.NetworkCache
-import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper.{
   IngestJob,
   IngestJobParser,
@@ -28,8 +27,6 @@ class IngestDisneyPlusCatalog @Inject()(
 
   override protected def externalSources: List[ExternalSource] =
     List(ExternalSource.DisneyPlus)
-
-  override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
   override protected def outputLocation: Option[URI] = {
     if (rawArgs.valueOrDefault("outputLocal", true)) {

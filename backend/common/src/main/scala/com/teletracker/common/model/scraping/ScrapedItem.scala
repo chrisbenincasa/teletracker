@@ -35,4 +35,19 @@ trait ScrapedItem {
       None
     }
   }
+
+  def cast: Option[Seq[ScrapedCastMember]] = None
+  def crew: Option[Seq[ScrapedCrewMember]] = None
+}
+
+trait ScrapedCastMember {
+  def name: String
+  def order: Option[Int]
+  def role: Option[String]
+}
+
+trait ScrapedCrewMember {
+  def name: String
+  def order: Option[Int]
+  def role: Option[String]
 }

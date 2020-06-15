@@ -27,7 +27,4 @@ class IngestDisneyPlusPotentialMatches @Inject()(
 
   override protected def externalSources: List[ExternalSource] =
     List(ExternalSource.DisneyPlus)
-
-  override protected def parseMode: IngestJobParser.ParseMode =
-    IngestJobParser.JsonPerLine
 }

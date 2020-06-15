@@ -26,7 +26,21 @@ case class ClosedDateRange(
   }
 }
 
+object ClosedNumericRange {
+  def fromRange(range: Range): ClosedNumericRange[Int] =
+    ClosedNumericRange(range.start, range.end)
+}
+
 case class ClosedNumericRange[T: Numeric](
   start: T,
-  end: T)
+  end: T,
+  override val inclusive: Boolean = true)
     extends ClosedRange[T]
+
+object RelativeRange {
+  def forInt(i: Int): RelativeRange[Int] = RelativeRange(i, i)
+}
+
+case class RelativeRange[T: Numeric](
+  minus: T,
+  plus: T)

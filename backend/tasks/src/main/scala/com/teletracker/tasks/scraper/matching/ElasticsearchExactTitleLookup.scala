@@ -8,7 +8,7 @@ import com.teletracker.common.elasticsearch.{
 import com.teletracker.common.elasticsearch.model.EsItem
 import com.teletracker.common.model.scraping
 import com.teletracker.common.model.scraping.{MatchResult, ScrapedItem}
-import com.teletracker.common.util.{Folds, Sanitizers}
+import com.teletracker.common.util.{Folds, RelativeRange, Sanitizers}
 import com.teletracker.tasks.scraper.{model, IngestJobArgsLike}
 import com.teletracker.tasks.util.Stopwords
 import javax.inject.Inject
@@ -54,8 +54,13 @@ class ElasticsearchExactTitleLookup @Inject()(
         title = item.title,
         description = item.description,
         itemType = item.thingType.filter(_ => includeType),
-        releaseYearRange = item.releaseYear.map(ry => (ry - 1) to (ry + 1)),
-        looseReleaseYearMatching = true
+        exactReleaseYear = item.releaseYear.map(_ -> 3.0f),
+        releaseYearTiers = Some(Seq(RelativeRange.forInt(1) -> 1.0f)),
+        looseReleaseYearMatching = false,
+        popularityThreshold = Some(1.0),
+        castNames = item.cast.map(_.map(_.name).toSet),
+        crewNames = item.crew.map(_.map(_.name).toSet),
+        strictTitleMatch = true
       ) -> item
     })
 
@@ -78,51 +83,6 @@ class ElasticsearchExactTitleLookup @Inject()(
             }
         }
       })
-
-//    itemSearch
-//      .lookupFuzzy(requests)
-//      .map(matchesByTitle => {
-//        val (actualMatchesByTitle, nonMatches) = matchesByTitle.foldLeft(
-//          (List.empty[(T, EsItem)] -> List.empty[(T, EsItem)])
-//        ) {
-//          // If we've found a case-insensitive title match then add it to the positive match set
-//          case ((matches, nonMatches), (title, esItem))
-//              if
-////              title.equalsIgnoreCase(
-////                esItem.original_title.getOrElse("")
-////              ) ||
-//              esItem.title.get.exists(title.equalsIgnoreCase) =>
-//            val newMatches = matches ++ (itemsByTitle
-//              .get(title)
-//              .map(_ -> esItem))
-//              .toList
-//
-//            newMatches -> nonMatches
-//
-//          // Add non matches to the fallback set
-//          case ((matches, nonMatches), (title, esItem)) =>
-//            val newNonMatches = nonMatches ++ (itemsByTitle
-//              .get(title)
-//              .map(_ -> esItem))
-//              .toList
-//            matches -> newNonMatches
-//        }
-//
-//        val missing =
-//          (itemsByTitle.keySet -- matchesByTitle.keySet)
-//            .flatMap(itemsByTitle.get)
-//            .toList
-//
-//        val matchResultsForTitles = actualMatchesByTitle.map {
-//          case (scrapedItem, esItem) =>
-//            model.MatchResult(
-//              scrapedItem,
-//              esItem
-//            )
-//        }
-//
-//        matchResultsForTitles -> (missing ++ nonMatches.map(_._1))
-//      })
   }
 
   private def findSuitableMatch[T <: ScrapedItem](

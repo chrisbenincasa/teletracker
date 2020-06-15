@@ -9,7 +9,7 @@ import com.teletracker.common.model.scraping.hulu.{
   HuluScrapeItem,
   HuluSearchResponse
 }
-import com.teletracker.common.util.Slug
+import com.teletracker.common.util.{RelativeRange, Slug}
 import com.teletracker.common.util.execution.SequentialFutures
 import com.teletracker.tasks.scraper.{model, IngestJobArgs}
 import io.circe.parser.decode
@@ -161,8 +161,14 @@ class HuluFallbackMatching @Inject()(
           title = title,
           description = item.description,
           itemType = item.thingType,
-          releaseYearRange = item.releaseYear.map(ry => (ry - 1) to (ry + 1)),
-          looseReleaseYearMatching = true
+          exactReleaseYear = item.releaseYear.map(_ -> 3.0f),
+          releaseYearTiers = Some(Seq(RelativeRange.forInt(1) -> 1.0f)),
+          looseReleaseYearMatching = false,
+          popularityThreshold = Some(1.0),
+          castNames = item.cast.map(_.map(_.name).toSet),
+          crewNames = item.crew.map(_.map(_.name).toSet),
+          strictTitleMatch = true,
+          limit = 1
         ) -> item
     }.toList
 

@@ -30,8 +30,6 @@ class IngestHboChanges @Inject()(
   override protected def scrapeItemType: ScrapeItemType =
     ScrapeItemType.HboChanges
 
-  override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
-
   override protected def externalSources: List[ExternalSource] =
     List(ExternalSource.HboGo, ExternalSource.HboNow)
 

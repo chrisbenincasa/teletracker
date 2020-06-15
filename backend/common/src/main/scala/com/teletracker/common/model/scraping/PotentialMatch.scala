@@ -1,6 +1,6 @@
 package com.teletracker.common.model.scraping
 
-import com.teletracker.common.elasticsearch.model.EsItem
+import com.teletracker.common.elasticsearch.model.{EsItem, EsScrapedItem}
 import io.circe.Codec
 
 object PotentialMatch {
@@ -12,10 +12,10 @@ object PotentialMatch {
   def forEsItem[T <: ScrapedItem](
     esItem: EsItem,
     scrapedItem: T
-  ): PotentialMatch[T] = {
+  ): PotentialMatch[EsScrapedItem] = {
     PotentialMatch(
       PartialEsItem.forEsItem(esItem),
-      scrapedItem
+      EsScrapedItem.fromAnyScrapedItem(scrapedItem)
     )
   }
 }

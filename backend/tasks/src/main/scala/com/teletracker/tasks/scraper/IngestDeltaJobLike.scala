@@ -106,19 +106,13 @@ abstract class IngestDeltaJobLike[
       typedArgs,
       deps.executionContext,
       codec
-    )
-    with ElasticsearchFallbackMatching[IncomingItemType, IngestJobArgs] {
+    ) {
 
   protected val singleThreadExecutor: ScheduledExecutorService =
     deps.singleThreadExecutorProvider.get()
 
   implicit protected val execCtx: ExecutionContext =
     deps.executionContext
-
-  override protected def teletrackerConfig: TeletrackerConfig =
-    deps.teletrackerConfig
-  override protected def elasticsearchExecutor: ElasticsearchExecutor =
-    deps.elasticsearchExecutor
 
   protected def supportedNetworks: Set[SupportedNetwork]
   protected def externalSource: ExternalSource

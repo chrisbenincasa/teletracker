@@ -31,7 +31,6 @@ import com.teletracker.tasks.scraper.IngestJobParser.ParseMode
 import com.teletracker.tasks.scraper.matching.{
   CustomElasticsearchLookup,
   ElasticsearchExternalIdLookup,
-  ElasticsearchFallbackMatching,
   ElasticsearchLookup,
   LookupMethod
 }
@@ -41,7 +40,7 @@ import io.circe.generic.JsonCodec
 import javax.inject.Inject
 import org.elasticsearch.common.xcontent.{XContentHelper, XContentType}
 import software.amazon.awssdk.services.s3.S3Client
-import java.io.File
+import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
 import java.net.URI
 import java.time.{LocalDate, OffsetDateTime}
 import scala.concurrent.Future
@@ -88,17 +87,12 @@ abstract class IngestJob[T <: ScrapedItem](
       jsonableArgs,
       scala.concurrent.ExecutionContext.Implicits.global,
       codec
-    )
-    with ElasticsearchFallbackMatching[T, IngestJobArgs] {
+    ) {
 
   import diffson._
   import diffson.circe._
-  import diffson.jsonpatch.lcsdiff.remembering._
-  import diffson.lcs._
-  import io.circe._
+  import diffson.jsonpatch.simplediff._
   import io.circe.syntax._
-
-  implicit private val lcs = new Patience[Json]
 
   implicit protected val execCtx =
     scala.concurrent.ExecutionContext.Implicits.global
@@ -107,8 +101,6 @@ abstract class IngestJob[T <: ScrapedItem](
   protected def itemUpdater: ItemUpdater
   protected def s3: S3Client
   protected def networkCache: NetworkCache
-
-  protected def parseMode: ParseMode
 
   protected def externalSources: List[ExternalSource]
 
@@ -126,6 +118,18 @@ abstract class IngestJob[T <: ScrapedItem](
   protected var elasticsearchExecutor: ElasticsearchExecutor = _
   @Inject
   protected var teletrackerConfig: TeletrackerConfig = _
+
+  protected val matchChangesFile = new File(
+    s"${today}_${getClass.getSimpleName}-change-matches.json"
+  )
+
+  protected val matchChangesWriter = new PrintStream(
+    new BufferedOutputStream(
+      new FileOutputStream(
+        matchChangesFile
+      )
+    )
+  )
 
   protected def lookupMethod(): LookupMethod[T] = {
     val externalIdMatchers = if (args.enableExternalIdMatching) {
@@ -174,6 +178,7 @@ abstract class IngestJob[T <: ScrapedItem](
 
   override def runInternal(): Unit = {
     registerArtifact(potentialMatchFile)
+    registerArtifact(matchChangesFile)
 
     val network = getNetworksOrExit()
 
@@ -206,6 +211,9 @@ abstract class IngestJob[T <: ScrapedItem](
       .getSourceStream(args.inputFile)
       .safeTake(args.sourceLimit)
       .foreach(processSource(_, network))
+
+    matchChangesWriter.flush()
+    matchChangesWriter.close()
   }
 
   protected def preprocess(): Unit = {}
@@ -215,50 +223,25 @@ abstract class IngestJob[T <: ScrapedItem](
     networks: Set[StoredNetwork]
   ): Unit = {
     try {
-      parseMode match {
-        case IngestJobParser.JsonPerLine =>
-          new IngestJobParser()
-            .asyncStream[T](source.getLines())
-            .flatMapOption {
-              case Left(value) =>
-                logger.warn("Could not parse line", value)
-                None
-              case Right(value) =>
-                Some(value).filter(item => {
-                  args.externalIdFilter match {
-                    case Some(value) if item.externalId.isDefined =>
-                      value == item.externalId.get
-                    case Some(_) => false
-                    case None    => true
-                  }
-                })
-            }
-            .throughApply(processAll(_, networks))
-            .force
-            .await()
-
-        case IngestJobParser.AllJson =>
-          new IngestJobParser().parse[T](source.getLines(), parseMode) match {
-            case Left(value) =>
-              value.printStackTrace()
-              throw value
-
-            case Right(items) =>
-              val filteredItems = items.filter(item => {
-                args.externalIdFilter match {
-                  case Some(value) if item.externalId.isDefined =>
-                    value == item.externalId.get
-                  case Some(_) => false
-                  case None    => true
-                }
-              })
-
-              processAll(
-                AsyncStream.fromSeq(filteredItems),
-                networks
-              ).force.await()
-          }
-      }
+      new IngestJobParser()
+        .asyncStream[T](source.getLines())
+        .flatMapOption {
+          case Left(value) =>
+            logger.warn("Could not parse line", value)
+            None
+          case Right(value) =>
+            Some(value).filter(item => {
+              args.externalIdFilter match {
+                case Some(value) if item.externalId.isDefined =>
+                  value == item.externalId.get
+                case Some(_) => false
+                case None    => true
+              }
+            })
+        }
+        .throughApply(processAll(_, networks))
+        .force
+        .await()
     } catch {
       case NonFatal(e) =>
         throw e
@@ -279,52 +262,167 @@ abstract class IngestJob[T <: ScrapedItem](
     networks: Set[StoredNetwork],
     args: IngestJobArgs
   ): Future[Unit] = {
-    val itemsWithNewAvailability = results.flatMap {
-      case MatchResult(item, esItem) =>
-        val availabilities =
-          createAvailabilities(
-            networks,
-            esItem,
-            item
+    detectExternalIdChanges(results, networks).flatMap(_ => {
+      val itemsWithNewAvailability = results.flatMap {
+        case MatchResult(item, esItem) =>
+          val availabilities =
+            createAvailabilities(
+              networks,
+              esItem,
+              item
+            )
+
+          val updateItemFunc = (ItemUpdateApplier
+            .applyAvailabilities(_, availabilities))
+            .andThen(
+              esItem =>
+                ItemUpdateApplier.applyExternalIds(esItem, getExternalIds(item))
+            )
+            .andThen(_.copy(last_updated = Some(System.currentTimeMillis())))
+
+          val newItem = updateItemFunc(esItem)
+
+          val availabilitiesEqual = newItem.availability
+            .getOrElse(Nil)
+            .toSet == esItem.availability
+            .getOrElse(Nil)
+            .toSet
+
+          val externalIdsEqual = newItem.externalIdsGrouped == esItem.externalIdsGrouped
+
+          if (availabilitiesEqual && externalIdsEqual) {
+            None
+          } else {
+            if (args.dryRun && esItem != newItem) {
+              logger.info(
+                s"Would've updated id = ${newItem.id}:\n ${diff(esItem.asJson, newItem.asJson).asJson.spaces2}"
+              )
+            }
+
+            if (esItem != newItem) {
+              Some(newItem)
+            } else {
+              None
+            }
+          }
+      }
+
+      if (!args.dryRun) {
+        val requests = itemsWithNewAvailability.map(item => {
+          AsyncItemUpdateRequest(
+            id = item.id,
+            itemType = item.`type`,
+            doc = item.asJson,
+            denorm = Some(
+              EsIngestItemDenormArgs(
+                needsDenorm = true,
+                cast = false,
+                crew = false
+              )
+            )
           )
+        })
 
-        val updateItemFunc = (ItemUpdateApplier
-          .applyAvailabilities(_, availabilities))
-          .andThen(
-            esItem =>
-              ItemUpdateApplier.applyExternalIds(esItem, getExternalIds(item))
+        itemUpdateQueue.queueItemUpdates(requests).map(_ => {})
+      } else {
+        Future.successful {
+          logger.info(
+            s"Would've saved ${itemsWithNewAvailability.size} items with availability: ${}"
           )
-          .andThen(_.copy(last_updated = Some(System.currentTimeMillis())))
+        }
+      }
+    })
+  }
 
-        val newItem = updateItemFunc(esItem)
+  private def detectExternalIdChanges(
+    results: List[MatchResult[T]],
+    networks: Set[StoredNetwork]
+  ): Future[Unit] = {
+    AsyncStream
+      .fromSeq(results)
+      .grouped(25)
+      .flatMapF(batch => {
+        val esItemById = batch.map(_.esItem).map(item => item.id -> item).toMap
+        val scrapeItemByEsItemId =
+          batch.map(i => i.esItem.id -> i.scrapedItem).toMap
+        val esItemIdByExternalId = batch.flatMap {
+          case MatchResult(scrapedItem, esItem) =>
+            getExternalIds(scrapedItem).map {
+              case (source, str) =>
+                (EsExternalId(source, str), esItem.`type`) -> esItem.id
+            }
+        }.toMap
+        val keys = batch.flatMap {
+          case MatchResult(scrapedItem, esItem) =>
+            getExternalIds(scrapedItem).map {
+              case (source, str) => (source, str, esItem.`type`)
+            }
+        }
 
-        val availabilitiesEqual = newItem.availability
-          .getOrElse(Nil)
-          .toSet == esItem.availability
-          .getOrElse(Nil)
-          .toSet
+        // Lookup by external IDs to see if there are existing items we've matched previously
+        // that don't match the current results
+        itemLookup
+          .lookupItemsByExternalIds(keys.toList)
+          .map(results => {
+            results.toSeq
+              .flatMap {
+                case (key, existingItem) =>
+                  esItemIdByExternalId.get(key) match {
+                    case Some(value) if value != existingItem.id =>
+                      logger.info(
+                        s"Found external id mismatch for ${key}: existing = ${value}, new = ${existingItem.id}"
+                      )
 
-        val externalIdsEqual = newItem.externalIdsGrouped == esItem.externalIdsGrouped
+                      Some(existingItem -> key)
+                    case _ => None
+                  }
+              }
+              .groupBy {
+                case (item, _) => item.id
+              }
+              .map {
+                case (uuid, values) =>
+                  uuid -> (values.head._1, values.map(_._2))
+              }
+              .withEffect(grouped => {
+                grouped.foreach {
+                  case (uuid, (existingItem, keys)) =>
+                    val newMatchItemId = esItemIdByExternalId(keys.head)
+                    val newItem = esItemById(newMatchItemId)
+                    writeMatchChange(
+                      scrapeItemByEsItemId(newMatchItemId),
+                      existingItem,
+                      newItem
+                    )
+                }
+              })
+              .toSeq
+          })
+      })
+      .map {
+        case (_, (item, keys)) =>
+          val idsToRemove = keys.map(_._1).toSet
+          val updatedItem = item
+            .through(
+              ItemUpdateApplier.removeAvailabilitiesForNetworks(_, networks)
+            )
+            .through(i => {
+              i.copy(
+                external_ids = Some(
+                  i.external_ids.getOrElse(Nil).filterNot(idsToRemove.contains)
+                )
+              )
+            })
 
-        if (availabilitiesEqual && externalIdsEqual) {
-          None
-        } else {
-          if (args.dryRun && esItem != newItem) {
+          if (args.dryRun) {
             logger.info(
-              s"Would've updated id = ${newItem.id}:\n ${diff(esItem.asJson, newItem.asJson).asJson.spaces2}"
+              s"Would've updated incorrect item (${item.id}):\n${diff(item.asJson, updatedItem.asJson).asJson.spaces2}"
             )
           }
 
-          if (esItem != newItem) {
-            Some(newItem)
-          } else {
-            None
-          }
-        }
-    }
-
-    if (!args.dryRun) {
-      val requests = itemsWithNewAvailability.map(item => {
+          updatedItem
+      }
+      .map(item => {
         AsyncItemUpdateRequest(
           id = item.id,
           itemType = item.`type`,
@@ -338,15 +436,30 @@ abstract class IngestJob[T <: ScrapedItem](
           )
         )
       })
+      .grouped(10)
+      .mapF(
+        group =>
+          if (args.dryRun) {
+            Future.unit
+          } else {
+            itemUpdateQueue.queueItemUpdates(group.toList).map(_ => {})
+          }
+      )
+      .force
+  }
 
-      itemUpdateQueue.queueItemUpdates(requests).map(_ => {})
-    } else {
-      Future.successful {
-        logger.info(
-          s"Would've saved ${itemsWithNewAvailability.size} items with availability: ${}"
-        )
-      }
-    }
+  protected def writeMatchChange(
+    item: T,
+    original: EsItem,
+    newMatch: EsItem
+  ): Unit = {
+    matchChangesWriter.println(
+      Map(
+        "scraped" -> item.asJson,
+        "original" -> PartialEsItem.forEsItem(original).asJson,
+        "new" -> PartialEsItem.forEsItem(newMatch).asJson
+      ).asJson.noSpaces
+    )
   }
 
   override protected def writePotentialMatches(

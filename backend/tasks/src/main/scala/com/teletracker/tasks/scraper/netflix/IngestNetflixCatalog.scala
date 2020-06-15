@@ -63,8 +63,6 @@ class IngestNetflixCatalog @Inject()(
   override protected def externalSources: List[ExternalSource] =
     List(ExternalSource.Netflix)
 
-  override protected def parseMode: ParseMode = JsonPerLine
-
   private val elasticsearchMatcherOptions =
     ElasticsearchFallbackMatcherOptions(
       requireTypeMatch = false,
