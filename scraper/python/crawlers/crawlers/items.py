@@ -28,6 +28,20 @@ class NetflixItem(scrapy.Item):
     genres = scrapy.Field()
     contentRating = scrapy.Field()
     seasons = scrapy.Field()
+    cast = scrapy.Field()
+    crew = scrapy.Field()
+
+
+class NetflixCastMember(scrapy.Item):
+    name = scrapy.Field()
+    order = scrapy.Field()
+    role = scrapy.Field()
+
+
+class NetflixCrewMember(scrapy.Item):
+    name = scrapy.Field()
+    order = scrapy.Field()
+    role = scrapy.Field()
 
 
 class NetflixItemSeason(scrapy.Item):
@@ -83,6 +97,7 @@ class HboItem(scrapy.Item):
     goUrl = scrapy.Field()
     nowUrl = scrapy.Field()
     releaseDate = scrapy.Field()
+    releaseYear = scrapy.Field()
     highDef = scrapy.Field()
     cast = scrapy.Field()
     crew = scrapy.Field()
@@ -92,6 +107,7 @@ class HboItem(scrapy.Item):
 class HboCastMember(scrapy.Item):
     name = scrapy.Field()
     order = scrapy.Field()
+    role = scrapy.Field()
 
 
 class HboCrewMember(scrapy.Item):

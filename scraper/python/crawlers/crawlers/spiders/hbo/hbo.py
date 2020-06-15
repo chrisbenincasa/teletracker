@@ -113,7 +113,9 @@ def _parse_movie_programs_json(loaded_json, partial_item):
         if movies and len(movies) > 0:
             movie = movies[0]
             if not partial_item['id']:
-                external_id = path.split(movie['availability']['go'][0]['url'])[-1]
+                url = movie['availability']['go'][0]['url']
+                if url:
+                    external_id = path.split(url)[-1]
                 partial_item['id'] = external_id
                 partial_item['externalId'] = external_id
 

@@ -9,7 +9,7 @@ from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Rule
 
 from crawlers.base_spider import BaseCrawlSpider
-from crawlers.items import NetflixItem, NetflixItemSeason, NetflixItemEpisode
+from crawlers.items import NetflixItem, NetflixItemSeason, NetflixItemEpisode, NetflixCastMember, NetflixCrewMember
 
 
 def _safe_to_int(value):
@@ -106,8 +106,8 @@ class NetflixSpider(BaseCrawlSpider):
                     pass
 
     def parse_item(self, response):
-        id = response.url.split('/')[-1]
-        schema_org_json = self._attempt_to_load_schema_json(id, response)
+        item_id = response.url.split('/')[-1]
+        schema_org_json = self._attempt_to_load_schema_json(item_id, response)
 
         title = schema_org_json['name'] if schema_org_json and 'name' in schema_org_json else self._extract_title(
             response)
@@ -116,29 +116,24 @@ class NetflixSpider(BaseCrawlSpider):
             'description'] if schema_org_json and 'description' in schema_org_json else self._extract_description(
             response)
 
+        cast = []
+        if schema_org_json and 'actors' in schema_org_json:
+            for (idx, actor) in enumerate(schema_org_json['actors']):
+                cast.append(NetflixCastMember(name=actor['name'], order=idx))
+
+        crew = []
+        if schema_org_json:
+            if 'creator' in schema_org_json:
+                for (idx, creator) in enumerate(schema_org_json['creator']):
+                    crew.append(NetflixCrewMember(name=creator['name'], order=idx, role='Creator'))
+            if 'director' in schema_org_json:
+                for (idx, director) in enumerate(schema_org_json['director']):
+                    crew.append(NetflixCrewMember(name=director['name'], order=idx, role='Director'))
+
         content_rating = schema_org_json['contentRating'] if schema_org_json and 'contentRating' in schema_org_json \
             else self._extract_content_rating(
             response
         )
-
-        if schema_org_json and 'actors' in schema_org_json:
-            actors = [actor['name'] for actor in schema_org_json['actors']]
-        else:
-            actors = self._extract_actors(response)
-
-        director = None
-        if schema_org_json and 'director' in schema_org_json:
-            try:
-                director = schema_org_json['director'][0]['name']
-            except (KeyError, IndexError):
-                pass
-
-        creator = None
-        if schema_org_json and 'creator' in schema_org_json:
-            try:
-                creator = schema_org_json['creator'][0]['name']
-            except (KeyError, IndexError):
-                pass
 
         item_type = self._extract_type(schema_org_json)
 
@@ -147,18 +142,17 @@ class NetflixSpider(BaseCrawlSpider):
             seasons = self._extract_seasons(response)
 
         yield NetflixItem(
-            id=id,
+            id=item_id,
             title=title,
             releaseYear=self._extract_release_year(response),
             network='Netflix',
             itemType=self._extract_type(schema_org_json),
-            externalId=id,
+            externalId=item_id,
             description=description,
             genres=item_type,
             contentRating=content_rating,
-            actors=actors,
-            director=director,
-            creator=creator,
+            cast=cast,
+            crew=crew,
             seasons=seasons)
 
     def _attempt_to_load_schema_json(self, item_id, response):
