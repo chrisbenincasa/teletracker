@@ -22,7 +22,7 @@ import {
   AccountCircle,
   ArrowDropDown,
   ArrowDropUp,
-  KeyboardArrowUp,
+  ChevronRight,
   Menu as MenuIcon,
   MenuOpen,
   Search as SearchIcon,
@@ -59,7 +59,6 @@ const useStyles = makeStyles((theme: Theme) =>
       padding: theme.spacing(1, 2),
     },
     genrePaper: {
-      // position: 'absolute',
       zIndex: theme.zIndex.appBar,
       marginTop: 10,
       backgroundColor: hexToRGB(theme.palette.primary.main, 0.95),
@@ -95,14 +94,6 @@ const useStyles = makeStyles((theme: Theme) =>
       left: 0,
       right: 0,
     },
-    mobileSearchIcon: {
-      padding: theme.spacing(0.5, 1),
-      marginLeft: theme.spacing(2),
-    },
-    // searchClear: {
-    //   color: theme.palette.common.white,
-    //   opacity: 0.25,
-    // },
     sectionMobile: {
       display: 'flex',
       justifyContent: 'flex-end',
@@ -111,12 +102,8 @@ const useStyles = makeStyles((theme: Theme) =>
       display: 'flex',
       position: 'relative',
       borderRadius: theme.shape.borderRadius,
-      // backgroundColor: fade(theme.palette.common.white, 0.15),
-      // '&:hover': {
-      //   backgroundColor: fade(theme.palette.common.white, 0.25),
-      // },
-      marginRight: theme.spacing(2),
-      width: '100%',
+      width: '86%',
+      alignItems: 'center',
     },
   }),
 );
@@ -184,7 +171,7 @@ export default function Toolbar(props: Props) {
   const genreShowContainerRef = useRef<HTMLElement | null>(null);
   const genreMovieSpacerRef = useRef<HTMLDivElement | null>(null);
   const genreShowSpacerRef = useRef<HTMLDivElement | null>(null);
-  const mobileSearchIcon = useRef<HTMLDivElement | null>(null);
+
   const genreAnchorEl = useRef<HTMLButtonElement | null>(null);
 
   const currentSearchText = useStateSelector(
@@ -280,30 +267,25 @@ export default function Toolbar(props: Props) {
 
   const renderMobileSearchBar = () => {
     return (
-      <Slide
-        direction="down"
-        in={mobileSearchBarOpen}
-        timeout={100}
-        mountOnEnter
-      >
+      <Slide direction="left" in={mobileSearchBarOpen} timeout={100}>
         <div
           className={clsx(classes.sectionMobile, classes.mobileSearchContainer)}
         >
-          <IconButton
-            onClick={handleMobileSearchDisplayClose}
-            color="inherit"
-            size="small"
-            className={classes.mobileSearchIcon}
-          >
-            <KeyboardArrowUp />
-          </IconButton>
           <div className={classes.searchMobile}>
             <Search
               drawerOpen={drawerOpen}
               onDrawerChange={fireOnDrawerChange}
               quickSearchEnabled={showQuickSearch}
+              resetFocus={mobileSearchBarOpen}
             />
           </div>
+          <IconButton
+            onClick={handleMobileSearchDisplayClose}
+            color="inherit"
+            disableRipple
+          >
+            <ChevronRight />
+          </IconButton>
         </div>
       </Slide>
     );
@@ -505,7 +487,7 @@ export default function Toolbar(props: Props) {
               </Button>
             ))}
           {isSmallScreen && !mobileSearchBarOpen && showToolbarSearch && (
-            <div className={classes.sectionMobile} ref={mobileSearchIcon}>
+            <div className={classes.sectionMobile}>
               <IconButton
                 aria-owns={'Search Teletracker'}
                 aria-haspopup="true"

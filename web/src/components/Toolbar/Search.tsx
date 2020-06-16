@@ -72,6 +72,7 @@ interface Props {
   readonly filters?: FilterParams;
   readonly quickSearchColor?: string;
   readonly quickSearchEnabled?: boolean;
+  readonly resetFocus?: boolean;
 }
 
 function Search(props: Props) {
@@ -102,6 +103,17 @@ function Search(props: Props) {
   useEffect(() => {
     searchInput.current && searchInput.current.focus();
   }, []);
+
+  useEffect(() => {
+    // Todo: investigate weird flash that happens without this timeout.
+    setTimeout(function() {
+      searchInput.current && searchInput.current.focus();
+    }, 250);
+
+    if (searchAnchor === null) {
+      setSearchAnchor(searchInput.current);
+    }
+  }, [props.resetFocus]);
 
   // When search text changes, execute throttled/debounced search
   useEffect(() => {
@@ -274,6 +286,7 @@ function Search(props: Props) {
 
 Search.defaultProps = {
   quickSearchEnabled: true,
+  resetFocus: false,
 };
 
 export default Search;
