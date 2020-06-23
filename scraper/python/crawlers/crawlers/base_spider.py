@@ -27,8 +27,12 @@ class CustomJsonFormatter(jsonlogger.JsonFormatter):
         else:
             log_record['level'] = log_record.get('level').upper()
 
+class VersionedSpider:
+    import time
+    version = int(time.time())
 
-class BaseSitemapSpider(scrapy.spiders.SitemapSpider):
+
+class BaseSitemapSpider(scrapy.spiders.SitemapSpider, VersionedSpider):
     def __init__(self, json_logging=True, name=None, **kwargs):
         super().__init__(name, **kwargs)
         if json_logging is None or json_logging:
@@ -46,7 +50,7 @@ class BaseSitemapSpider(scrapy.spiders.SitemapSpider):
         return spider
 
 
-class BaseCrawlSpider(scrapy.spiders.CrawlSpider):
+class BaseCrawlSpider(scrapy.spiders.CrawlSpider, VersionedSpider):
     def __init__(self, json_logging=True, *a, **kw):
         super().__init__(*a, **kw)
         if json_logging is None or json_logging:
@@ -65,7 +69,7 @@ class BaseCrawlSpider(scrapy.spiders.CrawlSpider):
         return spider
 
 
-class BaseSpider(scrapy.spiders.Spider):
+class BaseSpider(scrapy.spiders.Spider, VersionedSpider):
     def __init__(self, json_logging=True, *a, **kw):
         super().__init__(*a, **kw)
         if json_logging is None or json_logging:

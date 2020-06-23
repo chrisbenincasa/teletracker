@@ -112,6 +112,7 @@ class HboChangesSpider(BaseSpider):
 
 
 class HboChangeItem(scrapy.Item):
+    type = 'HboChangeItem'
     availableDate = scrapy.Field()
     title = scrapy.Field()
     releaseYear = scrapy.Field()

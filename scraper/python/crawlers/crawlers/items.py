@@ -15,6 +15,7 @@ class CrawlersItem(scrapy.Item):
 
 
 class NetflixItem(scrapy.Item):
+    type = 'NetflixItem'
     id = scrapy.Field()
     title = scrapy.Field()
     releaseYear = scrapy.Field()
@@ -61,6 +62,7 @@ class NetflixItemEpisode(scrapy.Item):
 
 
 class HuluItem(scrapy.Item):
+    type = 'HuluItem'
     id = scrapy.Field()
     title = scrapy.Field()
     description = scrapy.Field()
@@ -88,6 +90,7 @@ class HuluEpisodeItem(scrapy.Item):
 
 
 class HboItem(scrapy.Item):
+    type = 'HboItem'
     id = scrapy.Field()
     title = scrapy.Field()
     externalId = scrapy.Field()
@@ -117,6 +120,7 @@ class HboCrewMember(scrapy.Item):
 
 
 class ShowtimeItem(scrapy.Item):
+    type = 'ShowtimeItem'
     id = scrapy.Field()
     title = scrapy.Field()
     externalId = scrapy.Field()

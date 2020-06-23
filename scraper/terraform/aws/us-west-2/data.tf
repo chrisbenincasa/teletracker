@@ -3,7 +3,7 @@ data "aws_ecs_cluster" "ecs-cluster" {
 }
 
 data "aws_ssm_parameter" "datadog_api_key" {
-  name = "datadog-api-key"
+  name            = "datadog-api-key"
   with_decryption = true
 }
 

@@ -72,9 +72,9 @@ USER_AGENTS = [
 
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html
-# EXTENSIONS = {
-#    'scrapy.extensions.telnet.TelnetConsole': None,
-# }
+EXTENSIONS = {
+   'crawlers.extensions.dynamo_crawl_recorder.DynamoCrawlRecorder': 500,
+}
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
@@ -84,6 +84,11 @@ ITEM_PIPELINES = {
 
 FEED_EXPORTERS = {
     'jl.gz': 'crawlers.exporters.json_lines_gzip_exporter.JsonLinesGzipItemExporter',
+    'sqs': 'crawlers.exporters.sqs_exporter.SqsItemExporter'
+}
+
+FEED_STORAGES = {
+    'sqs': 'crawlers.feedstorage.sqs_feed_storage.SqsFeedStorage'
 }
 
 FEED_FORMAT = 'jl.gz'

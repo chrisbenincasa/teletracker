@@ -110,6 +110,7 @@ class GooglePlayStoreSpider(BaseSitemapSpider):
 
 
 class GooglePlayStoreItem(scrapy.Item):
+    type = 'GooglePlayStoreItem'
     id = scrapy.Field()
     title = scrapy.Field()
     releaseYear = scrapy.Field()

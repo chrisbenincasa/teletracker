@@ -17,7 +17,9 @@
     "command": [
       "./run_spider.sh",
       "${spider_name}",
-      "${output_path}:${output_format}"
+      %{ for output in outputs ~}
+      "${output}",
+      %{ endfor ~}
     ],
     "memoryReservation": 100
   }

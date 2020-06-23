@@ -117,6 +117,7 @@ class HboNowSpider(BaseSitemapSpider):
 
 
 class HboMaxItem(scrapy.Item):
+    type = 'HboMaxItem'
     id = scrapy.Field()
     externalId = scrapy.Field()
     itemType = scrapy.Field()

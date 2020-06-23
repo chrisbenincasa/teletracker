@@ -14,16 +14,15 @@ variable "image_version" {
   type = string
 }
 
-variable "output_path" {
-  type = string
-}
-
-variable "output_format" {
-  type = string
-  default = "jl"
+variable "outputs" {
+  type = list(string)
 }
 
 variable "schedule" {
-  type = list
+  type = list(string)
   default = []
+}
+
+variable "dynamodb_output_table" {
+  type = string
 }

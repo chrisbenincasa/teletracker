@@ -182,6 +182,7 @@ subject_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9." \
 
 
 class DisneyPlusCatalogItem(scrapy.Item):
+    type = 'DisneyPlusCatalogItem'
     id = scrapy.Field()
     title = scrapy.Field()
     slug = scrapy.Field()
