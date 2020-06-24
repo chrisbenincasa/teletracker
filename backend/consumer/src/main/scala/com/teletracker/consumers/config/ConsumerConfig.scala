@@ -13,7 +13,8 @@ case class ConsumerConfig(
   logging: ConsumerLoggingConfig,
   es_ingest_worker: ThroughputWorkerConfig,
   es_item_denorm_worker: BatchWorkerConfig,
-  es_person_denorm_worker: BatchWorkerConfig)
+  es_person_denorm_worker: BatchWorkerConfig,
+  scrape_item_worker: ThroughputWorkerConfig)
 
 case class ConsumerLoggingConfig(output_to_console: Boolean)
 

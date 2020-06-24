@@ -1,54 +1,34 @@
 package com.teletracker.common.elasticsearch.scraping
 
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.db.{Bookmark, SearchScore, SortMode}
-import com.teletracker.common.elasticsearch.{
-  ElasticsearchAccess,
-  ElasticsearchExecutor,
-  EsPotentialMatchResponse,
-  Scroller
-}
+import com.teletracker.common.db.Bookmark
 import com.teletracker.common.elasticsearch.model.{
   EsPotentialMatchItem,
-  EsPotentialMatchState,
-  UpdateableEsItem
+  EsPotentialMatchState
 }
 import com.teletracker.common.elasticsearch.scraping.EsPotentialMatchItemStore.Sort
+import com.teletracker.common.elasticsearch._
 import com.teletracker.common.model.scraping.ScrapeItemType
-import com.teletracker.common.util.{AsyncStream, HasId}
-import io.circe.{Codec, Decoder, Encoder, Json}
+import com.teletracker.common.util.Functions._
+import io.circe.Json
 import io.circe.syntax._
 import javax.inject.Inject
-import org.elasticsearch.action.bulk.BulkRequest
-import org.elasticsearch.action.index.{IndexRequest, IndexResponse}
-import org.elasticsearch.action.search.{SearchRequest, SearchResponse}
-import org.elasticsearch.action.update.{UpdateRequest, UpdateResponse}
-import org.elasticsearch.common.xcontent.XContentType
-import org.elasticsearch.index.query.{
-  BoolQueryBuilder,
-  QueryBuilder,
-  QueryBuilders
-}
-import org.elasticsearch.search.builder.SearchSourceBuilder
-import com.teletracker.common.util.Functions._
 import org.apache.lucene.search.join.ScoreMode
-import org.elasticsearch.action.get.GetRequest
+import org.elasticsearch.action.search.{SearchRequest, SearchResponse}
 import org.elasticsearch.action.support.WriteRequest
+import org.elasticsearch.action.update.UpdateRequest
 import org.elasticsearch.client.core.CountRequest
-import org.elasticsearch.index.reindex.{
-  BulkByScrollResponse,
-  UpdateByQueryRequest
-}
-import org.elasticsearch.script.Script
+import org.elasticsearch.common.xcontent.XContentType
+import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilders}
+import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.sort.{
   FieldSortBuilder,
   NestedSortBuilder,
   SortOrder
 }
 import java.time.OffsetDateTime
-import scala.concurrent.{ExecutionContext, Future}
 import scala.collection.JavaConverters._
-import scala.reflect.ClassTag
+import scala.concurrent.{ExecutionContext, Future}
 
 object EsPotentialMatchItemStore {
   sealed trait Sort {
@@ -282,121 +262,3 @@ case class PotentialMatchItemSearch(
   bookmark: Option[Bookmark],
   sort: Option[String],
   desc: Boolean = true)
-
-abstract class ElasticsearchCrud[Id, T: Codec: ClassTag](
-  implicit hasId: HasId.Aux[T, Id],
-  executionContext: ExecutionContext)
-    extends ElasticsearchAccess {
-  protected def indexName: String
-  protected def elasticsearchExecutor: ElasticsearchExecutor
-
-  def lookup(id: Id): Future[Option[T]] = {
-    elasticsearchExecutor
-      .get(
-        new GetRequest(indexName, hasId.asString(id))
-      )
-      .map(response => {
-        decodeSourceString[T](response.getSourceAsString)
-      })
-  }
-
-  def index(item: T): Future[IndexResponse] = {
-    elasticsearchExecutor.index(
-      new IndexRequest(indexName)
-        .create(true)
-        .id(hasId.idString(item))
-        .source(item.asJson.noSpaces, XContentType.JSON)
-    )
-  }
-
-  def indexBatch(items: List[T]): Future[Unit] = {
-    AsyncStream
-      .fromStream(items.grouped(50).toStream)
-      .foreachF(batch => {
-        val bulkRequest = new BulkRequest()
-        batch.foreach(
-          insert =>
-            bulkRequest.add(
-              new IndexRequest(indexName)
-                .id(hasId.idString(insert))
-                .create(true)
-                .source(insert.asJson.noSpaces, XContentType.JSON)
-            )
-        )
-
-        elasticsearchExecutor.bulk(bulkRequest).map(_ => {})
-      })
-  }
-
-  def update(item: T): Future[UpdateResponse] = {
-    elasticsearchExecutor.update(
-      new UpdateRequest(indexName, hasId.idString(item))
-        .doc(item.asJson.deepDropNullValues.noSpaces, XContentType.JSON)
-    )
-  }
-
-  def updateByQuery(
-    query: QueryBuilder,
-    script: Script
-  ): Future[BulkByScrollResponse] = {
-    elasticsearchExecutor.updateByQuery(
-      new UpdateByQueryRequest(indexName)
-        .setRequestsPerSecond(25)
-        .setQuery(query)
-        .setScript(script)
-    )
-  }
-
-  def upsertBatch(items: List[T]): Future[Unit] = {
-    AsyncStream
-      .fromStream(items.grouped(25).toStream)
-      .foreachF(batch => {
-        val bulkRequest = new BulkRequest()
-        batch.foreach(
-          insert =>
-            bulkRequest.add(
-              new UpdateRequest(indexName, hasId.idString(insert))
-                .id(hasId.idString(insert))
-                .doc(
-                  insert.asJson.deepDropNullValues.noSpaces,
-                  XContentType.JSON
-                )
-                .upsert(
-                  insert.asJson.deepDropNullValues.noSpaces,
-                  XContentType.JSON
-                )
-            )
-        )
-
-        elasticsearchExecutor.bulk(bulkRequest).map(_ => {})
-      })
-  }
-
-  def upsertBatchWithFallback[U: Encoder](
-    items: List[(U, T)]
-  )(implicit updateableEsItem: UpdateableEsItem.Aux[T, U]
-  ): Future[Unit] = {
-    AsyncStream
-      .fromStream(items.grouped(25).toStream)
-      .foreachF(batch => {
-        val bulkRequest = new BulkRequest()
-        batch.foreach {
-          case (update, insert) =>
-            bulkRequest.add(
-              new UpdateRequest(indexName, hasId.idString(insert))
-                .id(hasId.idString(insert))
-                .doc(
-                  update.asJson.deepDropNullValues.noSpaces,
-                  XContentType.JSON
-                )
-                .upsert(
-                  insert.asJson.deepDropNullValues.noSpaces,
-                  XContentType.JSON
-                )
-            )
-        }
-
-        elasticsearchExecutor.bulk(bulkRequest).map(_ => {})
-      })
-  }
-}

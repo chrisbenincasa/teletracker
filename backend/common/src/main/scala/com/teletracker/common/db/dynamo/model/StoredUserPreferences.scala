@@ -24,18 +24,21 @@ object StoredUserPreferences {
   ): StoredUserPreferences = {
     val rowMap = row.asScala
 
-    require(rowMap("type").valueAs[String] == MetadataType.GenreReferenceType)
+    require(
+      rowMap("type")
+        .fromAttributeValue[String] == MetadataType.GenreReferenceType
+    )
 
     StoredUserPreferences(
-      userId = rowMap("userId").valueAs[String],
+      userId = rowMap("userId").fromAttributeValue[String],
       createdAt = Instant
-        .ofEpochMilli(rowMap("createdAt").valueAs[Long])
+        .ofEpochMilli(rowMap("createdAt").fromAttributeValue[Long])
         .atOffset(ZoneOffset.UTC),
       lastUpdatedAt = Instant
-        .ofEpochMilli(rowMap("lastUpdatedAt").valueAs[Long])
+        .ofEpochMilli(rowMap("lastUpdatedAt").fromAttributeValue[Long])
         .atOffset(ZoneOffset.UTC),
       preferences = decode[StoredUserPreferencesBlob](
-        rowMap("preferences").valueAs[String]
+        rowMap("preferences").fromAttributeValue[String]
       ).right.get
     )
   }

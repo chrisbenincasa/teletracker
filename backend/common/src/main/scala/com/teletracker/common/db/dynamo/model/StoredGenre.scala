@@ -26,14 +26,15 @@ object StoredGenre {
   def fromRow(row: java.util.Map[String, AttributeValue]): StoredGenre = {
     val rowMap = row.asScala
 
-    require(rowMap("type").valueAs[String] == MetadataType.GenreType)
+    require(rowMap("type").fromAttributeValue[String] == MetadataType.GenreType)
 
     StoredGenre(
-      id = parseGenreId(rowMap("id").valueAs[String]),
-      name = rowMap("name").valueAs[String],
-      slug = Slug.raw(rowMap("slug").valueAs[String]),
-      genreTypes =
-        rowMap("genreTypes").valueAs[Set[String]].map(GenreType.fromString)
+      id = parseGenreId(rowMap("id").fromAttributeValue[String]),
+      name = rowMap("name").fromAttributeValue[String],
+      slug = Slug.raw(rowMap("slug").fromAttributeValue[String]),
+      genreTypes = rowMap("genreTypes")
+        .fromAttributeValue[Set[String]]
+        .map(GenreType.fromString)
     )
   }
 }

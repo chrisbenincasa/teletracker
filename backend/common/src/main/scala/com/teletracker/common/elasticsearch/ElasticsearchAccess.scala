@@ -1,6 +1,5 @@
 package com.teletracker.common.elasticsearch
 
-import com.google.inject.Inject
 import com.teletracker.common.db.dynamo.model.{
   StoredGenre,
   StoredNetwork,
@@ -11,23 +10,18 @@ import com.teletracker.common.db.model.{
   ItemType,
   PersonAssociationType
 }
-import com.teletracker.common.db.{
-  AddedTime,
-  Bookmark,
-  DefaultForListType,
-  Popularity,
-  Rating,
-  Recent,
-  SearchScore,
-  SortMode
-}
+import com.teletracker.common.db._
 import com.teletracker.common.elasticsearch.model.{
   EsItem,
   EsPerson,
   EsUserItem,
   TagFilter
 }
+import com.teletracker.common.util.Functions._
+import com.teletracker.common.util.{ClosedNumericRange, IdOrSlug, OpenDateRange}
+import io.circe.Decoder
 import io.circe.parser.decode
+import org.apache.lucene.search.join.ScoreMode
 import org.elasticsearch.action.search.SearchResponse
 import org.elasticsearch.index.query.{
   BoolQueryBuilder,
@@ -35,15 +29,6 @@ import org.elasticsearch.index.query.{
   RangeQueryBuilder,
   TermQueryBuilder
 }
-import com.teletracker.common.util.Functions._
-import com.teletracker.common.util.{
-  ClosedNumericRange,
-  IdOrSlug,
-  OpenDateRange,
-  OpenNumericRange
-}
-import io.circe.Decoder
-import org.apache.lucene.search.join.ScoreMode
 import org.elasticsearch.search.sort.{
   FieldSortBuilder,
   NestedSortBuilder,
@@ -52,11 +37,10 @@ import org.elasticsearch.search.sort.{
 }
 import org.slf4j.LoggerFactory
 import scala.annotation.tailrec
-import scala.reflect.ClassTag
 import scala.collection.JavaConverters._
+import scala.reflect.ClassTag
 
-trait ElasticsearchAccess {
-//  @Inject private[this] var denormalizationCache: ItemDenormalizationCache = _
+trait ElasticsearchAccess extends ElasticsearchImplicits {
   protected val SupportedRatingSortSources =
     Set(ExternalSource.TheMovieDb, ExternalSource.Imdb)
 

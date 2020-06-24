@@ -36,16 +36,19 @@ object StoredNetworkReference {
   ): StoredNetworkReference = {
     val rowMap = row.asScala
 
-    require(rowMap("type").valueAs[String] == MetadataType.NetworkReferenceType)
+    require(
+      rowMap("type")
+        .fromAttributeValue[String] == MetadataType.NetworkReferenceType
+    )
 
     val (externalSource, externalId) = parseNetworkReferenceId(
-      rowMap("id").valueAs[String]
+      rowMap("id").fromAttributeValue[String]
     )
 
     StoredNetworkReference(
       externalSource = ExternalSource.fromString(externalSource),
       externalId = externalId,
-      networkId = rowMap("networkId").valueAs[Int]
+      networkId = rowMap("networkId").fromAttributeValue[Int]
     )
   }
 }

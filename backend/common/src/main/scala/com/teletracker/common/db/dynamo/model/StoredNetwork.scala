@@ -26,15 +26,17 @@ object StoredNetwork {
   def fromRow(row: java.util.Map[String, AttributeValue]): StoredNetwork = {
     val rowMap = row.asScala
 
-    require(rowMap("type").valueAs[String] == MetadataType.NetworkType)
+    require(
+      rowMap("type").fromAttributeValue[String] == MetadataType.NetworkType
+    )
 
     StoredNetwork(
-      id = parseNetworkId(rowMap("id").valueAs[String]),
-      name = rowMap("name").valueAs[String],
-      slug = Slug.raw(rowMap("slug").valueAs[String]),
-      shortname = rowMap("shortname").valueAs[String],
-      homepage = rowMap.get("homepage").map(_.valueAs[String]),
-      origin = rowMap.get("origin").map(_.valueAs[String])
+      id = parseNetworkId(rowMap("id").fromAttributeValue[String]),
+      name = rowMap("name").fromAttributeValue[String],
+      slug = Slug.raw(rowMap("slug").fromAttributeValue[String]),
+      shortname = rowMap("shortname").fromAttributeValue[String],
+      homepage = rowMap.get("homepage").map(_.fromAttributeValue[String]),
+      origin = rowMap.get("origin").map(_.fromAttributeValue[String])
     )
   }
 }

@@ -36,8 +36,6 @@ class IngestHuluCatalog @Inject()(
   override protected def externalSources: List[ExternalSource] =
     List(ExternalSource.Hulu)
 
-  override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
-
   override protected def shouldProcessItem(
     item: HuluScrapeCatalogItem
   ): Boolean = {

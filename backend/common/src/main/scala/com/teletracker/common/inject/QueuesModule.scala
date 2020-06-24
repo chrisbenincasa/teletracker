@@ -1,12 +1,13 @@
 package com.teletracker.common.inject
 
 import com.google.inject.Provides
-import com.teletracker.common.aws.sqs.SqsFifoQueue
+import com.teletracker.common.aws.sqs.{SqsFifoQueue, SqsQueue}
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.pubsub.{
   EsDenormalizeItemMessage,
   EsDenormalizePersonMessage,
   EsIngestMessage,
+  ScrapeItemIngestMessage,
   TeletrackerTaskQueueMessage
 }
 import com.twitter.inject.TwitterModule
@@ -90,5 +91,24 @@ class QueuesModule extends TwitterModule {
       }),
       config.async.esPersonDenormalizationQueue.message_group_id
         .getOrElse("default")
+    )
+
+  @Provides
+  def scrapeItemQueue(
+    config: TeletrackerConfig,
+    sqsAsyncClient: SqsAsyncClient
+  )(implicit executionContext: ExecutionContext
+  ): SqsQueue[ScrapeItemIngestMessage] =
+    new SqsQueue[ScrapeItemIngestMessage](
+      sqsAsyncClient,
+      config.async.scrapeItemQueue.url,
+      config.async.scrapeItemQueue.dlq.map(
+        dlqConf =>
+          new SqsQueue[ScrapeItemIngestMessage](
+            sqsAsyncClient,
+            dlqConf.url,
+            None
+          )
+      )
     )
 }

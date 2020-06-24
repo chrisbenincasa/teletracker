@@ -1,0 +1,75 @@
+{
+  "mappings": {
+    "dynamic": false,
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "type": {
+        "type": "keyword"
+      },
+      "version": {
+        "type": "long"
+      },
+      "title": {
+        "type": "text"
+      },
+      "releaseYear": {
+        "type": "integer"
+      },
+      "network": {
+        "type": "keyword"
+      },
+      "status": {
+        "type": "keyword"
+      },
+      "externalId": {
+        "type": "keyword"
+      },
+      "availableDate": {
+        "type": "date"
+      },
+      "description": {
+        "type": "text"
+      },
+      "url": {
+        "type": "keyword"
+      },
+      "posterImageUrl": {
+        "type": "keyword"
+      },
+      "cast": {
+        "type": "nested",
+        "properties": {
+          "name": {
+            "type": "text"
+          },
+          "order": {
+            "type": "integer"
+          },
+          "role": {
+            "type": "keyword"
+          }
+        }
+      },
+      "crew": {
+        "type": "nested",
+        "properties": {
+          "name": {
+            "type": "text"
+          },
+          "order": {
+            "type": "integer"
+          },
+          "role": {
+            "type": "keyword"
+          }
+        }
+      },
+      "raw": {
+        "type": "object",
+        "enabled": false
+      }
+    }
+  }
+}

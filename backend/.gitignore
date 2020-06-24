@@ -46,6 +46,7 @@ people.*.json
 FULL_VERSION
 *.csv
 *.txt
+!english_stopwords.txt
 
 *.json
 !item_mapping.json
@@ -53,6 +54,7 @@ FULL_VERSION
 !people_mapping.json
 !user_item_mapping.json
 !potential_matches_index.json
+!scraped_items_index.json
 !tasks_mapping.json
 !jwks.json
 

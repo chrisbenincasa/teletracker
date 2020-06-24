@@ -15,7 +15,8 @@ case class TeletrackerConfig(
   tmdb: TmdbConfig,
   env: String,
   async: AsyncConfig,
-  data: DataConfig)
+  data: DataConfig,
+  dynamo: DynamoTablesConfig)
 
 case class AuthConfig(
   admin: AdminConfig,
@@ -29,7 +30,8 @@ case class AsyncConfig(
   taskQueue: QueueConfig,
   esIngestQueue: QueueConfig,
   esItemDenormalizationQueue: QueueConfig,
-  esPersonDenormalizationQueue: QueueConfig)
+  esPersonDenormalizationQueue: QueueConfig,
+  scrapeItemQueue: QueueConfig)
 
 case class QueueConfig(
   url: String,
@@ -50,7 +52,8 @@ case class EsConfig(
   people_index_name: String,
   user_items_index_name: String,
   tasks_index_name: String,
-  potential_matches_index_name: String)
+  potential_matches_index_name: String,
+  scraped_items_index_name: String)
 
 case class EsHostConfig(
   hostname: String,
@@ -64,3 +67,7 @@ case class EsCredentials(
 case class TmdbConfig(api_key: String)
 
 case class DataConfig(s3_bucket: String)
+
+case class DynamoTablesConfig(scraped_items: DynamoTableConfig)
+
+case class DynamoTableConfig(table_name: String)

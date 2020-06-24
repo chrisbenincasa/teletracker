@@ -279,7 +279,7 @@ class ListsDbAccess @Inject()(
       .map(response => {
         Option(response.item().asScala)
           .filter(_.nonEmpty)
-          .flatMap(_.get("id").map(_.valueAs[UUID]))
+          .flatMap(_.get("id").map(_.fromAttributeValue[UUID]))
       })
   }
 }

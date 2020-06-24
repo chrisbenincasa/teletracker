@@ -8,6 +8,7 @@ import com.teletracker.common.aws.sqs.worker.{
 import com.teletracker.common.aws.sqs.worker.poll.HeartbeatConfig
 import com.teletracker.common.config.core.ConfigLoader
 import com.teletracker.common.config.core.api.ReloadableConfig
+import com.teletracker.common.inject.QueueConfigAnnotations.ScrapeItemQueueConfig
 import com.teletracker.common.inject.{
   QueueConfigAnnotations,
   Modules => CommonModules
@@ -82,6 +83,18 @@ class ConsumerConfigModule extends TwitterModule {
       new SqsQueueWorkerConfig(
         batchSize = conf.es_item_denorm_worker.batch_size,
         heartbeat = None
+      )
+    })
+  }
+
+  @Provides
+  @ScrapeItemQueueConfig
+  def scrapeItemConfig(
+    consumerConfig: ReloadableConfig[ConsumerConfig]
+  ): ReloadableConfig[SqsQueueThroughputWorkerConfig] = {
+    consumerConfig.map(conf => {
+      new SqsQueueThroughputWorkerConfig(
+        maxOutstandingItems = conf.scrape_item_worker.max_outstanding
       )
     })
   }

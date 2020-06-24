@@ -36,16 +36,19 @@ object StoredGenreReference {
   ): StoredGenreReference = {
     val rowMap = row.asScala
 
-    require(rowMap("type").valueAs[String] == MetadataType.GenreReferenceType)
+    require(
+      rowMap("type")
+        .fromAttributeValue[String] == MetadataType.GenreReferenceType
+    )
 
     val (externalSource, externalId) = parseGenreReferenceId(
-      rowMap("id").valueAs[String]
+      rowMap("id").fromAttributeValue[String]
     )
 
     StoredGenreReference(
       externalSource = ExternalSource.fromString(externalSource),
       externalId = externalId,
-      genreId = rowMap("genreId").valueAs[Int]
+      genreId = rowMap("genreId").fromAttributeValue[Int]
     )
   }
 }

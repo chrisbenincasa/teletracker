@@ -60,7 +60,7 @@ class DynamoElasticsearchExternalIdMapping @Inject()(
       .getItem(request)
       .toScala
       .map(response => {
-        response.item().asScala.get("id").map(_.valueAs[UUID])
+        response.item().asScala.get("id").map(_.fromAttributeValue[UUID])
       })
   }
 
@@ -107,9 +107,9 @@ class DynamoElasticsearchExternalIdMapping @Inject()(
                       for {
                         key <- row
                           .get("externalId")
-                          .map(_.valueAs[String])
+                          .map(_.fromAttributeValue[String])
                           .flatMap(parseKey)
-                        value <- row.get("id").map(_.valueAs[UUID])
+                        value <- row.get("id").map(_.fromAttributeValue[UUID])
                       } yield {
                         key -> value
                       }
@@ -143,7 +143,7 @@ class DynamoElasticsearchExternalIdMapping @Inject()(
       rows.flatMap(row => {
         row.asScala
           .get("externalId")
-          .map(_.valueAs[String])
+          .map(_.fromAttributeValue[String])
           .flatMap(externalIdType => {
             parseKey(externalIdType).collect {
               case (id, typ) if typ == itemType => id
@@ -284,7 +284,7 @@ class DynamoElasticsearchExternalIdMapping @Inject()(
       .map(row => {
         row.asScala
           .get("externalId")
-          .map(_.valueAs[String])
+          .map(_.fromAttributeValue[String])
           .flatMap(externalIdType => {
             parseKey(externalIdType)
           })

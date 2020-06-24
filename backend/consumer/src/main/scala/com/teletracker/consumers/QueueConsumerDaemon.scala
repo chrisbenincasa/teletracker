@@ -7,6 +7,7 @@ import com.teletracker.consumers.impl.{
   EsDenormalizeItemWorker,
   EsDenormalizePersonWorker,
   EsIngestQueueWorker,
+  ScrapeItemImportWorker,
   TaskQueueWorker
 }
 import com.teletracker.consumers.inject.{HttpClientModule, Modules}
@@ -35,6 +36,8 @@ object QueueConsumerDaemon extends com.twitter.inject.app.App {
         new SqsQueueListener(injector.instance[EsDenormalizeItemWorker])
       case EsPersonDenormalizeConsumer =>
         new SqsQueueListener(injector.instance[EsDenormalizePersonWorker])
+      case ScrapeItemImportConsumer =>
+        new SqsQueueListener(injector.instance[ScrapeItemImportWorker])
     }
 
     listener.start()
@@ -55,6 +58,7 @@ object RunMode {
   final private val EsItemDenormalizeConsumerType = "EsItemDenormalizeConsumer"
   final private val EsPersonDenormalizeConsumerType =
     "EsPersonDenormalizeConsumer"
+  final private val ScrapeItemImportConsumerType = "ScrapeItemImportConsumer"
 
   implicit val flaggable_runMode: Flaggable[RunMode] = new Flaggable[RunMode] {
     override def parse(s: String): RunMode =
@@ -63,6 +67,7 @@ object RunMode {
         case EsIngestConsumerType            => EsIngestConsumer
         case EsItemDenormalizeConsumerType   => EsItemDenormalizeConsumer
         case EsPersonDenormalizeConsumerType => EsPersonDenormalizeConsumer
+        case ScrapeItemImportConsumerType    => ScrapeItemImportConsumer
         case _                               => throw new IllegalArgumentException
       }
   }
@@ -73,3 +78,4 @@ case object TaskConsumer extends RunMode
 case object EsIngestConsumer extends RunMode
 case object EsItemDenormalizeConsumer extends RunMode
 case object EsPersonDenormalizeConsumer extends RunMode
+case object ScrapeItemImportConsumer extends RunMode

@@ -1,5 +1,6 @@
 package com.teletracker.common.db.dynamo.util
 
+import io.circe.Json
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 import java.time.Instant
 import java.util.UUID
@@ -54,6 +55,15 @@ trait AsAttributeValueInstances {
       value => value.ss().asScala.toSet
     )
 
+  implicit val jsonAsAttributeValue: ToAndFromAttributeValue[Json] =
+    make(
+      value => AttributeValue.builder().s(value.noSpaces).build(),
+      value =>
+        io.circe.parser
+          .parse(value.s())
+          .fold(throw _, identity) // TODO don't do this
+    )
+
   implicit def optionAsAttributeValue[T](
     implicit other: ToAndFromAttributeValue[T]
   ): ToAndFromAttributeValue[Option[T]] =
@@ -95,6 +105,8 @@ final class AsAttributeValueOps[T](val value: T) extends AnyVal {
 }
 
 final class FromAttributeValueOps(val value: AttributeValue) extends AnyVal {
-  def valueAs[T](implicit fromAttributeValue: FromAttributeValue[T]): T =
+  def fromAttributeValue[T](
+    implicit fromAttributeValue: FromAttributeValue[T]
+  ): T =
     fromAttributeValue.from(value)
 }

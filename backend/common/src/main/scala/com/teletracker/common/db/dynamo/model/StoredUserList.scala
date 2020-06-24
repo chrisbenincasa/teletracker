@@ -25,29 +25,30 @@ object StoredUserList {
 
   def fromRow(row: java.util.Map[String, AttributeValue]): StoredUserList = {
     StoredUserList(
-      id = row.get("id").valueAs[UUID],
-      name = row.get("name").valueAs[String],
-      isDefault = row.get("isDefault").valueAs[Boolean],
-      isPublic = row.get("isPublic").valueAs[Boolean],
-      userId = row.get("userId").valueAs[String],
-      isDynamic = row.get("isDynamic").valueAs[Boolean],
+      id = row.get("id").fromAttributeValue[UUID],
+      name = row.get("name").fromAttributeValue[String],
+      isDefault = row.get("isDefault").fromAttributeValue[Boolean],
+      isPublic = row.get("isPublic").fromAttributeValue[Boolean],
+      userId = row.get("userId").fromAttributeValue[String],
+      isDynamic = row.get("isDynamic").fromAttributeValue[Boolean],
       rules = Option(row.get("rules"))
-        .map(_.valueAs[String])
+        .map(_.fromAttributeValue[String])
         .map(decode[DynamicListRules](_).right.get),
       options = Option(row.get("options"))
-        .map(_.valueAs[String])
+        .map(_.fromAttributeValue[String])
         .map(decode[UserListRowOptions](_).right.get),
       deletedAt = Option(row.get("deletedAt"))
-        .map(_.valueAs[String])
+        .map(_.fromAttributeValue[String])
         .map(OffsetDateTime.parse(_)),
       createdAt = Option(row.get("createdAt"))
-        .map(_.valueAs[String])
+        .map(_.fromAttributeValue[String])
         .map(OffsetDateTime.parse(_)),
       lastUpdatedAt = Option(row.get("lastUpdatedAt"))
-        .map(_.valueAs[String])
+        .map(_.fromAttributeValue[String])
         .map(OffsetDateTime.parse(_)),
-      legacyId = Option(row.get("legacyId")).map(_.valueAs[Int]),
-      aliases = Option(row.get("aliases")).map(_.valueAs[Set[String]])
+      legacyId = Option(row.get("legacyId")).map(_.fromAttributeValue[Int]),
+      aliases =
+        Option(row.get("aliases")).map(_.fromAttributeValue[Set[String]])
     )
   }
 }
