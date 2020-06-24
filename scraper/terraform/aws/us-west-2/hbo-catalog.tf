@@ -17,7 +17,7 @@ module "hbo_crawler" {
 
   outputs = [
     "s3://${data.aws_s3_bucket.data_bucket.id}/scrape-results/hbo/catalog/{date}/items_{time}.jl:jl",
-    "sqs://${replace(aws_sqs_queue.scrape_item_output_queue.id, "https://", "")}:sqs"
+    "sqs://${replace(data.aws_sqs_queue.scrape_item_output_queue.id, "https://", "")}:sqs"
   ]
 
   dynamodb_output_table = aws_dynamodb_table.crawls.name

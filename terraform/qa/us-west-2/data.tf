@@ -44,6 +44,6 @@ data "aws_iam_policy" "s3_full_access_policy" {
 }
 
 data "aws_ssm_parameter" "datadog_api_key" {
-  name = "datadog-api-key"
+  name            = "datadog-api-key"
   with_decryption = true
 }

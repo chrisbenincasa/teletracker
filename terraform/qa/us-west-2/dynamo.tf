@@ -117,7 +117,7 @@ resource "aws_dynamodb_table" "id-mapping-ddb-table" {
   name         = "teletracker.qa.id_mapping"
   billing_mode = "PAY_PER_REQUEST"
 
-  hash_key  = "externalId"
+  hash_key = "externalId"
 
   attribute {
     name = "externalId"
@@ -134,5 +134,23 @@ resource "aws_dynamodb_table" "id-mapping-ddb-table" {
     hash_key        = "id"
     range_key       = "externalId"
     projection_type = "ALL"
+  }
+}
+
+resource "aws_dynamodb_table" "scraped_items" {
+  name         = "teletracker.qa.scraped_items"
+  billing_mode = "PAY_PER_REQUEST"
+
+  hash_key  = "id"
+  range_key = "version"
+
+  attribute {
+    name = "id"
+    type = "S"
+  }
+
+  attribute {
+    name = "version"
+    type = "N"
   }
 }
