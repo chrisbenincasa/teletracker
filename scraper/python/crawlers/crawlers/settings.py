@@ -12,7 +12,8 @@ from scrapy.settings.default_settings import DOWNLOADER_MIDDLEWARES
 
 BOT_NAME = 'crawlers'
 
-SPIDER_MODULES = ['crawlers.spiders', 'crawlers.spiders.disney', 'crawlers.spiders.hbo', 'crawlers.spiders.google']
+SPIDER_MODULES = ['crawlers.spiders', 'crawlers.spiders.disney', 'crawlers.spiders.hbo', 'crawlers.spiders.google',
+                  'crawlers.spiders.netflix']
 NEWSPIDER_MODULE = 'crawlers.spiders'
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
@@ -73,7 +74,7 @@ USER_AGENTS = [
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html
 EXTENSIONS = {
-   'crawlers.extensions.dynamo_crawl_recorder.DynamoCrawlRecorder': 500,
+    'crawlers.extensions.dynamo_crawl_recorder.DynamoCrawlRecorder': 500,
 }
 
 # Configure item pipelines
