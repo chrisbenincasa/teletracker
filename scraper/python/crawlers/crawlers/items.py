@@ -130,6 +130,8 @@ class ShowtimeItem(scrapy.Item):
     url = scrapy.Field()
     seasons = scrapy.Field()
     releaseYear = scrapy.Field()
+    cast = scrapy.Field()
+    crew = scrapy.Field()
 
 
 class ShowtimeItemSeason(scrapy.Item):
@@ -143,3 +145,14 @@ class ShowtimeItemEpisode(scrapy.Item):
     episodeNumber = scrapy.Field()
     releaseDate = scrapy.Field()
     description = scrapy.Field()
+
+class ShowtimeCastMember(scrapy.Item):
+    name = scrapy.Field()
+    order = scrapy.Field()
+    role = scrapy.Field()
+
+
+class ShowtimeCrewMember(scrapy.Item):
+    name = scrapy.Field()
+    role = scrapy.Field()
+    order = scrapy.Field()

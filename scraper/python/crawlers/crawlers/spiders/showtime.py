@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 
 import scrapy
 
@@ -6,7 +7,7 @@ from crawlers.base_spider import BaseSitemapSpider
 from urllib.parse import urlparse, urljoin
 from base64 import b64encode
 
-from crawlers.items import ShowtimeItem, ShowtimeItemSeason, ShowtimeItemEpisode
+from crawlers.items import ShowtimeItem, ShowtimeItemSeason, ShowtimeItemEpisode, ShowtimeCastMember
 from crawlers.spiders.netflix.netflix_catalog import _safe_to_int
 
 
@@ -15,6 +16,7 @@ def try_decode_json(s):
         return json.loads(s)
     except json.JSONDecodeError:
         return
+
 
 def _schema_org_details(response, type):
     scripts = response.xpath('//script[@type="application/ld+json"]/text()').getall()
@@ -87,6 +89,15 @@ class ShowtimeSpider(BaseSitemapSpider):
                     if metadata_value:
                         release_year = _safe_to_int(metadata_value)
 
+            actors = []
+            if 'actor' in page_details:
+                for (idx, actor) in enumerate(page_details['actor']):
+                    actors.append(ShowtimeCastMember(
+                        name=actor['actor']['name'],
+                        role=actor['characterName'],
+                        order=idx
+                    ))
+
             yield ShowtimeItem(
                 id=external_id,
                 externalId=external_id,
@@ -95,7 +106,9 @@ class ShowtimeSpider(BaseSitemapSpider):
                 network='showtime',
                 itemType='movie',
                 url=response.url,
-                releaseYear=release_year
+                releaseYear=release_year,
+                cast=actors,
+                crew=[]
             )
 
     def parse_show(self, response):
@@ -107,6 +120,15 @@ class ShowtimeSpider(BaseSitemapSpider):
                             response.xpath('//a[contains(@href, "{}/season")]'.format(page_path.path))]
             season_links.sort()
             external_id = b64encode(response.url.encode('utf-8')).decode('utf-8')
+            actors = []
+            if 'actor' in show_page_details:
+                for (idx, actor) in enumerate(show_page_details['actor']):
+                    actors.append(ShowtimeCastMember(
+                        name=actor['actor']['name'],
+                        role=actor['characterName'],
+                        order=idx
+                    ))
+
             item = ShowtimeItem(
                 id=external_id,
                 externalId=external_id,
@@ -115,7 +137,9 @@ class ShowtimeSpider(BaseSitemapSpider):
                 network='showtime',
                 itemType='show',
                 url=response.url,
-                seasons=list()
+                seasons=list(),
+                cast=actors,
+                crew=list()
             )
 
             yield self._next_season_request(item=item, base_url=response.url, seasons_left=season_links)
@@ -136,14 +160,21 @@ class ShowtimeSpider(BaseSitemapSpider):
 
             episode_links = [x.attrib['href'] for x in response.css('div.promo-season-group a.promo__link')]
 
+            season_publication_date = _publication_date(page_details)
             season = ShowtimeItemSeason(
                 seasonNumber=season_number,
                 description=description,
-                releaseDate=_publication_date(page_details),
+                releaseDate=season_publication_date,
                 episodes=list()
             )
 
             item['seasons'].append(season)
+
+            if season_number and season_number == 1 and season_publication_date:
+                try:
+                    item['releaseYear'] = datetime.strptime(season_publication_date, '%Y-%m-%d').year
+                except ValueError:
+                    pass
 
             yield self._next_episode_request(item=item, base_url=response.meta['base_url'],
                                              seasons_left=response.meta['seasons_left'], episodes_left=episode_links)
