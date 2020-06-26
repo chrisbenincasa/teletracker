@@ -7,6 +7,7 @@ from urllib.parse import urlparse, urljoin
 from base64 import b64encode
 
 from crawlers.items import ShowtimeItem, ShowtimeItemSeason, ShowtimeItemEpisode
+from crawlers.spiders.netflix.netflix_catalog import _safe_to_int
 
 
 def try_decode_json(s):
@@ -24,7 +25,7 @@ def _schema_org_details(response, type):
 
 
 def _movie_page_details(response):
-    return _schema_org_details(response, 'TVSeries')
+    return _schema_org_details(response, 'Movie')
 
 
 def _show_page_details(response):
@@ -78,6 +79,14 @@ class ShowtimeSpider(BaseSitemapSpider):
             if not description:
                 description = response.css('.about-the-series-section p.block-container__copy::text').get()
 
+            release_year = None
+            metadata = response.css('dt.metadata__key')
+            for datum in metadata:
+                if datum.xpath('./text()').get() == 'Released':
+                    metadata_value = datum.xpath('./following-sibling::dd[1]/text()').get()
+                    if metadata_value:
+                        release_year = _safe_to_int(metadata_value)
+
             yield ShowtimeItem(
                 id=external_id,
                 externalId=external_id,
@@ -86,6 +95,7 @@ class ShowtimeSpider(BaseSitemapSpider):
                 network='showtime',
                 itemType='movie',
                 url=response.url,
+                releaseYear=release_year
             )
 
     def parse_show(self, response):

@@ -129,6 +129,7 @@ class ShowtimeItem(scrapy.Item):
     network = scrapy.Field()
     url = scrapy.Field()
     seasons = scrapy.Field()
+    releaseYear = scrapy.Field()
 
 
 class ShowtimeItemSeason(scrapy.Item):
