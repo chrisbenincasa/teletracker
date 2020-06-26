@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-./build_new_version.sh
+./scripts/build_new_version.sh
 
 VERSION=$(cat FULL_VERSION)
 

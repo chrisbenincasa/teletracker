@@ -19,7 +19,7 @@ for output in "$@"; do
 done
 
 DYNAMO_CMD=()
-if [ -z "${DYNAMO_DB_OUTPUT_TABLE}" ]; then
+if [[ -n "${DYNAMO_DB_OUTPUT_TABLE}" ]]; then
   DYNAMO_CMD+=(--set 'DYNAMO_CRAWL_TRACK_ENABLED=True' --set "DYNAMO_CRAWL_TRACK_TABLE=$DYNAMO_DB_OUTPUT_TABLE")
 fi
 
