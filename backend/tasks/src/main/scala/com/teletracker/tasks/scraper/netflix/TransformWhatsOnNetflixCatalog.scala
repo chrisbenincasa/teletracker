@@ -1,6 +1,7 @@
 package com.teletracker.tasks.scraper.netflix
 
 import com.teletracker.common.db.model.ItemType
+import com.teletracker.common.model.scraping.netflix.NetflixScrapedCatalogItem
 import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.scraper.model.WhatsOnNetflixCatalogItem
@@ -13,13 +14,13 @@ import java.nio.file.Files
 import java.util.concurrent.ConcurrentHashMap
 
 object TransformWhatsOnNetflixCatalog {
-  def convert(item: WhatsOnNetflixCatalogItem): NetflixCatalogItem = {
-    NetflixCatalogItem(
+  def convert(item: WhatsOnNetflixCatalogItem): NetflixScrapedCatalogItem = {
+    NetflixScrapedCatalogItem(
       availableDate = None,
       title = item.title.trim,
       releaseYear = Option(item.titlereleased).filter(_.nonEmpty).map(_.toInt),
       network = "Netflix",
-      `type` = item.`type` match {
+      itemType = item.`type` match {
         case "Movie" | "Documentary"  => ItemType.Movie
         case "TV" | "Stand-Up Comedy" => ItemType.Show
         case x =>
@@ -28,7 +29,8 @@ object TransformWhatsOnNetflixCatalog {
           )
       },
       externalId = Some(item.netflixid),
-      description = Some(item.description).filter(_.nonEmpty)
+      description = Some(item.description).filter(_.nonEmpty),
+      seasons = None
     )
   }
 }

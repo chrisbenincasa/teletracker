@@ -1,20 +1,10 @@
 package com.teletracker.tasks.scraper.netflix
 
 import com.teletracker.common.db.model._
-import com.teletracker.common.elasticsearch.{
-  ElasticsearchExecutor,
-  ItemLookup,
-  ItemUpdater
-}
-import com.teletracker.common.model.scraping.{
-  NonMatchResult,
-  ScrapeItemType,
-  ScrapedItem
-}
+import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.model.scraping.netflix.NetflixScrapedCatalogItem
+import com.teletracker.common.model.scraping.{NonMatchResult, ScrapeItemType}
 import com.teletracker.common.util.NetworkCache
-import com.teletracker.common.util.json.circe._
-import com.teletracker.tasks.scraper.IngestJobParser.{JsonPerLine, ParseMode}
 import com.teletracker.tasks.scraper.matching.{
   ElasticsearchFallbackMatcher,
   ElasticsearchFallbackMatcherOptions
@@ -27,7 +17,6 @@ import com.teletracker.tasks.scraper.{
   SubscriptionNetworkAvailability
 }
 import com.teletracker.tasks.util.SourceRetriever
-import io.circe.generic.JsonCodec
 import io.circe.parser._
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
@@ -184,26 +173,4 @@ class IngestNetflixCatalog @Inject()(
       case (k, Some(v)) => k -> v
     }
   }
-}
-
-@JsonCodec
-case class NetflixCatalogItem(
-  availableDate: Option[String],
-  title: String,
-  releaseYear: Option[Int],
-  network: String,
-  `type`: ItemType,
-  externalId: Option[String],
-  description: Option[String])
-    extends ScrapedItem {
-  val status = "Available"
-
-  override def category: Option[String] = None
-
-  override def isMovie: Boolean = `type` == ItemType.Movie
-
-  override def isTvShow: Boolean = `type` == ItemType.Show
-
-  override def url: Option[String] =
-    externalId.map(id => s"https://netflix.com/title/$id")
 }

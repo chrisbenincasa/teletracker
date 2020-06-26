@@ -1,6 +1,6 @@
 package com.teletracker.consumers.impl
 
-import com.teletracker.common.aws.sqs.{SqsFifoQueue, SqsQueue}
+import com.teletracker.common.aws.sqs.SqsQueue
 import com.teletracker.common.aws.sqs.worker.{
   SqsQueueThroughputWorker,
   SqsQueueThroughputWorkerConfig,
@@ -13,7 +13,6 @@ import com.teletracker.common.elasticsearch.scraping.{
   EsScrapedItemStore
 }
 import com.teletracker.common.inject.QueueConfigAnnotations.ScrapeItemQueueConfig
-import com.teletracker.common.model.scraping.hbo.HboScrapedCatalogItem
 import com.teletracker.common.pubsub.ScrapeItemIngestMessage
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
@@ -32,21 +31,17 @@ class ScrapeItemImportWorker @Inject()(
     msg: ScrapeItemIngestMessage
   ): Future[SqsQueueWorkerBase.FinishedAction] = {
     msg.deserToScrapedItem match {
-      case Success(value: HboScrapedCatalogItem) =>
+      case Success(value) =>
         handleForEsScrapedItem(
-          EsScrapedItemDoc.fromAnyScrapedItem(msg.`type`, msg.version, value),
+          EsScrapedItemDoc
+            .fromAnyScrapedItem(msg.`type`, msg.version, value, msg.item),
           msg
         )
-
-      case Success(value) =>
-        logger.error(s"Could not handle item: ${value}, unsupported type")
-        Future.successful(SqsQueueWorkerBase.DoNothing)
 
       case Failure(exception) =>
         logger.error("Could not deserialize item, unsupported type", exception)
         Future.successful(SqsQueueWorkerBase.Ack(msg.receiptHandle.get))
     }
-
   }
 
   private def handleForEsScrapedItem(
@@ -57,7 +52,6 @@ class ScrapeItemImportWorker @Inject()(
       .put(DynamoScrapedItem.fromEsScrapedItemDoc(esScrapedItem))
       .transformWith {
         case Failure(exception) =>
-          // TODO: Send to DLQ
           logger.error(
             s"Error while saving item to Dynamo (id=${esScrapedItem.id}). Retrying.",
             exception

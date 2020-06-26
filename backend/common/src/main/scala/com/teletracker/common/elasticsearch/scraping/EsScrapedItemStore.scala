@@ -40,10 +40,11 @@ object EsScrapedItemDoc {
   implicit final val hasId: HasId.Aux[EsScrapedItemDoc, String] =
     HasId.instance(_.id)
 
-  def fromAnyScrapedItem[T <: ScrapedItem: Encoder](
+  def fromAnyScrapedItem[T <: ScrapedItem](
     scrapeItemType: String,
     version: Long,
-    item: T
+    item: T,
+    raw: Json
   ): EsScrapedItemDoc = {
     require(item.thingType.isDefined)
     require(item.externalId.isDefined)
@@ -74,8 +75,16 @@ object EsScrapedItemDoc {
             EsScrapedCrewMember(name = c.name, order = c.order, role = c.role)
         )
       ),
-      raw = item.asJson
+      raw = raw
     )
+  }
+
+  def fromAnyScrapedItem[T <: ScrapedItem: Encoder](
+    scrapeItemType: String,
+    version: Long,
+    item: T
+  ): EsScrapedItemDoc = {
+    fromAnyScrapedItem(scrapeItemType, version, item, item.asJson)
   }
 }
 
