@@ -42,7 +42,11 @@ class DisneyPlusCatalogSpider(BaseSitemapSpider):
                                      'subject_token_type': 'urn:bamtech:params:oauth:token-type:device'
                                  },
                                  callback=self.set_token_and_start_scrape,
-                                 errback=super().start_requests())
+                                 errback=self.defer_start_requests)
+
+    def defer_start_requests(self):
+        for req in super().start_requests():
+            yield req
 
     def set_token_and_start_scrape(self, response):
         self.access_token = json.loads(response.text)['access_token']
