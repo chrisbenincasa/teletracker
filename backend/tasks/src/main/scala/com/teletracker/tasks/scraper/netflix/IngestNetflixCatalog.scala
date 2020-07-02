@@ -27,16 +27,6 @@ import scala.collection.mutable
 import scala.concurrent.Future
 import scala.io.Source
 
-case class IngestNetflixCatalogJobArgs(
-  inputFile: URI,
-  offset: Int,
-  limit: Int,
-  titleMatchThreshold: Int,
-  dryRun: Boolean,
-  parallelism: Int,
-  sourceLimit: Int)
-    extends IngestJobArgsLike
-
 class IngestNetflixCatalog @Inject()(
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,

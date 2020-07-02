@@ -9,6 +9,7 @@ import com.teletracker.common.db.dynamo.model.{
   StoredNetworkReference,
   StoredUserPreferences
 }
+import com.teletracker.common.db.dynamo.util.DynamoQueryUtil
 import com.teletracker.common.db.dynamo.util.syntax._
 import com.teletracker.common.db.model.ExternalSource
 import javax.inject.Inject
@@ -29,8 +30,7 @@ object MetadataDbAccess {
 
 class MetadataDbAccess @Inject()(
   dynamo: DynamoDbAsyncClient
-)(implicit executionContext: ExecutionContext)
-    extends DynamoAccess(dynamo) {
+)(implicit executionContext: ExecutionContext) {
   import MetadataDbAccess._
 
   def saveNetwork(storedNetwork: StoredNetwork): Future[StoredNetwork] = {
@@ -71,24 +71,27 @@ class MetadataDbAccess @Inject()(
   }
 
   def getAllNetworks(): Future[List[StoredNetwork]] = {
-    queryLoop(
-      TableName,
-      req =>
-        req
-          .keyConditionExpression("#t = :v1")
-          .expressionAttributeNames(
-            Map(
-              "#t" -> MetadataFields.TypeField
-            ).asJava
-          )
-          .expressionAttributeValues(
-            Map(
-              ":v1" -> MetadataType.NetworkType.toAttributeValue
-            ).asJava
-          )
-    ).map(networks => {
-      networks.map(StoredNetwork.fromRow)
-    })
+    DynamoQueryUtil
+      .queryLoop(
+        dynamo,
+        TableName,
+        req =>
+          req
+            .keyConditionExpression("#t = :v1")
+            .expressionAttributeNames(
+              Map(
+                "#t" -> MetadataFields.TypeField
+              ).asJava
+            )
+            .expressionAttributeValues(
+              Map(
+                ":v1" -> MetadataType.NetworkType.toAttributeValue
+              ).asJava
+            )
+      )
+      .map(networks => {
+        networks.map(StoredNetwork.fromRow)
+      })
   }
 
   def saveNetworkReference(storedNetworkReference: StoredNetworkReference) = {
@@ -189,24 +192,27 @@ class MetadataDbAccess @Inject()(
   }
 
   def getAllGenres(): Future[List[StoredGenre]] = {
-    queryLoop(
-      TableName,
-      req =>
-        req
-          .keyConditionExpression("#t = :v1")
-          .expressionAttributeNames(
-            Map(
-              "#t" -> MetadataFields.TypeField
-            ).asJava
-          )
-          .expressionAttributeValues(
-            Map(
-              ":v1" -> MetadataType.GenreType.toAttributeValue
-            ).asJava
-          )
-    ).map(genres => {
-      genres.map(StoredGenre.fromRow)
-    })
+    DynamoQueryUtil
+      .queryLoop(
+        dynamo,
+        TableName,
+        req =>
+          req
+            .keyConditionExpression("#t = :v1")
+            .expressionAttributeNames(
+              Map(
+                "#t" -> MetadataFields.TypeField
+              ).asJava
+            )
+            .expressionAttributeValues(
+              Map(
+                ":v1" -> MetadataType.GenreType.toAttributeValue
+              ).asJava
+            )
+      )
+      .map(genres => {
+        genres.map(StoredGenre.fromRow)
+      })
   }
 
   def getGenreByReference(
@@ -240,24 +246,27 @@ class MetadataDbAccess @Inject()(
   }
 
   def getAllGenreReferences() = {
-    queryLoop(
-      TableName,
-      req =>
-        req
-          .keyConditionExpression("#t = :v1")
-          .expressionAttributeNames(
-            Map(
-              "#t" -> MetadataFields.TypeField
-            ).asJava
-          )
-          .expressionAttributeValues(
-            Map(
-              ":v1" -> MetadataType.GenreReferenceType.toAttributeValue
-            ).asJava
-          )
-    ).map(genres => {
-      genres.map(StoredGenreReference.fromRow)
-    })
+    DynamoQueryUtil
+      .queryLoop(
+        dynamo,
+        TableName,
+        req =>
+          req
+            .keyConditionExpression("#t = :v1")
+            .expressionAttributeNames(
+              Map(
+                "#t" -> MetadataFields.TypeField
+              ).asJava
+            )
+            .expressionAttributeValues(
+              Map(
+                ":v1" -> MetadataType.GenreReferenceType.toAttributeValue
+              ).asJava
+            )
+      )
+      .map(genres => {
+        genres.map(StoredGenreReference.fromRow)
+      })
   }
 
   def getUserPreferences(userId: String) = {

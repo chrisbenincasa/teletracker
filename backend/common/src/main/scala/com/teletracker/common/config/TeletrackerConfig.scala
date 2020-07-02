@@ -68,6 +68,8 @@ case class TmdbConfig(api_key: String)
 
 case class DataConfig(s3_bucket: String)
 
-case class DynamoTablesConfig(scraped_items: DynamoTableConfig)
+case class DynamoTablesConfig(
+  scraped_items: DynamoTableConfig,
+  crawls: DynamoTableConfig)
 
 case class DynamoTableConfig(table_name: String)

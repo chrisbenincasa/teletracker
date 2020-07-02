@@ -1,4 +1,4 @@
-package com.teletracker.common.db.dynamo
+package com.teletracker.common.db.dynamo.util
 
 import com.teletracker.common.util.Functions._
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
@@ -10,12 +10,12 @@ import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
-abstract class DynamoAccess(
-  dynamo: DynamoDbAsyncClient
-)(implicit executionContext: ExecutionContext) {
-  protected def queryLoop(
+object DynamoQueryUtil {
+  def queryLoop(
+    dynamo: DynamoDbAsyncClient,
     tableName: String,
     mutateQueryReq: QueryRequest.Builder => QueryRequest.Builder
+  )(implicit executionContext: ExecutionContext
   ): Future[List[java.util.Map[String, AttributeValue]]] = {
     def queryLoopInner(
       startKey: Option[java.util.Map[String, AttributeValue]] = None,

@@ -1,6 +1,9 @@
 package com.teletracker.common.db.dynamo.util
 
-import io.circe.Json
+import com.teletracker.common.db.dynamo.util.syntax.EpochSeconds
+import io.circe.{Codec, Json}
+import shapeless.tag
+import shapeless.tag.@@
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 import java.time.Instant
 import java.util.UUID
@@ -18,7 +21,25 @@ trait ToAndFromAttributeValue[T]
     extends AsAttributeValue[T]
     with FromAttributeValue[T]
 
-trait AsAttributeValueInstances {
+trait LowPriAsAttributeValueInstances {
+  protected def make[T](
+    toFn: T => AttributeValue,
+    fromFn: AttributeValue => T
+  ): ToAndFromAttributeValue[T] =
+    new ToAndFromAttributeValue[T] {
+      override def to(value: T): AttributeValue = toFn(value)
+      override def from(value: AttributeValue): T = fromFn(value)
+    }
+
+  implicit def typedJsonAsAttributeValue[T](
+    implicit codec: Codec[T]
+  ): ToAndFromAttributeValue[T] = make(
+    value => AttributeValue.builder().s(codec(value).noSpaces).build(),
+    value => io.circe.parser.decode[T](value.s()).fold(throw _, identity)
+  )
+}
+
+trait AsAttributeValueInstances extends LowPriAsAttributeValueInstances {
   implicit val stringAsAttributeValue: ToAndFromAttributeValue[String] = make(
     value => AttributeValue.builder().s(value).build(),
     value => value.s()
@@ -49,6 +70,13 @@ trait AsAttributeValueInstances {
     value => Instant.parse(value.s())
   )
 
+  implicit val instantFromSecondsAsAttributeValue
+    : ToAndFromAttributeValue[Instant @@ EpochSeconds] = make(
+    value =>
+      AttributeValue.builder().n((value.toEpochMilli / 1000L).toString).build(),
+    value => tag[EpochSeconds](Instant.ofEpochSecond(value.n().toLong))
+  )
+
   implicit val stringSetAsAttributeValue: ToAndFromAttributeValue[Set[String]] =
     make(
       value => AttributeValue.builder().ss(value.asJavaCollection).build(),
@@ -74,20 +102,13 @@ trait AsAttributeValueInstances {
           .getOrElse(AttributeValue.builder().nul(true).build()),
       value => if (value.nul()) None else Some(other.from(value))
     )
-
-  private def make[T](
-    toFn: T => AttributeValue,
-    fromFn: AttributeValue => T
-  ): ToAndFromAttributeValue[T] =
-    new ToAndFromAttributeValue[T] {
-      override def to(value: T): AttributeValue = toFn(value)
-      override def from(value: AttributeValue): T = fromFn(value)
-    }
 }
 
 object AsAttributeValue extends AsAttributeValueInstances
 
 object syntax extends AsAttributeValueInstances {
+  sealed trait EpochSeconds
+
   implicit def toAsAttributeValue[T](
     value: T
   )(implicit aav: AsAttributeValue[T]

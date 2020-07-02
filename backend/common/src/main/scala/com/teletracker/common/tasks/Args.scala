@@ -25,11 +25,11 @@ object TaskArgs extends TaskArgImplicits {
 }
 
 trait TaskArgImplicits {
-  implicit def asRichArgs(args: Map[String, Option[Any]]): RichArgs =
+  implicit def asRichArgs(args: Map[String, Any]): RichArgs =
     new RichArgs(args)
 }
 
-class RichArgs(val args: Map[String, Option[Any]]) extends AnyVal {
+class RichArgs(val args: Map[String, Any]) extends AnyVal {
   def valueOrDefault[T](
     key: String,
     default: => T
@@ -37,13 +37,30 @@ class RichArgs(val args: Map[String, Option[Any]]) extends AnyVal {
   ): T =
     value(key).getOrElse(default)
 
-  def value[T](key: String)(implicit argParser: ArgParser[T]): Option[T] =
-    args.get(key).flatten.map(argParser.parse(_).get)
+  def value[T](key: String)(implicit argParser: ArgParser[T]): Option[T] = {
+    valueTry[T](key).toOption.flatten
+  }
 
   def valueOrThrow[T](key: String)(implicit argParser: ArgParser[T]): T =
-    value(key).getOrElse(
-      throw new IllegalArgumentException(s"No argument under key: $key")
-    )
+    valueTry[T](key) match {
+      case Failure(exception) => throw exception
+      case Success(None) =>
+        throw new IllegalArgumentException(s"No argument under key: $key")
+      case Success(Some(value)) => value
+    }
+
+  private def valueTry[T](
+    key: String
+  )(implicit argParser: ArgParser[T]
+  ): Try[Option[T]] = {
+    args.get(key) match {
+      case Some(value: Option[_]) if value.isEmpty => Success(None)
+      case Some(value: Option[_]) if value.isDefined =>
+        argParser.parse(value.get).map(Some(_))
+      case Some(value) => argParser.parse(value).map(Some(_))
+      case None        => Success(None)
+    }
+  }
 
   def valueRequiredIfOtherPresent[T](
     key: String,

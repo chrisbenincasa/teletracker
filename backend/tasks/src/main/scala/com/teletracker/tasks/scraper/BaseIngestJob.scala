@@ -1,19 +1,14 @@
 package com.teletracker.tasks.scraper
 
 import com.teletracker.common.availability.NetworkAvailability
-import com.teletracker.common.tasks.{TeletrackerTask, TypedTeletrackerTask}
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.dynamo.model.StoredNetwork
-import com.teletracker.common.db.model.{OfferType, PresentationType}
+import com.teletracker.common.db.model.PresentationType
 import com.teletracker.common.elasticsearch.model.{EsAvailability, EsItem}
-import com.teletracker.common.model.scraping.{
-  MatchResult,
-  NonMatchResult,
-  PotentialMatch,
-  ScrapeItemType,
-  ScrapedItem
-}
+import com.teletracker.common.inject.SingleThreaded
+import com.teletracker.common.model.scraping._
 import com.teletracker.common.tasks.TeletrackerTask.JsonableArgs
+import com.teletracker.common.tasks.TypedTeletrackerTask
 import com.teletracker.common.util.{AsyncStream, OpenDateRange}
 import com.teletracker.tasks.scraper.matching.{
   ElasticsearchFallbackMatcher,
@@ -27,11 +22,10 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
 import java.time.{LocalDate, OffsetDateTime, ZoneOffset}
-import java.util.UUID
-import java.util.concurrent.{Executors, TimeUnit}
+import java.util.concurrent.ScheduledExecutorService
 import scala.collection.mutable
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{ExecutionContext, Future}
 
 // Base class for processing a bunch of items
 abstract class BaseIngestJob[
@@ -49,6 +43,9 @@ abstract class BaseIngestJob[
   @Inject
   protected var elasticsearchFallbackMatcher
     : ElasticsearchFallbackMatcher.Factory = _
+  @Inject
+  @SingleThreaded
+  protected var scheduledExecutor: ScheduledExecutorService = _
 
   protected def networkTimeZone: ZoneOffset = ZoneOffset.UTC
   protected lazy val today: LocalDate = LocalDate.now()
@@ -68,21 +65,24 @@ abstract class BaseIngestJob[
     s"${today}_${getClass.getSimpleName}-potential-matches.json"
   )
 
-  protected val missingItemsWriter = new PrintStream(
-    new BufferedOutputStream(new FileOutputStream(missingItemsFile))
+  protected val missingItemsWriter: PrintStream = newPrintStream(
+    missingItemsFile
+  )
+  protected val matchingItemsWriter: PrintStream = newPrintStream(
+    matchItemsFile
+  )
+  protected val potentialMatchesWriter: PrintStream = newPrintStream(
+    potentialMatchFile
   )
 
-  protected val matchingItemsWriter = new PrintStream(
-    new BufferedOutputStream(new FileOutputStream(matchItemsFile))
-  )
-
-  protected val potentialMatchesWriter = new PrintStream(
-    new BufferedOutputStream(
-      new FileOutputStream(
-        potentialMatchFile
+  private def newPrintStream(file: File): PrintStream =
+    new PrintStream(
+      new BufferedOutputStream(
+        new FileOutputStream(
+          file
+        )
       )
     )
-  )
 
   private val _artifacts: mutable.ListBuffer[File] = {
     val a = new mutable.ListBuffer[File]()
@@ -98,9 +98,9 @@ abstract class BaseIngestJob[
     }
   }
 
-  protected def lookupMethod(): LookupMethod[T]
+  protected def defaultParallelism: Int = 16
 
-  protected def processMode(): ProcessMode
+  protected def lookupMethod(): LookupMethod[T]
 
   postrun { _ =>
     missingItemsWriter.flush()
@@ -128,46 +128,19 @@ abstract class BaseIngestJob[
     }
   })
 
-  private lazy val scheduledPool = Executors.newSingleThreadScheduledExecutor()
-
-  private def sleep(delay: FiniteDuration) = {
-    val p = Promise[Unit]()
-    scheduledPool.schedule(new Runnable {
-      override def run(): Unit = p.success(())
-    }, delay.toMillis, TimeUnit.MILLISECONDS)
-    p.future
-  }
-
   protected def processAll(
     items: AsyncStream[T],
     networks: Set[StoredNetwork]
   ): AsyncStream[(List[MatchResult[T]], List[T])] = {
-    processMode() match {
-      case Serial(perBatchSleep) =>
-        items
-          .drop(args.offset)
-          .safeTake(args.limit)
-          .map(sanitizeItem)
-          .mapF(item => {
-            for {
-              res <- processSingle(item, networks, args)
-              _ <- perBatchSleep.map(sleep).getOrElse(Future.unit)
-            } yield res
-
-          })
-
-      case Parallel(parallelism, perBatchSleep) =>
-        items
-          .drop(args.offset)
-          .safeTake(args.limit)
-          .grouped(parallelism)
-          .mapF(batch => {
-            for {
-              res <- processBatch(batch.toList, networks, args)
-              _ <- perBatchSleep.map(sleep).getOrElse(Future.unit)
-            } yield res
-          })
-    }
+    items
+      .drop(args.offset)
+      .safeTake(args.limit)
+      .grouped(args.parallelism.getOrElse(defaultParallelism))
+      .map(_.toList)
+      .delayedMapF(
+        args.processBatchSleep.getOrElse(0 millis),
+        scheduledExecutor
+      )(processBatch(_, networks, args))
   }
 
   protected def processBatch(
@@ -233,14 +206,6 @@ abstract class BaseIngestJob[
     }
   }
 
-  protected def processSingle(
-    item: T,
-    networks: Set[StoredNetwork],
-    args: IngestJobArgsType
-  ): Future[(List[MatchResult[T]], List[T])] = {
-    processBatch(List(item), networks, args)
-  }
-
   protected def handleMatchResults(
     results: List[MatchResult[T]],
     networks: Set[StoredNetwork],
@@ -265,7 +230,8 @@ abstract class BaseIngestJob[
       )
   }
 
-  protected def getElasticsearchFallbackMatcherOptions =
+  protected def getElasticsearchFallbackMatcherOptions
+    : ElasticsearchFallbackMatcherOptions =
     ElasticsearchFallbackMatcherOptions(
       requireTypeMatch = true,
       sourceJobName = getClass.getSimpleName
@@ -304,14 +270,6 @@ abstract class BaseIngestJob[
     item: EsItem,
     scrapeItem: T
   ): Seq[EsAvailability]
-
-  sealed trait ProcessMode
-  case class Serial(perBatchSleep: Option[FiniteDuration] = None)
-      extends ProcessMode
-  case class Parallel(
-    parallelism: Int,
-    perBatchSleep: Option[FiniteDuration] = None)
-      extends ProcessMode
 }
 
 trait BaseSubscriptionNetworkAvailability[

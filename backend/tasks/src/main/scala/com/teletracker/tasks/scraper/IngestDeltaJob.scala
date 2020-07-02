@@ -17,6 +17,7 @@ import java.net.URI
 import java.time.{LocalDate, OffsetDateTime}
 import java.util.UUID
 import scala.util.control.NonFatal
+import scala.concurrent.duration._
 
 abstract class IngestDeltaJob[ScrapeItemType <: ScrapedItem](
   deps: IngestDeltaJobDependencies
@@ -27,15 +28,14 @@ abstract class IngestDeltaJob[ScrapeItemType <: ScrapedItem](
       ScrapeItemType,
       IngestDeltaJobArgs
     ](deps)
-    with IngestDeltaJobScrapeItemReaders[
+    with IngestDeltaJobScrapeFileReaders[
       ScrapeItemType,
-      ScrapeItemType,
-      IngestDeltaJobArgs
+      ScrapeItemType
     ] {
 
   override def preparseArgs(args: RawArgs): IngestDeltaJobArgs = parseArgs(args)
 
-  private def parseArgs(args: Map[String, Option[Any]]): IngestDeltaJobArgs = {
+  private def parseArgs(args: Map[String, Any]): IngestDeltaJobArgs = {
     IngestDeltaJobArgs(
       snapshotAfter = args.valueOrThrow[URI]("snapshotAfter"),
       snapshotBefore = args.value[URI]("snapshotBefore"),
@@ -43,11 +43,14 @@ abstract class IngestDeltaJob[ScrapeItemType <: ScrapedItem](
       limit = args.valueOrDefault("limit", -1),
       dryRun = args.valueOrDefault("dryRun", true),
       itemIdFilter = args.value[UUID]("itemIdFilter"),
-      perBatchSleepMs = args.value[Int]("perBatchSleepMs"),
+      sleepBetweenWriteMs = args.value[Long]("perBatchSleepMs"),
+      processBatchSleep = args.value[Long]("perBatchSleepMs").map(_ millis),
       deltaSizeThreshold =
         args.valueOrDefault[Double]("deltaSizeThreshold", 5.0),
       disableDeltaSizeCheck =
-        args.valueOrDefault("disableDeltaSizeCheck", false)
+        args.valueOrDefault("disableDeltaSizeCheck", false),
+      externalIdFilter = args.value[String]("externalIdFilter"),
+      parallelism = args.value[Int]("parallelism")
     )
   }
 

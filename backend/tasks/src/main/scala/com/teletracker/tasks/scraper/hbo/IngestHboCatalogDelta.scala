@@ -10,12 +10,14 @@ import com.teletracker.common.elasticsearch.ItemsScroller
 import com.teletracker.common.elasticsearch.model.{EsAvailability, EsItem}
 import com.teletracker.common.model.scraping.ScrapeItemType
 import com.teletracker.common.model.scraping.hbo.HboScrapedCatalogItem
+import com.teletracker.tasks.scraper.loaders.CrawlAvailabilityItemLoaderFactory
 import com.teletracker.tasks.scraper.{
   BaseSubscriptionNetworkAvailability,
   IngestDeltaJob,
   IngestDeltaJobArgs,
   IngestDeltaJobDependencies,
   LiveIngestDeltaJob,
+  LiveIngestDeltaJobArgs,
   SubscriptionNetworkDeltaAvailability
 }
 import javax.inject.Inject
@@ -49,11 +51,16 @@ class IngestHboCatalogDelta @Inject()(deps: IngestDeltaJobDependencies)
 
 class IngestHboLiveCatalogDelta @Inject()(
   deps: IngestDeltaJobDependencies,
-  itemsScroller: ItemsScroller)
-    extends LiveIngestDeltaJob[HboScrapedCatalogItem](deps, itemsScroller)
+  itemsScroller: ItemsScroller,
+  crawlAvailabilityItemLoaderFactory: CrawlAvailabilityItemLoaderFactory)
+    extends LiveIngestDeltaJob[HboScrapedCatalogItem](
+      deps,
+      itemsScroller,
+      crawlAvailabilityItemLoaderFactory
+    )
     with BaseSubscriptionNetworkAvailability[
       HboScrapedCatalogItem,
-      IngestDeltaJobArgs
+      LiveIngestDeltaJobArgs
     ] {
   override protected def offerType: OfferType = OfferType.Subscription
 
@@ -61,19 +68,6 @@ class IngestHboLiveCatalogDelta @Inject()(
     Set(SupportedNetwork.Hbo, SupportedNetwork.HboMax)
 
   override protected def externalSource: ExternalSource = ExternalSource.HboGo
-
-  override protected def uniqueKeyForIncoming(
-    item: HboScrapedCatalogItem
-  ): Option[String] =
-    item.externalId
-
-  override protected def externalIds(
-    item: HboScrapedCatalogItem
-  ): Map[ExternalSource, String] =
-    Map(
-      ExternalSource.HboGo -> item.externalId.get,
-      ExternalSource.HboMax -> item.externalId.get
-    )
 
   override protected def scrapeItemType: ScrapeItemType =
     ScrapeItemType.HboCatalog

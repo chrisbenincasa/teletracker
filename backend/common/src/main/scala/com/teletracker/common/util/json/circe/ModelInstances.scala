@@ -72,4 +72,10 @@ trait ModelInstances extends ConfiguredModelInstances with JodaInstances {
   implicit val dynamicListRulesEncoder: Codec[DynamicListRules] = deriveCodec
   implicit val dynamicListTagRuleEncoder: Codec[DynamicListTagRule] =
     deriveCodec
+
+  import scala.concurrent.duration._
+  implicit val finiteDurationCodec = Codec.from(
+    Decoder.decodeLong.map(_ millis),
+    Encoder.encodeLong.contramap[FiniteDuration](_.toMillis)
+  )
 }

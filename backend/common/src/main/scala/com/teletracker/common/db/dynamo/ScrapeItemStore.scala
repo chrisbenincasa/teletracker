@@ -17,8 +17,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class ScrapeItemStore @Inject()(
   teletrackerConfig: TeletrackerConfig,
   dynamoDbAsyncClient: DynamoDbAsyncClient
-)(implicit executionContext: ExecutionContext)
-    extends DynamoAccess(dynamoDbAsyncClient) {
+)(implicit executionContext: ExecutionContext) {
 
   def put(item: DynamoScrapedItem): Future[Unit] = {
     dynamoDbAsyncClient

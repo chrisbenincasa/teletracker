@@ -1,14 +1,38 @@
 package com.teletracker.common.model.scraping.hbo
 
-import com.teletracker.common.db.model.ItemType
+import com.teletracker.common.db.model.{ExternalSource, ItemType, OfferType}
 import com.teletracker.common.model.scraping.{
   ScrapedCastMember,
   ScrapedCrewMember,
-  ScrapedItem
+  ScrapedItem,
+  ScrapedItemAvailabilityDetails
 }
 import com.teletracker.common.util.json.circe._
 import io.circe.generic.JsonCodec
 import java.time.{Instant, ZoneOffset}
+
+object HboScrapedCatalogItem {
+  implicit final val scrapedItemAvailabilityDetails
+    : ScrapedItemAvailabilityDetails[HboScrapedCatalogItem] =
+    new ScrapedItemAvailabilityDetails[HboScrapedCatalogItem] {
+      override def offerType(t: HboScrapedCatalogItem): OfferType =
+        OfferType.Subscription
+
+      override def uniqueKey(t: HboScrapedCatalogItem): Option[String] =
+        t.externalId
+
+      override def externalIds(
+        t: HboScrapedCatalogItem
+      ): Map[ExternalSource, String] = {
+        Map(
+          ExternalSource.HboGo -> t.externalId,
+          ExternalSource.HboMax -> t.externalId
+        ).collect {
+          case (source, Some(str)) => source -> str
+        }
+      }
+    }
+}
 
 @JsonCodec
 case class HboScrapedCatalogItem(

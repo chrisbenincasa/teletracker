@@ -27,6 +27,11 @@ import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.json.circe._
 import com.teletracker.common.util.{AsyncStream, NetworkCache}
 import com.teletracker.tasks.TeletrackerTaskApp
+import com.teletracker.tasks.model.{
+  BaseTaskArgs,
+  PagingTaskArgs,
+  ParallelismTaskArgs
+}
 import com.teletracker.tasks.scraper.IngestJobParser.ParseMode
 import com.teletracker.tasks.scraper.matching.{
   CustomElasticsearchLookup,
@@ -58,23 +63,21 @@ abstract class IngestJobApp[T <: IngestJob[_]: Manifest]
   val dryRun = flag[Boolean]("dryRun", true, "X")
 }
 
-trait IngestJobArgsLike {
-  val offset: Int
-  val limit: Int
-  val titleMatchThreshold: Int
-  val dryRun: Boolean
-}
+trait IngestJobArgsLike
+    extends BaseTaskArgs
+    with PagingTaskArgs
+    with ParallelismTaskArgs
 
 @JsonCodec
 case class IngestJobArgs(
   inputFile: URI,
-  offset: Int,
-  limit: Int,
-  titleMatchThreshold: Int,
-  dryRun: Boolean,
-  parallelism: Int,
+  override val offset: Int,
+  override val limit: Int,
+  override val dryRun: Boolean,
+  override val parallelism: Option[Int],
+  override val processBatchSleep: Option[FiniteDuration],
+  override val sleepBetweenWriteMs: Option[Long],
   sourceLimit: Int,
-  perBatchSleepMs: Option[Int],
   enableExternalIdMatching: Boolean = true,
   reimport: Boolean = false,
   externalIdFilter: Option[String] = None)
@@ -148,27 +151,22 @@ abstract class IngestJob[T <: ScrapedItem](
     )
   }
 
-  protected def processMode(): ProcessMode =
-    Parallel(args.parallelism, args.perBatchSleepMs.map(_ millis))
-
   protected def outputLocation: Option[URI] = None
 
   protected def getAdditionalOutputFiles: Seq[(File, String)] = Seq()
 
   override def preparseArgs(args: RawArgs): ArgsType = parseArgs(args)
 
-  final protected def parseArgs(
-    args: Map[String, Option[Any]]
-  ): IngestJobArgs = {
+  final protected def parseArgs(args: Map[String, Any]): IngestJobArgs = {
     IngestJobArgs(
       inputFile = args.valueOrThrow[URI]("inputFile"),
       offset = args.valueOrDefault("offset", 0),
       limit = args.valueOrDefault("limit", -1),
-      titleMatchThreshold = args.valueOrDefault("fuzzyThreshold", 15),
       dryRun = args.valueOrDefault("dryRun", true),
-      parallelism = args.valueOrDefault("parallelism", 32),
+      parallelism = args.value[Int]("parallelism"),
       sourceLimit = args.valueOrDefault("sourceLimit", -1),
-      perBatchSleepMs = args.value[Int]("perBatchSleepMs"),
+      processBatchSleep = args.value[Long]("perBatchSleepMs").map(_ millis),
+      sleepBetweenWriteMs = args.value[Long]("perBatchSleepMs"),
       enableExternalIdMatching =
         args.valueOrDefault("enableExternalIdMatching", true),
       reimport = args.valueOrDefault("reimport", false),

@@ -1,63 +1,84 @@
 package com.teletracker.tasks.scraper
 
+import com.teletracker.common.db.dynamo.CrawlerName
+import com.teletracker.common.db.model.ExternalSource
 import com.teletracker.common.elasticsearch.model.{EsAvailability, EsItem}
 import com.teletracker.common.elasticsearch.{
   AvailabilityQueryBuilder,
   ItemsScroller
 }
-import com.teletracker.common.model.scraping.{MatchResult, ScrapedItem}
+import com.teletracker.common.model.scraping.{
+  MatchResult,
+  ScrapedItem,
+  ScrapedItemAvailabilityDetails
+}
 import com.teletracker.common.tasks.TeletrackerTask.{JsonableArgs, RawArgs}
 import com.teletracker.common.util.{Folds, OnceT}
 import com.teletracker.common.util.Futures._
+import com.teletracker.common.util.json.circe._
+import com.teletracker.tasks.scraper.loaders.{
+  CrawlAvailabilityItemLoaderArgs,
+  CrawlAvailabilityItemLoaderFactory
+}
 import io.circe.Codec
+import io.circe.generic.JsonCodec
 import org.elasticsearch.index.query.QueryBuilders
-import java.net.URI
 import java.util.UUID
+import scala.concurrent.duration._
 
-abstract class LiveIngestDeltaJob[T <: ScrapedItem](
+@JsonCodec
+case class LiveIngestDeltaJobArgs(
+  crawler: String,
+  version: Option[Long],
+  override val offset: Int,
+  override val limit: Int,
+  override val itemIdFilter: Option[UUID],
+  override val externalIdFilter: Option[String],
+  override val deltaSizeThreshold: Double,
+  override val disableDeltaSizeCheck: Boolean,
+  override val dryRun: Boolean = true,
+  override val sleepBetweenWriteMs: Option[Long],
+  override val processBatchSleep: Option[FiniteDuration],
+  override val parallelism: Option[Int])
+    extends IngestDeltaJobArgsLike
+
+abstract class LiveIngestDeltaJob[
+  T <: ScrapedItem: ScrapedItemAvailabilityDetails
+](
   deps: IngestDeltaJobDependencies,
-  itemsScroller: ItemsScroller
+  itemsScroller: ItemsScroller,
+  crawlAvailabilityItemLoaderFactory: CrawlAvailabilityItemLoaderFactory
 )(implicit codec: Codec[T],
   typedArgs: JsonableArgs[IngestDeltaJobArgs])
-    extends IngestDeltaJobLike[EsItem, T, IngestDeltaJobArgs](deps)
-    with IngestDeltaJobScrapeItemReaders[EsItem, T, IngestDeltaJobArgs] {
-  override def preparseArgs(args: RawArgs): IngestDeltaJobArgs = parseArgs(args)
+    extends IngestDeltaJobLike[EsItem, T, LiveIngestDeltaJobArgs](deps) {
+  import ScrapedItemAvailabilityDetails.syntax._
 
-  private def parseArgs(args: Map[String, Option[Any]]): IngestDeltaJobArgs = {
-    IngestDeltaJobArgs(
-      snapshotAfter = args.valueOrThrow[URI]("snapshotAfter"),
-      snapshotBefore = args.value[URI]("snapshotBefore"),
+  override def preparseArgs(args: RawArgs): LiveIngestDeltaJobArgs =
+    parseArgs(args)
+
+  private def parseArgs(args: Map[String, Any]): LiveIngestDeltaJobArgs = {
+    LiveIngestDeltaJobArgs(
+      crawler = args.valueOrThrow[String]("crawler"),
+      version = args.value[Long]("version"),
       offset = args.valueOrDefault("offset", 0),
       limit = args.valueOrDefault("limit", -1),
       dryRun = args.valueOrDefault("dryRun", true),
       itemIdFilter = args.value[UUID]("itemIdFilter"),
       externalIdFilter = args.value[String]("externalIdFilter"),
-      perBatchSleepMs = args.value[Int]("perBatchSleepMs"),
+      sleepBetweenWriteMs = args.value[Long]("perBatchSleepMs"),
+      processBatchSleep = args.value[Long]("perBatchSleepMs").map(_ millis),
       deltaSizeThreshold =
         args.valueOrDefault[Double]("deltaSizeThreshold", 5.0),
       disableDeltaSizeCheck =
-        args.valueOrDefault("disableDeltaSizeCheck", false)
+        args.valueOrDefault("disableDeltaSizeCheck", false),
+      parallelism = args.value[Int]("parallelism")
     )
   }
 
   override def runInternal(): Unit = {
     val networks = getNetworksOrExit()
-    val existingAvailability = itemsScroller
-      .start(
-        AvailabilityQueryBuilder.hasAvailabilityForNetworks(
-          QueryBuilders.boolQuery(),
-          networks
-        )
-      )
-      .toList
-      .await()
 
-    val beforeItems = existingAvailability.filter(item => {
-      networks.toList
-        .map(_.id)
-        .flatMap(item.availabilityGrouped.getOrElse(_, Nil))
-        .nonEmpty
-    })
+    val beforeItems = getAllBeforeItems()
 
     val beforeIds = beforeItems
       .flatMap(item => item.externalIdsGrouped.get(externalSource))
@@ -157,6 +178,14 @@ abstract class LiveIngestDeltaJob[T <: ScrapedItem](
     item.externalIdsGrouped.get(externalSource)
   }
 
+  override protected def uniqueKeyForIncoming(item: T): Option[String] = {
+    item.uniqueKey
+  }
+
+  override protected def externalIds(item: T): Map[ExternalSource, String] = {
+    item.externalIds
+  }
+
   override protected def getBeforeIds(): Set[String] = {
     getAllBeforeItems()
       .flatMap(uniqueKeyForExisting)
@@ -165,6 +194,23 @@ abstract class LiveIngestDeltaJob[T <: ScrapedItem](
 
   override protected def getAllBeforeItems(): List[EsItem] = {
     getAllBeforeItemsOnce()
+  }
+
+  override protected def getAfterIds(): Set[String] = {
+    getAllAfterItems().flatMap(uniqueKeyForIncoming).toSet
+  }
+
+  override protected def getAllAfterItems(): List[T] = {
+    crawlAvailabilityItemLoaderFactory
+      .make[T]
+      .load(
+        CrawlAvailabilityItemLoaderArgs(
+          supportedNetworks,
+          new CrawlerName(args.crawler),
+          args.version
+        )
+      )
+      .await()
   }
 
   private[this] val getAllBeforeItemsOnce = OnceT {

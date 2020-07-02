@@ -87,7 +87,7 @@ object TeletrackerTask {
     )
   }
 
-  type RawArgs = Map[String, Option[Any]]
+  type RawArgs = Map[String, Any]
 }
 
 trait TeletrackerTask extends TaskArgImplicits {

@@ -1,34 +1,19 @@
 package com.teletracker.common.elasticsearch.lookups
 
-import com.teletracker.common.db.dynamo.DynamoAccess
+import com.teletracker.common.db.dynamo.util.DynamoQueryUtil
 import com.teletracker.common.db.dynamo.util.syntax._
 import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.elasticsearch.model.EsExternalId
 import com.teletracker.common.util.AsyncStream
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
-import software.amazon.awssdk.core.async.SdkPublisher
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
-import software.amazon.awssdk.services.dynamodb.model.{
-  AttributeValue,
-  BatchGetItemRequest,
-  BatchWriteItemRequest,
-  ComparisonOperator,
-  Condition,
-  DeleteRequest,
-  GetItemRequest,
-  KeysAndAttributes,
-  PutItemRequest,
-  PutRequest,
-  QueryRequest,
-  ScanRequest,
-  WriteRequest
-}
+import software.amazon.awssdk.services.dynamodb.model._
 import java.util.UUID
 import java.util.function.Consumer
-import scala.concurrent.{ExecutionContext, Future}
 import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters._
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 object DynamoElasticsearchExternalIdMapping {
@@ -38,8 +23,7 @@ object DynamoElasticsearchExternalIdMapping {
 class DynamoElasticsearchExternalIdMapping @Inject()(
   dynamo: DynamoDbAsyncClient
 )(implicit executionContext: ExecutionContext)
-    extends DynamoAccess(dynamo)
-    with ElasticsearchExternalIdMappingStore {
+    extends ElasticsearchExternalIdMappingStore {
   private val logger = LoggerFactory.getLogger(getClass)
 
   override def getItemIdForExternalId(
@@ -127,30 +111,33 @@ class DynamoElasticsearchExternalIdMapping @Inject()(
     itemId: UUID,
     itemType: ItemType
   ): Future[List[EsExternalId]] = {
-    queryLoop(
-      DynamoElasticsearchExternalIdMapping.TableName,
-      builder =>
-        builder
-          .tableName(DynamoElasticsearchExternalIdMapping.TableName)
-          .indexName("id-to-externals")
-          .keyConditionExpression("id = :v1")
-          .expressionAttributeValues(
-            Map(
-              ":v1" -> itemId.toAttributeValue
-            ).asJava
-          )
-    ).map(rows => {
-      rows.flatMap(row => {
-        row.asScala
-          .get("externalId")
-          .map(_.fromAttributeValue[String])
-          .flatMap(externalIdType => {
-            parseKey(externalIdType).collect {
-              case (id, typ) if typ == itemType => id
-            }
-          })
+    DynamoQueryUtil
+      .queryLoop(
+        dynamo,
+        DynamoElasticsearchExternalIdMapping.TableName,
+        builder =>
+          builder
+            .tableName(DynamoElasticsearchExternalIdMapping.TableName)
+            .indexName("id-to-externals")
+            .keyConditionExpression("id = :v1")
+            .expressionAttributeValues(
+              Map(
+                ":v1" -> itemId.toAttributeValue
+              ).asJava
+            )
+      )
+      .map(rows => {
+        rows.flatMap(row => {
+          row.asScala
+            .get("externalId")
+            .map(_.fromAttributeValue[String])
+            .flatMap(externalIdType => {
+              parseKey(externalIdType).collect {
+                case (id, typ) if typ == itemType => id
+              }
+            })
+        })
       })
-    })
   }
 
   override def mapExternalId(

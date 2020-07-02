@@ -13,6 +13,7 @@ import java.net.URI
 import java.util.UUID
 import scala.collection.mutable
 import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
 
 // Job that takes in a hand-filtered potential match file output and imports the items
 abstract class IngestPotentialMatches[T <: ScrapedItem: Codec]
@@ -23,13 +24,15 @@ case class IngestPotentialMatchesDeltaArgs(
   snapshotAfter: URI,
   snapshotBefore: Option[URI],
   potentialMappings: URI,
-  offset: Int = 0,
-  limit: Int = -1,
+  override val offset: Int = 0,
+  override val limit: Int = -1,
   dryRun: Boolean = true,
   titleMatchThreshold: Int = 15,
   itemIdFilter: Option[UUID] = None,
   externalIdFilter: Option[String] = None,
-  perBatchSleepMs: Option[Int] = None)
+  processBatchSleep: Option[FiniteDuration] = None,
+  sleepBetweenWriteMs: Option[Long] = None,
+  override val parallelism: Option[Int])
     extends IngestJobArgsLike
     with IngestDeltaJobArgsLike {
   override val deltaSizeThreshold: Double = 0.0

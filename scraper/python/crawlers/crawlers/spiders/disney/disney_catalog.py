@@ -44,12 +44,13 @@ class DisneyPlusCatalogSpider(BaseSitemapSpider):
                                  callback=self.set_token_and_start_scrape,
                                  errback=self.defer_start_requests)
 
-    def defer_start_requests(self):
+    def defer_start_requests(self, failure):
         for req in super().start_requests():
             yield req
 
     def set_token_and_start_scrape(self, response):
         self.access_token = json.loads(response.text)['access_token']
+        self.log('Got Disney plus token: {}'.format(self.access_token))
         for url in super().start_requests():
             yield url
 

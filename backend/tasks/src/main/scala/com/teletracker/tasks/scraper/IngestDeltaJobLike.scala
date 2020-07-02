@@ -28,8 +28,9 @@ import com.teletracker.common.model.scraping.{MatchResult, ScrapedItem}
 import com.teletracker.common.pubsub.EsIngestItemDenormArgs
 import com.teletracker.common.tasks.TeletrackerTask.JsonableArgs
 import com.teletracker.common.util.Futures._
+import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.json.circe._
-import com.teletracker.common.util.{AsyncStream, NetworkCache}
+import com.teletracker.common.util.{AsyncStream, Folds, NetworkCache}
 import com.teletracker.tasks.scraper.IngestJobParser.{JsonPerLine, ParseMode}
 import com.teletracker.tasks.scraper.matching._
 import com.teletracker.tasks.util.{FileUtils, SourceRetriever}
@@ -46,16 +47,9 @@ import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
-trait IngestDeltaJobArgsLike {
-  val snapshotBefore: Option[URI]
-  val snapshotAfter: URI
-  val offset: Int
-  val limit: Int
-  val dryRun: Boolean
-  val titleMatchThreshold: Int
+trait IngestDeltaJobArgsLike extends IngestJobArgsLike {
   val itemIdFilter: Option[UUID]
   val externalIdFilter: Option[String]
-  val perBatchSleepMs: Option[Int]
   val deltaSizeThreshold: Double
   val disableDeltaSizeCheck: Boolean
 }
@@ -64,17 +58,17 @@ trait IngestDeltaJobArgsLike {
 case class IngestDeltaJobArgs(
   snapshotAfter: URI,
   snapshotBefore: Option[URI],
-  offset: Int = 0,
-  limit: Int = -1,
+  override val offset: Int = 0,
+  override val limit: Int = -1,
   dryRun: Boolean = true,
-  titleMatchThreshold: Int = 15,
   itemIdFilter: Option[UUID] = None,
   externalIdFilter: Option[String] = None,
-  perBatchSleepMs: Option[Int] = None,
+  override val parallelism: Option[Int] = None,
+  override val processBatchSleep: Option[FiniteDuration] = None,
   deltaSizeThreshold: Double = 5.0,
-  disableDeltaSizeCheck: Boolean = false)
-    extends IngestJobArgsLike
-    with IngestDeltaJobArgsLike
+  disableDeltaSizeCheck: Boolean = false,
+  override val sleepBetweenWriteMs: Option[Long] = None)
+    extends IngestDeltaJobArgsLike
 
 class IngestDeltaJobDependencies @Inject()(
   val externalIdLookup: ElasticsearchExternalIdLookup.Factory,
@@ -97,7 +91,7 @@ class IngestDeltaJobDependencies @Inject()(
 abstract class IngestDeltaJobLike[
   ExistingItemType,
   IncomingItemType <: ScrapedItem,
-  IngestJobArgs <: IngestJobArgsLike with IngestDeltaJobArgsLike
+  IngestJobArgs <: IngestDeltaJobArgsLike
 ](
   protected val deps: IngestDeltaJobDependencies
 )(implicit codec: Codec[IncomingItemType],
@@ -129,9 +123,6 @@ abstract class IngestDeltaJobLike[
       )
     )
 
-  override protected def processMode(): ProcessMode =
-    Parallel(16, args.perBatchSleepMs.map(_ millis))
-
   protected def getAfterIds(): Set[String]
 
   protected def getBeforeIds(): Set[String]
@@ -150,7 +141,57 @@ abstract class IngestDeltaJobLike[
 
   protected def getRemovedItems(): List[PendingAvailabilityRemove]
 
-  protected def getAddedItems(): List[PendingAvailabilityAdd]
+  protected def getAddedItems(): List[PendingAvailabilityAdd] = {
+    val afterItems = getAllAfterItems()
+    val newIds = getAddedIds()
+    val networks = getNetworksOrExit()
+
+    AsyncStream
+      .fromSeq(afterItems)
+      .filter(item => containsUniqueKey(newIds, item))
+      .throughApply(processAll(_, networks))
+      .map {
+        case (matchResults, nonMatches) =>
+          val filteredResults = matchResults.filter {
+            case MatchResult(_, esItem) =>
+              args.itemIdFilter.forall(_ == esItem.id)
+          }
+
+          filteredResults -> nonMatches
+      }
+      .foldLeft(
+        Folds.list2Empty[MatchResult[IncomingItemType], IncomingItemType]
+      )(
+        Folds.fold2Append
+      )
+      .await()
+      .withEffect {
+        case (_, notFound) =>
+          if (notFound.nonEmpty) {
+            logger.warn(
+              s"Could not find matches for added items: $notFound"
+            )
+          }
+      }
+      ._1
+      .filter {
+        case MatchResult(scrapedItem, esItem) =>
+          args.itemIdFilter.forall(_ == esItem.id) &&
+            uniqueKeyForIncoming(scrapedItem).exists(
+              id => args.externalIdFilter.forall(_ == id)
+            )
+      }
+      .map {
+        case MatchResult(scrapedItem, esItem) =>
+          val newAvailabilities = createDeltaAvailabilities(
+            networks,
+            esItem,
+            scrapedItem,
+            isAvailable = true
+          )
+          PendingAvailabilityAdd(esItem, Some(scrapedItem), newAvailabilities)
+      }
+  }
 
   protected def getNetworksOrExit(): Set[StoredNetwork] = {
     val foundNetworks = deps.networkCache
@@ -207,7 +248,7 @@ abstract class IngestDeltaJobLike[
       .fromSeq(allItemIds.toSeq)
       .grouped(16)
       .delayedMapF(
-        args.perBatchSleepMs.map(_ millis).getOrElse(250 millis),
+        args.sleepBetweenWriteMs.map(_ millis).getOrElse(250 millis),
         singleThreadExecutor
       )(batch => {
         val updates = batch.toList.map(itemId => {
