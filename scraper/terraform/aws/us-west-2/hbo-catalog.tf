@@ -55,7 +55,7 @@ module "hbo_max_crawler" {
   image_version = var.hbo_max_crawler_version
 
   name        = "hbo_max_crawler"
-  spider_name = "hbomax"
+  spider_name = "hbo_max_authenticated"
 
   outputs = [
     "s3://${data.aws_s3_bucket.data_bucket.id}/scrape-results/hbo-max/catalog/{date}/items_{time}.jl:jl"
