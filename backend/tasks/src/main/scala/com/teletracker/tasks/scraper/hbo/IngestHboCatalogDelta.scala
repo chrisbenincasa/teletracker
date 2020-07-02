@@ -1,5 +1,6 @@
 package com.teletracker.tasks.scraper.hbo
 
+import com.teletracker.common.db.dynamo.{CrawlStore, CrawlerName}
 import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.db.model.{
   ExternalSource,
@@ -62,14 +63,16 @@ class IngestHboLiveCatalogDelta @Inject()(
       HboScrapedCatalogItem,
       LiveIngestDeltaJobArgs
     ] {
-  override protected def offerType: OfferType = OfferType.Subscription
+  override protected val crawlerName: CrawlerName = CrawlStore.HboCatalog
 
-  override protected def supportedNetworks: Set[SupportedNetwork] =
+  override protected val offerType: OfferType = OfferType.Subscription
+
+  override protected val supportedNetworks: Set[SupportedNetwork] =
     Set(SupportedNetwork.Hbo, SupportedNetwork.HboMax)
 
-  override protected def externalSource: ExternalSource = ExternalSource.HboGo
+  override protected val externalSource: ExternalSource = ExternalSource.HboGo
 
-  override protected def scrapeItemType: ScrapeItemType =
+  override protected val scrapeItemType: ScrapeItemType =
     ScrapeItemType.HboCatalog
 
   override protected def createDeltaAvailabilities(

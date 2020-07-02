@@ -28,7 +28,6 @@ import scala.concurrent.duration._
 
 @JsonCodec
 case class LiveIngestDeltaJobArgs(
-  crawler: String,
   version: Option[Long],
   override val offset: Int,
   override val limit: Int,
@@ -53,12 +52,16 @@ abstract class LiveIngestDeltaJob[
     extends IngestDeltaJobLike[EsItem, T, LiveIngestDeltaJobArgs](deps) {
   import ScrapedItemAvailabilityDetails.syntax._
 
+  private val crawlAvailabilityItemLoader =
+    crawlAvailabilityItemLoaderFactory.make[T]
+
+  protected def crawlerName: CrawlerName
+
   override def preparseArgs(args: RawArgs): LiveIngestDeltaJobArgs =
     parseArgs(args)
 
   private def parseArgs(args: Map[String, Any]): LiveIngestDeltaJobArgs = {
     LiveIngestDeltaJobArgs(
-      crawler = args.valueOrThrow[String]("crawler"),
       version = args.value[Long]("version"),
       offset = args.valueOrDefault("offset", 0),
       limit = args.valueOrDefault("limit", -1),
@@ -201,12 +204,11 @@ abstract class LiveIngestDeltaJob[
   }
 
   override protected def getAllAfterItems(): List[T] = {
-    crawlAvailabilityItemLoaderFactory
-      .make[T]
+    crawlAvailabilityItemLoader
       .load(
         CrawlAvailabilityItemLoaderArgs(
           supportedNetworks,
-          new CrawlerName(args.crawler),
+          crawlerName,
           args.version
         )
       )

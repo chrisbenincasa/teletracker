@@ -358,7 +358,7 @@ abstract class IngestDeltaJobLike[
           case PendingAvailabilityUpdate(_, _, _) => "updated"
         }
 
-        logger.info(
+        logger.debug(
           s"Would've ${typ} availability (ID: ${update.esItem.id}, external: ${update.scrapedItem
             .flatMap(uniqueKeyForIncoming)}, name: ${update.esItem.title.get.head}): ${update.availabilities}"
         )
@@ -373,7 +373,7 @@ abstract class IngestDeltaJobLike[
         )
 
       case PendingAvailabilityRemove(esItem, removes, externalId) =>
-        logger.info(
+        logger.debug(
           s"""Would've removed availability (ID: ${esItem.id}, external: ${externalId},
             name: ${esItem.title.get.head}): ${removes}"""
         )

@@ -11,6 +11,7 @@ import software.amazon.awssdk.services.dynamodb.model.{
   AttributeValue,
   ComparisonOperator,
   Condition,
+  GetItemRequest,
   QueryRequest
 }
 import java.net.URI
@@ -23,12 +24,39 @@ object CrawlStore {
   final val HboCatalog = new CrawlerName("hbo_go_catalog")
 }
 
-class CrawlerName(val name: String) extends AnyVal
+class CrawlerName(val name: String) extends AnyVal {
+  override def toString: String = name
+}
 
 class CrawlStore @Inject()(
   teletrackerConfig: ReloadableConfig[TeletrackerConfig],
   dynamo: DynamoDbAsyncClient
 )(implicit executionContext: ExecutionContext) {
+  def getCrawlAtVersion(
+    crawler: CrawlerName,
+    version: Long
+  ): Future[Option[HistoricalCrawl]] = {
+    dynamo
+      .getItem(
+        GetItemRequest
+          .builder()
+          .tableName(teletrackerConfig.currentValue().dynamo.crawls.table_name)
+          .key(
+            Map(
+              "spider" -> crawler.name.toAttributeValue,
+              "version" -> version.toAttributeValue
+            ).asJava
+          )
+          .build()
+      )
+      .toScala
+      .map(response => {
+        Option(response.item())
+          .map(_.asScala.toMap)
+          .map(HistoricalCrawl.fromDynamoRow)
+      })
+  }
+
   def getLatestCrawl(crawler: CrawlerName): Future[Option[HistoricalCrawl]] = {
     dynamo
       .query(
