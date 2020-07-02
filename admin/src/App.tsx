@@ -21,6 +21,7 @@ import {
 import { LiveTv, Menu } from '@material-ui/icons';
 import { Link, Redirect, Router } from '@reach/router';
 import Matching from './features/matching/Matching';
+import MatchInspector from './features/match_inspector/MatchInspector';
 
 const drawerWidth = 240;
 
@@ -157,6 +158,7 @@ function App() {
         <Router>
           <Redirect noThrow from="/matching" to={'/matching/unmatched/all'} />
           <Matching path="/matching/:filterType/:networkScraper" />
+          <MatchInspector path="/match_inspector/" />
         </Router>
       </main>
     </div>
