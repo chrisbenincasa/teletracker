@@ -139,7 +139,7 @@ class HboGoCrawlSpider(BaseSpider):
                     title=payload['titles']['full'],
                     externalId=response.meta['id'],
                     description=payload['summaries']['full'],
-                    itemType='movie',
+                    itemType='show',
                     network='hbo',
                     goUrl='https://play.hbogo.com/series/{}'.format(response.meta['id']),
                     highDef=True
