@@ -5,6 +5,13 @@ import scrapy
 from crawlers.base_spider import BaseSitemapSpider
 from urllib.parse import unquote
 
+_client_id = '585b02c8-dbe1-432f-b1bb-11cf670fbeb0'
+_client_secret = '585b02c8-dbe1-432f-b1bb-11cf670fbeb0'
+_scope = 'browse video_playback_free'
+_grant_type = 'client_credentials'
+_device_serial_number = '7de92ed7-d64c-4534-9dd8-fca4cd105262'
+
+CONTENT_API_URL = 'https://comet.api.hbo.com/content'
 
 def _load_script_data(response):
     data = response.xpath('//script[@id="__NEXT_DATA__"]/text()').get()
@@ -32,7 +39,7 @@ def _extract_seasons_object(loaded_data):
 
 class HboNowSpider(BaseSitemapSpider):
     name = 'hbomax'
-    allowed_domains = ['hbomax.com']
+    allowed_domains = ['hbomax.com', 'comet.api.hbo.com']
 
     sitemap_urls = [
         "https://www.hbomax.com/static/sitemap.xml"
@@ -127,6 +134,10 @@ class HboMaxItem(scrapy.Item):
     seasons = scrapy.Field()
     url = scrapy.Field()
     couldBeOnHboGo = scrapy.Field()
+    releaseYear = scrapy.Field()
+    cast = scrapy.Field()
+    crew = scrapy.Field()
+    runtime = scrapy.Field()
 
 
 class HboMaxSeasonItem(scrapy.Item):
