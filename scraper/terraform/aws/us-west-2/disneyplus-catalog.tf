@@ -12,7 +12,8 @@ module "disneyplus_catalog_crawler" {
   spider_name = "disneyplus"
 
   outputs = [
-    "s3://${data.aws_s3_bucket.data_bucket.id}/scrape-results/disneyplus/catalog/{date}/items_{time}.jl:jl"
+    "s3://${data.aws_s3_bucket.data_bucket.id}/scrape-results/disneyplus/catalog/{date}/items_{time}.jl:jl",
+    "sqs://${replace(data.aws_sqs_queue.scrape_item_output_queue.id, "https://", "")}:sqs"
   ]
 
   dynamodb_output_table = aws_dynamodb_table.crawls.name
