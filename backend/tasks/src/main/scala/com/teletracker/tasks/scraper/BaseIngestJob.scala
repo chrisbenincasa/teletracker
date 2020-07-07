@@ -20,7 +20,13 @@ import io.circe.syntax._
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
-import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
+import java.io.{
+  BufferedOutputStream,
+  File,
+  FileOutputStream,
+  OutputStream,
+  PrintStream
+}
 import java.time.{LocalDate, OffsetDateTime, ZoneOffset}
 import java.util.concurrent.ScheduledExecutorService
 import scala.collection.mutable
@@ -84,47 +90,57 @@ abstract class BaseIngestJob[
       )
     )
 
-  private val _artifacts: mutable.ListBuffer[File] = {
-    val a = new mutable.ListBuffer[File]()
-    a ++= List(matchItemsFile, missingItemsFile, potentialMatchFile)
+  private val _artifacts: mutable.ListBuffer[Artifact] = {
+    val a = new mutable.ListBuffer[Artifact]()
+    a ++= List(
+      Artifact(matchingItemsWriter, matchItemsFile),
+      Artifact(missingItemsWriter, missingItemsFile),
+      Artifact(potentialMatchesWriter, potentialMatchFile)
+    )
     a
   }
 
-  protected def artifacts: List[File] = _artifacts.toList
+  case class Artifact(
+    os: OutputStream,
+    file: File)
 
-  protected def registerArtifact(file: File): Unit = _artifacts.synchronized {
-    if (!_artifacts.exists(_.getAbsolutePath == file.getAbsolutePath)) {
-      _artifacts += file
+  protected def artifacts: List[Artifact] = _artifacts.toList
+
+  protected def registerArtifact(artifact: Artifact): Unit =
+    _artifacts.synchronized {
+      if (!_artifacts.exists(
+            _.file.getAbsolutePath == artifact.file.getAbsolutePath
+          )) {
+        _artifacts += artifact
+      }
     }
-  }
 
   protected def defaultParallelism: Int = 16
 
   protected def lookupMethod(): LookupMethod[T]
 
-  postrun { _ =>
-    missingItemsWriter.flush()
-    missingItemsWriter.close()
-    matchingItemsWriter.flush()
-    matchingItemsWriter.close()
-    potentialMatchesWriter.flush()
-    potentialMatchesWriter.close()
-  }
-
   postrun(args => {
+    artifacts.foreach {
+      case Artifact(os, _) =>
+        os.flush()
+        os.close()
+    }
+
     if (args.valueOrDefault("uploadArtifacts", true)) {
-      artifacts.foreach(artifact => {
-        s3.putObject(
-          PutObjectRequest
-            .builder()
-            .bucket(teletrackerConfig.data.s3_bucket)
-            .key(
-              s"task-output/${getClass.getSimpleName}/$now/${artifact.getName}"
-            )
-            .build(),
-          artifact.toPath
-        )
-      })
+      artifacts
+        .map(_.file)
+        .foreach(artifact => {
+          s3.putObject(
+            PutObjectRequest
+              .builder()
+              .bucket(teletrackerConfig.data.s3_bucket)
+              .key(
+                s"task-output/${getClass.getSimpleName}/$now/${artifact.getName}"
+              )
+              .build(),
+            artifact.toPath
+          )
+        })
     }
   })
 

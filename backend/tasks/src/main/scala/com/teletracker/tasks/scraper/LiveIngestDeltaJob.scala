@@ -159,6 +159,9 @@ abstract class LiveIngestDeltaJob[
       }
 
     val allChanges = additions ++ removals ++ changeUpdates ++ changeRemovals
+
+    writeChangesFile(allChanges)
+
     if (!args.dryRun) {
       logger.info(
         s"Saving ${allChanges.size} availabilities"
@@ -172,8 +175,6 @@ abstract class LiveIngestDeltaJob[
           )
         })
         .await()
-    } else {
-      writeChangesFile(allChanges)
     }
   }
 

@@ -66,7 +66,10 @@ abstract class IngestJobApp[T <: IngestJob[_]: Manifest]
 trait IngestJobArgsLike
     extends BaseTaskArgs
     with PagingTaskArgs
-    with ParallelismTaskArgs
+    with ParallelismTaskArgs {
+
+  def uploadArtifacts: Boolean = false
+}
 
 @JsonCodec
 case class IngestJobArgs(

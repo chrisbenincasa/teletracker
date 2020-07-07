@@ -38,7 +38,13 @@ import io.circe.Codec
 import io.circe.syntax._
 import io.circe.generic.JsonCodec
 import javax.inject.{Inject, Provider}
-import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
+import java.io.{
+  BufferedOutputStream,
+  File,
+  FileOutputStream,
+  PrintStream,
+  PrintWriter
+}
 import java.net.URI
 import java.time.LocalDate
 import java.util.UUID
@@ -101,6 +107,18 @@ abstract class IngestDeltaJobLike[
       deps.executionContext,
       codec
     ) {
+
+  protected lazy val changesFile = new File(
+    s"${today}_${getClass.getSimpleName}-changes.json"
+  )
+
+  protected lazy val changesPrinter = new PrintStream(
+    new BufferedOutputStream(new FileOutputStream(changesFile))
+  )
+
+  prerun {
+    registerArtifact(Artifact(changesPrinter, changesFile))
+  }
 
   protected val singleThreadExecutor: ScheduledExecutorService =
     deps.singleThreadExecutorProvider.get()
@@ -334,14 +352,6 @@ abstract class IngestDeltaJobLike[
   }
 
   protected def writeChangesFile(allChanges: List[PendingChange]): Unit = {
-    val today = LocalDate.now()
-    val changes = new File(
-      s"${today}_${getClass.getSimpleName}-changes.json"
-    )
-    val changesPrinter = new PrintWriter(
-      new BufferedOutputStream(new FileOutputStream(changes))
-    )
-
     val header = List(
       "change_type",
       "es_item_id",
