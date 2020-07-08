@@ -39,6 +39,7 @@ class NetflixSpider(BaseCrawlSpider):
         'https://www.netflix.com/browse/genre/10673',
         'https://www.netflix.com/browse/genre/52117',
         'https://www.netflix.com/browse/genre/6721',
+        'https://www.netflix.com/browse/genre/9833',
     ]
 
     custom_settings = {
