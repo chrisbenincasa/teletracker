@@ -1,5 +1,6 @@
 package com.teletracker.tasks.scraper
 
+import com.teletracker.common.availability.CrawlerInfo
 import com.teletracker.common.db.dynamo.CrawlerName
 import com.teletracker.common.db.model.ExternalSource
 import com.teletracker.common.elasticsearch.model.{EsAvailability, EsItem}
@@ -15,6 +16,8 @@ import com.teletracker.common.model.scraping.{
 import com.teletracker.common.tasks.TeletrackerTask.{JsonableArgs, RawArgs}
 import com.teletracker.common.util.{Folds, OnceT}
 import com.teletracker.common.util.Futures._
+import com.teletracker.common.util.Functions._
+import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.loaders.{
   CrawlAvailabilityItemLoaderArgs,
@@ -22,8 +25,12 @@ import com.teletracker.tasks.scraper.loaders.{
 }
 import io.circe.Codec
 import io.circe.generic.JsonCodec
+import io.circe.syntax._
 import org.elasticsearch.index.query.QueryBuilders
+import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
+import java.time.LocalDate
 import java.util.UUID
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
 @JsonCodec
@@ -48,7 +55,8 @@ abstract class LiveIngestDeltaJob[
   itemsScroller: ItemsScroller,
   crawlAvailabilityItemLoaderFactory: CrawlAvailabilityItemLoaderFactory
 )(implicit codec: Codec[T],
-  typedArgs: JsonableArgs[IngestDeltaJobArgs])
+  typedArgs: JsonableArgs[IngestDeltaJobArgs],
+  exeuctionContext: ExecutionContext)
     extends IngestDeltaJobLike[EsItem, T, LiveIngestDeltaJobArgs](deps) {
   import ScrapedItemAvailabilityDetails.syntax._
 
@@ -99,20 +107,41 @@ abstract class LiveIngestDeltaJob[
         .flatMap(item => uniqueKeyForIncoming(item).map(_ -> item))
         .toMap
 
+    val addedIds = afterIds -- beforeIds
     val removedIds = beforeIds -- afterIds
     val matchingIds = afterIds.intersect(beforeIds)
 
+    val pctChange = Math.abs(
+      (beforeIds.size - afterIds.size) / beforeIds.size.toDouble
+    ) * 100.0
+
+    if (pctChange >= args.deltaSizeThreshold && !args.disableDeltaSizeCheck) {
+      handleDiffEarlyExit(newIds = addedIds, removedIds = removedIds)
+
+      throw new RuntimeException(
+        s"Delta ($pctChange)% exceeded configured threshold of ${args.deltaSizeThreshold}. Before: ${beforeIds.size}, After: ${afterIds.size}"
+      )
+    }
+
+    logger.info(
+      s"Checking for ${addedIds.size} added IDs, ${removedIds.size} removed IDs, and ${matchingIds.size} matching IDs."
+    )
+
     val additions = getAddedItems()
 
-    val removals = removedIds.map(removedId => {
-      val esItem = beforeItemsById(removedId)
+    val removals = removedIds.toList
+      .map(removedId => {
+        val esItem = beforeItemsById(removedId)
 
-      PendingAvailabilityRemove(
-        esItem,
-        createAvailabilityKeys(networks),
-        Some(removedId)
-      )
-    })
+        PendingAvailabilityRemove(
+          esItem,
+          createAvailabilityKeys(networks),
+          Some(removedId)
+        )
+      })
+      .through(removals => {
+        processRemovals(removals).await()
+      })
 
     val (changeUpdates, changeRemovals) = matchingIds.toSeq
       .map(id => {
@@ -210,10 +239,11 @@ abstract class LiveIngestDeltaJob[
         CrawlAvailabilityItemLoaderArgs(
           supportedNetworks,
           crawlerName,
-          args.version
+          crawlAvailabilityItemLoader.getLoadedVersion.orElse(args.version)
         )
       )
       .await()
+      .safeTake(args.limit)
   }
 
   private[this] val getAllBeforeItemsOnce = OnceT {
@@ -302,4 +332,64 @@ abstract class LiveIngestDeltaJob[
     scrapedItem: T,
     esItem: EsItem
   ): Option[ItemChange]
+
+  protected def processRemovals(
+    removals: List[PendingAvailabilityRemove]
+  ): Future[List[PendingAvailabilityRemove]] = Future.successful(removals)
+
+  override protected def getContext: Option[IngestJobContext] = {
+    Some(
+      IngestJobContext(
+        Some(
+          CrawlerInfo(
+            crawler = crawlerName,
+            version = crawlAvailabilityItemLoader.getLoadedVersion
+          )
+        )
+      )
+    )
+  }
+
+  protected def handleDiffEarlyExit(
+    newIds: Set[String],
+    removedIds: Set[String]
+  ): Unit = {
+    val beforeItems = getAllBeforeItems()
+    val afterItems = getAllAfterItems()
+
+    val addedItems = afterItems
+      .filter(item => containsUniqueKey(newIds, item))
+
+    val removedItems = beforeItems
+      .filter(item => containsUniqueKey(removedIds, item))
+
+    val today = LocalDate.now()
+    val changes = new File(
+      s"${today}_${getClass.getSimpleName}-changes-error.json"
+    )
+    val changesPrinter = new PrintWriter(
+      new BufferedOutputStream(new FileOutputStream(changes))
+    )
+
+    addedItems.foreach(item => {
+      changesPrinter.println(
+        Map(
+          "change_type" -> "added".asJson,
+          "item" -> item.asJson
+        ).asJson.noSpaces
+      )
+    })
+
+    removedItems.foreach(item => {
+      changesPrinter.println(
+        Map(
+          "change_type" -> "removed".asJson,
+          "item" -> item.asJson
+        ).asJson.noSpaces
+      )
+    })
+
+    changesPrinter.flush()
+    changesPrinter.close()
+  }
 }

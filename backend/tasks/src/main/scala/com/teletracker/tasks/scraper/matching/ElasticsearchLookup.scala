@@ -11,10 +11,10 @@ class ElasticsearchLookup @Inject()(
 )(implicit executionContext: ExecutionContext)
     extends LookupMethod.Agnostic {
 
-  override def toMethod[T <: ScrapedItem]: LookupMethod[T] = {
+  override def create[T <: ScrapedItem]: LookupMethod[T] = {
     new CustomElasticsearchLookup[T](
       List(elasticsearchExactTitleLookup)
-        .map(_.toMethod[T])
+        .map(_.create[T])
     )
   }
 }

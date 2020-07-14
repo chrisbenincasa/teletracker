@@ -1,24 +1,8 @@
 package com.teletracker.tasks.scraper.debug
 
-import com.teletracker.common.model.scraping.disney.DisneyPlusCatalogItem
-import com.teletracker.common.model.scraping.hbo.{
-  HboMaxCatalogItem,
-  HboScrapedCatalogItem
-}
-import com.teletracker.common.model.scraping.{
-  MatchResult,
-  PotentialMatch,
-  ScrapeItemType,
-  ScrapedItem
-}
-import com.teletracker.common.model.scraping.hulu.HuluScrapeCatalogItem
-import com.teletracker.common.model.scraping.netflix.{
-  NetflixOriginalScrapeItem,
-  NetflixScrapedCatalogItem
-}
+import com.teletracker.common.model.scraping.ScrapeItemType
 import com.teletracker.common.tasks.UntypedTeletrackerTask
-import com.teletracker.tasks.scraper.IngestJobParser
-import com.teletracker.tasks.scraper.hbo.HboScrapeChangesItem
+import com.teletracker.tasks.scraper.ScrapeItemStreams
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
 import java.net.URI
 import java.util.concurrent.ConcurrentHashMap
@@ -53,7 +37,8 @@ class GeneratePotentialMatchCsv extends UntypedTeletrackerTask {
     val seen = ConcurrentHashMap.newKeySet[String]()
 
     try {
-      getStream(source, scrapeItemType)
+      ScrapeItemStreams
+        .getPotentialMatchResultStream(source, scrapeItemType)
         .foreach {
           case Left(value) => logger.error("Could not parse line", value)
           case Right(value) =>
@@ -85,35 +70,6 @@ class GeneratePotentialMatchCsv extends UntypedTeletrackerTask {
     writer.flush()
     writer.close()
   }
-
-  private def getStream(
-    source: Source,
-    scrapeItemType: ScrapeItemType
-  ): Stream[Either[Exception, PotentialMatch[_ <: ScrapedItem]]] = {
-    scrapeItemType match {
-      case ScrapeItemType.HuluCatalog =>
-        new IngestJobParser()
-          .stream[PotentialMatch[HuluScrapeCatalogItem]](source.getLines())
-      case ScrapeItemType.HboCatalog =>
-        new IngestJobParser()
-          .stream[PotentialMatch[HboScrapedCatalogItem]](source.getLines())
-      case ScrapeItemType.NetflixCatalog =>
-        new IngestJobParser()
-          .stream[PotentialMatch[NetflixScrapedCatalogItem]](source.getLines())
-      case ScrapeItemType.DisneyPlusCatalog =>
-        new IngestJobParser()
-          .stream[PotentialMatch[DisneyPlusCatalogItem]](source.getLines())
-      case ScrapeItemType.HboMaxCatalog =>
-        new IngestJobParser()
-          .stream[PotentialMatch[HboMaxCatalogItem]](source.getLines())
-      case ScrapeItemType.HboChanges =>
-        new IngestJobParser()
-          .stream[PotentialMatch[HboScrapeChangesItem]](source.getLines())
-      case ScrapeItemType.NetflixOriginalsArriving =>
-        new IngestJobParser()
-          .stream[PotentialMatch[NetflixOriginalScrapeItem]](source.getLines())
-    }
-  }
 }
 
 class GenerateMatchCsv extends UntypedTeletrackerTask {
@@ -143,7 +99,8 @@ class GenerateMatchCsv extends UntypedTeletrackerTask {
     val seen = ConcurrentHashMap.newKeySet[String]()
 
     try {
-      getStream(Source.fromURI(input), scrapeItemType)
+      ScrapeItemStreams
+        .getMatchResultStream(Source.fromURI(input), scrapeItemType)
         .foreach {
           case Left(value) => logger.error("Could not parse line", value)
           case Right(value) =>
@@ -172,34 +129,5 @@ class GenerateMatchCsv extends UntypedTeletrackerTask {
 
     writer.flush()
     writer.close()
-  }
-
-  private def getStream(
-    source: Source,
-    scrapeItemType: ScrapeItemType
-  ): Stream[Either[Exception, MatchResult[_ <: ScrapedItem]]] = {
-    scrapeItemType match {
-      case ScrapeItemType.HuluCatalog =>
-        new IngestJobParser()
-          .stream[MatchResult[HuluScrapeCatalogItem]](source.getLines())
-      case ScrapeItemType.HboCatalog =>
-        new IngestJobParser()
-          .stream[MatchResult[HboScrapedCatalogItem]](source.getLines())
-      case ScrapeItemType.NetflixCatalog =>
-        new IngestJobParser()
-          .stream[MatchResult[NetflixScrapedCatalogItem]](source.getLines())
-      case ScrapeItemType.DisneyPlusCatalog =>
-        new IngestJobParser()
-          .stream[MatchResult[DisneyPlusCatalogItem]](source.getLines())
-      case ScrapeItemType.HboMaxCatalog =>
-        new IngestJobParser()
-          .stream[MatchResult[HboMaxCatalogItem]](source.getLines())
-      case ScrapeItemType.HboChanges =>
-        new IngestJobParser()
-          .stream[MatchResult[HboScrapeChangesItem]](source.getLines())
-      case ScrapeItemType.NetflixOriginalsArriving =>
-        new IngestJobParser()
-          .stream[MatchResult[NetflixOriginalScrapeItem]](source.getLines())
-    }
   }
 }

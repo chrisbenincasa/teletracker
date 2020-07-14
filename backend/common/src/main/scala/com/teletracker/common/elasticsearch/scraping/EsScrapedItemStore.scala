@@ -46,7 +46,6 @@ object EsScrapedItemDoc {
     item: T,
     raw: Json
   ): EsScrapedItemDoc = {
-    require(item.thingType.isDefined)
     require(item.externalId.isDefined)
 
     EsScrapedItemDoc(
@@ -60,7 +59,7 @@ object EsScrapedItemDoc {
       status = item.status,
       externalId = item.externalId,
       description = item.description,
-      itemType = item.thingType.get,
+      itemType = item.itemType,
       url = item.url,
       posterImageUrl = item.posterImageUrl,
       cast = item.cast.map(

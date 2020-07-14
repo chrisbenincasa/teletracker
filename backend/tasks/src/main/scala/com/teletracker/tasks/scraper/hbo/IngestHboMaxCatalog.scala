@@ -1,38 +1,49 @@
 package com.teletracker.tasks.scraper.hbo
 
-import com.teletracker.common.db.model.ExternalSource
-import com.teletracker.common.elasticsearch.lookups.ElasticsearchExternalIdMappingStore
-import com.teletracker.common.elasticsearch.model.{EsExternalId, EsItem}
-import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
-import com.teletracker.common.model.scraping.hbo.HboMaxCatalogItem
-import com.teletracker.common.model.scraping.{NonMatchResult, ScrapeItemType}
-import com.teletracker.common.util.{AsyncStream, NetworkCache}
-import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
+import com.teletracker.common.db.dynamo.model.StoredNetwork
+import com.teletracker.common.db.dynamo.{CrawlStore, CrawlerName}
+import com.teletracker.common.db.model.{
+  ExternalSource,
+  OfferType,
+  SupportedNetwork
+}
+import com.teletracker.common.elasticsearch.model.{EsAvailability, EsItem}
+import com.teletracker.common.elasticsearch.{
+  ItemLookup,
+  ItemUpdater,
+  ItemsScroller
+}
+import com.teletracker.common.model.scraping.ScrapeItemType
+import com.teletracker.common.model.scraping.hbo.HboMaxScrapedCatalogItem
+import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper._
+import com.teletracker.tasks.scraper.loaders.CrawlAvailabilityItemLoaderFactory
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import java.time.LocalDate
-import java.util.UUID
 import java.util.regex.Pattern
-import scala.concurrent.Future
+import scala.concurrent.ExecutionContext
+
+trait CommonHboMaxCatalogIngest {
+  protected def scrapeItemType: ScrapeItemType =
+    ScrapeItemType.HboMaxCatalog
+
+  protected def externalSources: List[ExternalSource] =
+    List(ExternalSource.HboMax)
+}
 
 class IngestHboMaxCatalog @Inject()(
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
-  protected val itemUpdater: ItemUpdater,
-  externalIdMappingStore: ElasticsearchExternalIdMappingStore)
-    extends IngestJob[HboMaxCatalogItem]
-    with SubscriptionNetworkAvailability[HboMaxCatalogItem] {
-
-  override protected def scrapeItemType: ScrapeItemType =
-    ScrapeItemType.HboMaxCatalog
-
-  override protected def externalSources: List[ExternalSource] =
-    List(ExternalSource.HboMax)
+  protected val itemUpdater: ItemUpdater
+)(implicit executionContext: ExecutionContext)
+    extends IngestJob[HboMaxScrapedCatalogItem]
+    with SubscriptionNetworkAvailability[HboMaxScrapedCatalogItem]
+    with CommonHboMaxCatalogIngest {
 
   override protected def isAvailable(
-    item: HboMaxCatalogItem,
+    item: HboMaxScrapedCatalogItem,
     today: LocalDate
   ): Boolean = {
     true
@@ -42,80 +53,57 @@ class IngestHboMaxCatalog @Inject()(
     Pattern.compile("Director's Cut", Pattern.CASE_INSENSITIVE)
 
   override protected def sanitizeItem(
-    item: HboMaxCatalogItem
-  ): HboMaxCatalogItem = {
+    item: HboMaxScrapedCatalogItem
+  ): HboMaxScrapedCatalogItem = {
     item.copy(title = pattern.matcher(item.title).replaceAll("").trim)
   }
 
   override protected def itemUniqueIdentifier(
-    item: HboMaxCatalogItem
+    item: HboMaxScrapedCatalogItem
   ): String = {
     item.externalId.getOrElse(super.itemUniqueIdentifier(item))
   }
+}
 
-  override protected def getExternalIds(
-    item: HboMaxCatalogItem
-  ): Map[ExternalSource, String] = {
-    Map(
-      ExternalSource.HboMax -> item.externalId
-    ).collect {
-      case (k, Some(v)) => k -> v
-    }
-  }
+class IngestHboMaxCatalogDelta @Inject()(
+  deps: IngestDeltaJobDependencies,
+  itemsScroller: ItemsScroller,
+  crawlAvailabilityItemLoaderFactory: CrawlAvailabilityItemLoaderFactory
+)(implicit executionContext: ExecutionContext)
+    extends LiveIngestDeltaJob[HboMaxScrapedCatalogItem](
+      deps,
+      itemsScroller,
+      crawlAvailabilityItemLoaderFactory
+    )
+    with BaseSubscriptionNetworkAvailability[
+      HboMaxScrapedCatalogItem,
+      LiveIngestDeltaJobArgs
+    ] {
+  override protected val crawlerName: CrawlerName = CrawlStore.HboMaxCatalog
 
-  override protected def findPotentialMatches(
-    args: IngestJobArgs,
-    nonMatches: List[HboMaxCatalogItem]
-  ): Future[List[NonMatchResult[HboMaxCatalogItem]]] = {
-    val nonMatchesById = nonMatches.map(m => m.id -> m).toMap
+  override protected def processExistingAvailability(
+    existing: EsAvailability,
+    incoming: EsAvailability,
+    scrapedItem: HboMaxScrapedCatalogItem,
+    esItem: EsItem
+  ): Option[ItemChange] = None
 
-    val externalsToSearch = nonMatches
-      .filter(_.couldBeOnHboGo.contains(true))
-      .filter(_.externalId.isDefined)
-      .map(item => {
-        EsExternalId(ExternalSource.HboGo, item.id) -> item.itemType
-      })
+  override protected val supportedNetworks: Set[SupportedNetwork] = Set(
+    SupportedNetwork.HboMax
+  )
 
-    externalIdMappingStore
-      .getItemIdsForExternalIds(externalsToSearch.toSet)
-      .flatMap(foundMatches => {
-        AsyncStream
-          .fromSeq(foundMatches.values.toSet.grouped(10).toSeq)
-          .mapF(group => {
-            itemLookup
-              .lookupItemsByIds(group)
-              .map(_.collect {
-                case (uuid, Some(item)) => uuid -> item
-              })
-          })
-          .foldLeft(Map.empty[UUID, EsItem])(_ ++ _)
-          .flatMap(foundItems => {
-            val potentialMatches = for {
-              (id, scrapedItem) <- nonMatchesById
-              esItemId <- foundMatches
-                .get(
-                  EsExternalId(ExternalSource.HboGo, id),
-                  scrapedItem.itemType
-                )
-                .toList
-              esItem <- foundItems.get(esItemId).toList
-            } yield {
-              NonMatchResult(scrapedItem, scrapedItem, esItem)
-            }
+  override protected val externalSource: ExternalSource = ExternalSource.HboMax
 
-            writePotentialMatches(
-              potentialMatches.map(m => m.esItem -> m.originalScrapedItem)
-            )
+  override protected val offerType: OfferType = OfferType.Subscription
 
-            val foundIds = potentialMatches.map(_.originalScrapedItem.id)
+  override protected val scrapeItemType: ScrapeItemType =
+    ScrapeItemType.HboMaxCatalog
 
-            val stillMissingIds = nonMatchesById.keySet -- foundIds
-
-            super.findPotentialMatches(
-              args,
-              stillMissingIds.flatMap(nonMatchesById.get).toList
-            )
-          })
-      })
-  }
+  override protected def createDeltaAvailabilities(
+    networks: Set[StoredNetwork],
+    item: EsItem,
+    scrapedItem: HboMaxScrapedCatalogItem,
+    isAvailable: Boolean
+  ): List[EsAvailability] =
+    createAvailabilities(networks, item, scrapedItem).toList
 }

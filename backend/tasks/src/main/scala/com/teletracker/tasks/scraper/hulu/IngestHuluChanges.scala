@@ -9,14 +9,15 @@ import com.teletracker.tasks.scraper._
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import java.time.{Instant, ZoneId, ZoneOffset}
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class IngestHuluChanges @Inject()(
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater,
-  huluFallbackMatching: HuluFallbackMatching)
+  huluFallbackMatching: HuluFallbackMatching
+)(implicit executionContext: ExecutionContext)
     extends IngestJob[HuluScrapeItem]
     with SubscriptionNetworkAvailability[HuluScrapeItem] {
 

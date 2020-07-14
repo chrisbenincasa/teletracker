@@ -1,4 +1,5 @@
 import json
+import time
 
 from scrapy.http import JsonRequest
 from jsonpath_ng.ext import parse
@@ -45,8 +46,8 @@ def _parse_crew(payload):
 class HboMaxAuthenticatedCrawlSpider(BaseSpider):
     name = 'hbo_max_authenticated'
     allowed_domains = ['hbomax.com', 'comet.api.hbo.com']
-
     token = None
+    version = int(time.time())
 
     def start_requests(self):
         # {"client_id":"dd80d19d-61e3-4052-ba5b-e38e19dd1eb6","client_secret":"dd80d19d-61e3-4052-ba5b-e38e19dd1eb6",
@@ -118,7 +119,8 @@ class HboMaxAuthenticatedCrawlSpider(BaseSpider):
                     releaseYear=payload['releaseYear'],
                     cast=_parse_cast(payload),
                     crew=_parse_crew(payload),
-                    runtime=payload['duration']
+                    runtime=payload['duration'],
+                    version=self.version
                 )
 
     def handle_series(self, response):
@@ -149,6 +151,7 @@ class HboMaxAuthenticatedCrawlSpider(BaseSpider):
                     itemType='show',
                     network='hbo-max',
                     url='https://play.hbomax.com/{}/{}'.format(typ, response.meta['id']),
+                    version=self.version
                 )
 
         if item and episode_ref:

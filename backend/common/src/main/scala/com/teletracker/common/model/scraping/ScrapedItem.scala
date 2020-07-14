@@ -18,23 +18,16 @@ trait ScrapedItem {
   def numSeasonsAvailable: Option[Int] = None
   def posterImageUrl: Option[String] = None
   def actualItemId: Option[UUID] = None
+  def version: Option[Long] = None
 
   lazy val availableLocalDate: Option[LocalDate] =
     availableDate.map(LocalDate.parse(_, DateTimeFormatter.ISO_LOCAL_DATE))
 
   lazy val isExpiring: Boolean = status == "Expiring"
 
-  def isMovie: Boolean
-  def isTvShow: Boolean
-  def thingType: Option[ItemType] = {
-    if (isMovie) {
-      Some(ItemType.Movie)
-    } else if (isTvShow) {
-      Some(ItemType.Show)
-    } else {
-      None
-    }
-  }
+  def isMovie: Boolean = itemType == ItemType.Movie
+  def isTvShow: Boolean = itemType == ItemType.Show
+  def itemType: ItemType
 
   def cast: Option[Seq[ScrapedCastMember]] = None
   def crew: Option[Seq[ScrapedCrewMember]] = None

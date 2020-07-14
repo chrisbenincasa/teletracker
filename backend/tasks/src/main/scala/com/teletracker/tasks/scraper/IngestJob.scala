@@ -17,7 +17,8 @@ import com.teletracker.common.elasticsearch.{
 import com.teletracker.common.model.scraping.{
   MatchResult,
   PartialEsItem,
-  ScrapedItem
+  ScrapedItem,
+  ScrapedItemAvailabilityDetails
 }
 import com.teletracker.common.pubsub.EsIngestItemDenormArgs
 import com.teletracker.common.tasks.TeletrackerTask.{JsonableArgs, RawArgs}
@@ -48,7 +49,7 @@ import software.amazon.awssdk.services.s3.S3Client
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
 import java.net.URI
 import java.time.{LocalDate, OffsetDateTime}
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.io.Source
 import scala.util.control.NonFatal
@@ -86,22 +87,17 @@ case class IngestJobArgs(
   externalIdFilter: Option[String] = None)
     extends IngestJobArgsLike
 
-abstract class IngestJob[T <: ScrapedItem](
+abstract class IngestJob[T <: ScrapedItem: ScrapedItemAvailabilityDetails](
   implicit codec: Codec[T],
-  jsonableArgs: JsonableArgs[IngestJobArgs])
-    extends BaseIngestJob[T, IngestJobArgs]()(
-      jsonableArgs,
-      scala.concurrent.ExecutionContext.Implicits.global,
-      codec
-    ) {
+  jsonableArgs: JsonableArgs[IngestJobArgs],
+  executionContext: ExecutionContext)
+    extends BaseIngestJob[T, IngestJobArgs]() {
 
+  import ScrapedItemAvailabilityDetails.syntax._
   import diffson._
   import diffson.circe._
   import diffson.jsonpatch.simplediff._
   import io.circe.syntax._
-
-  implicit protected val execCtx =
-    scala.concurrent.ExecutionContext.Implicits.global
 
   protected def itemLookup: ItemLookup
   protected def itemUpdater: ItemUpdater
@@ -139,18 +135,13 @@ abstract class IngestJob[T <: ScrapedItem](
 
   protected def lookupMethod(): LookupMethod[T] = {
     val externalIdMatchers = if (args.enableExternalIdMatching) {
-      externalSources.map(externalSource => {
-        externalIdLookup.createOpt[T](
-          externalSource,
-          (item: T) => getExternalIds(item).get(externalSource)
-        )
-      })
+      List(externalIdLookup.create[T])
     } else {
       Nil
     }
 
     new CustomElasticsearchLookup[T](
-      externalIdMatchers :+ elasticsearchLookup.toMethod[T]
+      externalIdMatchers :+ elasticsearchLookup.create[T]
     )
   }
 
@@ -178,8 +169,8 @@ abstract class IngestJob[T <: ScrapedItem](
   }
 
   override def runInternal(): Unit = {
-    registerArtifact(potentialMatchFile)
-    registerArtifact(matchChangesFile)
+    registerArtifact(Artifact(potentialMatchesWriter, potentialMatchFile))
+    registerArtifact(Artifact(matchChangesWriter, matchChangesFile))
 
     val network = getNetworksOrExit()
 
@@ -556,7 +547,8 @@ abstract class IngestJob[T <: ScrapedItem](
     end.exists(_.isAfter(today))
   }
 
-  protected def getExternalIds(item: T): Map[ExternalSource, String] = Map.empty
+  protected def getExternalIds(item: T): Map[ExternalSource, String] =
+    item.externalIds
 
   protected def uploadResultFiles(): Unit = {
     outputLocation.foreach(uri => {

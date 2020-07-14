@@ -160,7 +160,7 @@ class HuluFallbackMatching @Inject()(
         FuzzyItemLookupRequest(
           title = title,
           description = item.description,
-          itemType = item.thingType,
+          itemType = Some(item.itemType),
           exactReleaseYear = item.releaseYear.map(_ -> 3.0f),
           releaseYearTiers = Some(Seq(RelativeRange.forInt(1) -> 1.0f)),
           looseReleaseYearMatching = false,
@@ -209,17 +209,14 @@ class HuluFallbackMatching @Inject()(
   private def lookupBySlugs(itemBySlug: Map[Slug, HuluScrapeItem]) = {
     itemLookup
       .lookupItemsBySlug(
-        itemBySlug
-          .filter(_._2.thingType.isDefined)
-          .map {
-            case (slug, item) =>
-              (
-                slug,
-                item.thingType.get,
-                item.releaseYear.map(ry => (ry - 1) to (ry + 1))
-              )
-          }
-          .toList
+        itemBySlug.map {
+          case (slug, item) =>
+            (
+              slug,
+              item.itemType,
+              item.releaseYear.map(ry => (ry - 1) to (ry + 1))
+            )
+        }.toList
       )
       .map(foundBySlug => {
         foundBySlug.flatMap {

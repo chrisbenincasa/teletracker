@@ -7,7 +7,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object LookupMethod {
   trait Agnostic {
-    def toMethod[T <: ScrapedItem]: LookupMethod[T]
+    def create[T <: ScrapedItem]: LookupMethod[T]
   }
 
   def unravel[T <: ScrapedItem](

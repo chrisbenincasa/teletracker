@@ -2,7 +2,11 @@ package com.teletracker.tasks.scraper
 
 import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.model.scraping
-import com.teletracker.common.model.scraping.{MatchResult, ScrapedItem}
+import com.teletracker.common.model.scraping.{
+  MatchResult,
+  ScrapedItem,
+  ScrapedItemAvailabilityDetails
+}
 import com.teletracker.common.tasks.TeletrackerTask.RawArgs
 import com.teletracker.common.util.Folds
 import com.teletracker.tasks.scraper.model.PotentialInput
@@ -12,11 +16,13 @@ import io.circe.{Codec, Encoder}
 import java.net.URI
 import java.util.UUID
 import scala.collection.mutable
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.FiniteDuration
 
 // Job that takes in a hand-filtered potential match file output and imports the items
-abstract class IngestPotentialMatches[T <: ScrapedItem: Codec]
+abstract class IngestPotentialMatches[
+  T <: ScrapedItem: Codec: ScrapedItemAvailabilityDetails
+](implicit executionContext: ExecutionContext)
     extends IngestJob[PotentialInput[T]]
 
 @JsonCodec

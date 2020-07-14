@@ -18,7 +18,9 @@ case class EsAvailability(
   links: Option[EsAvailabilityLinks],
   num_seasons_available: Option[Int],
   last_updated: Option[OffsetDateTime],
-  last_updated_by: Option[String])
+  last_updated_by: Option[String],
+  crawler: Option[String],
+  crawl_version: Option[Long])
 
 object EsAvailability {
   import io.circe.generic.semiauto._

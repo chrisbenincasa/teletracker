@@ -18,18 +18,22 @@ abstract class AvailabilityItemLoader[T, Args <: AvailabilityItemLoaderArgs](
 
   def load(args: Args): Future[List[T]] = synchronized {
     if (loadedOnce && args.enableCaching) {
-      Future.successful(cache.asScala.toList)
+      Future.successful(getCache)
     } else {
       loadImpl(args).andThen {
         case Success(value) if args.enableCaching =>
-          value.foreach(item => {
-            cache.add(item)
-          })
-
+          setCache(value)
           loadedOnce = true
       }
     }
   }
 
   protected def loadImpl(args: Args): Future[List[T]]
+
+  protected def getCache: List[T] = cache.asScala.toList
+
+  protected def setCache(items: List[T]): Unit =
+    cache.addAll(items.asJavaCollection)
+
+  protected def markAsLoadedOnce(): Unit = synchronized(loadedOnce = true)
 }

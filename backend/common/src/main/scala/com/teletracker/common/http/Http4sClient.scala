@@ -18,7 +18,7 @@ class Http4sClient @Inject()(
   @Assisted host: String,
   @Assisted options: HttpClientOptions
 )(implicit executionContext: ExecutionContext)
-    extends HttpClient(host, options) {
+    extends HttpClient {
 
   private val blockingExecCtx =
     ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
@@ -52,43 +52,4 @@ class Http4sClient @Inject()(
   }
 
   override def close(): Unit = {}
-
-  private def buildRequest[T](
-    uri: Uri,
-    request: HttpRequest
-  )(implicit d: EntityDecoder[IO, T]
-  ) = {
-    val req = Request[IO](uri = uri)
-    val withAccept = if (d.consumes.nonEmpty) {
-      val m = d.consumes.toList
-      req.putHeaders(
-        Accept(
-          MediaRangeAndQValue(m.head),
-          m.tail.map(MediaRangeAndQValue(_)): _*
-        )
-      )
-    } else req
-
-    request.headers.foldLeft(withAccept) {
-      case (r, (key, value)) => r.putHeaders(Header(key, value))
-    }
-  }
-
-  private def parseResponseDefault[T](
-    res: Response[IO]
-  )(implicit d: EntityDecoder[IO, T]
-  ): IO[HttpResponse[T]] = {
-    catsDataBifunctorForEitherT[IO]
-      .leftWiden[DecodeFailure, T, Throwable](d.decode(res, strict = false))
-      .rethrowT
-      .map(value => {
-        HttpResponse[T](
-          headers = res.headers.toList
-            .map(header => header.name.value -> header.value)
-            .toMap,
-          content = value
-        )
-      })
-
-  }
 }

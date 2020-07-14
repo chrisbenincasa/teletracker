@@ -14,12 +14,14 @@ import com.teletracker.tasks.scraper.{
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import java.time.{Instant, LocalDate, ZoneId, ZoneOffset}
+import scala.concurrent.ExecutionContext
 
 class IngestNetflixOriginalsArrivals @Inject()(
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
-  protected val itemUpdater: ItemUpdater)
+  protected val itemUpdater: ItemUpdater
+)(implicit executionContext: ExecutionContext)
     extends IngestJob[NetflixOriginalScrapeItem]
     with SubscriptionNetworkAvailability[NetflixOriginalScrapeItem] {
 

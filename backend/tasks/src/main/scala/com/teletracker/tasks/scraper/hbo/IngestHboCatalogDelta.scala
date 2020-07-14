@@ -22,8 +22,11 @@ import com.teletracker.tasks.scraper.{
   SubscriptionNetworkDeltaAvailability
 }
 import javax.inject.Inject
+import scala.concurrent.ExecutionContext
 
-class IngestHboCatalogDelta @Inject()(deps: IngestDeltaJobDependencies)
+class IngestHboCatalogDelta @Inject()(
+  deps: IngestDeltaJobDependencies
+)(implicit executionContext: ExecutionContext)
     extends IngestDeltaJob[HboScrapedCatalogItem](deps)
     with SubscriptionNetworkDeltaAvailability[HboScrapedCatalogItem] {
   override protected def offerType: OfferType = OfferType.Subscription
@@ -53,7 +56,8 @@ class IngestHboCatalogDelta @Inject()(deps: IngestDeltaJobDependencies)
 class IngestHboLiveCatalogDelta @Inject()(
   deps: IngestDeltaJobDependencies,
   itemsScroller: ItemsScroller,
-  crawlAvailabilityItemLoaderFactory: CrawlAvailabilityItemLoaderFactory)
+  crawlAvailabilityItemLoaderFactory: CrawlAvailabilityItemLoaderFactory
+)(implicit executionContext: ExecutionContext)
     extends LiveIngestDeltaJob[HboScrapedCatalogItem](
       deps,
       itemsScroller,

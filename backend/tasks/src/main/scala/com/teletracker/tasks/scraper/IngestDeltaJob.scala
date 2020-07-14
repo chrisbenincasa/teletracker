@@ -1,28 +1,55 @@
 package com.teletracker.tasks.scraper
 
+import com.teletracker.common.availability.CrawlerInfo
+import com.teletracker.common.db.dynamo.CrawlerName
 import com.teletracker.common.elasticsearch.model._
 import com.teletracker.common.model.scraping.{
   MatchResult,
   PartialEsItem,
-  ScrapedItem
+  ScrapedItem,
+  ScrapedItemAvailabilityDetails
 }
 import com.teletracker.common.tasks.TeletrackerTask.{JsonableArgs, RawArgs}
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Futures._
+import com.teletracker.common.util.json.circe._
 import com.teletracker.common.util.{AsyncStream, Folds, OnceT}
 import io.circe.Codec
+import io.circe.generic.JsonCodec
 import io.circe.syntax._
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
 import java.net.URI
 import java.time.{LocalDate, OffsetDateTime}
 import java.util.UUID
+import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
 import scala.concurrent.duration._
 
-abstract class IngestDeltaJob[ScrapeItemType <: ScrapedItem](
+@JsonCodec
+case class IngestDeltaJobArgs(
+  snapshotAfter: URI,
+  snapshotBefore: Option[URI],
+  override val offset: Int = 0,
+  override val limit: Int = -1,
+  dryRun: Boolean = true,
+  itemIdFilter: Option[UUID] = None,
+  externalIdFilter: Option[String] = None,
+  override val parallelism: Option[Int] = None,
+  override val processBatchSleep: Option[FiniteDuration] = None,
+  deltaSizeThreshold: Double = 5.0,
+  disableDeltaSizeCheck: Boolean = false,
+  override val sleepBetweenWriteMs: Option[Long] = None,
+  crawlerName: Option[String],
+  crawlerVersion: Option[Long])
+    extends IngestDeltaJobArgsLike
+
+abstract class IngestDeltaJob[
+  ScrapeItemType <: ScrapedItem: ScrapedItemAvailabilityDetails
+](
   deps: IngestDeltaJobDependencies
 )(implicit codec: Codec[ScrapeItemType],
-  typedArgs: JsonableArgs[IngestDeltaJobArgs])
+  typedArgs: JsonableArgs[IngestDeltaJobArgs],
+  executionContext: ExecutionContext)
     extends IngestDeltaJobLike[
       ScrapeItemType,
       ScrapeItemType,
@@ -50,7 +77,9 @@ abstract class IngestDeltaJob[ScrapeItemType <: ScrapedItem](
       disableDeltaSizeCheck =
         args.valueOrDefault("disableDeltaSizeCheck", false),
       externalIdFilter = args.value[String]("externalIdFilter"),
-      parallelism = args.value[Int]("parallelism")
+      parallelism = args.value[Int]("parallelism"),
+      crawlerName = args.value[String]("crawler_name"),
+      crawlerVersion = args.value[Long]("crawler_version")
     )
   }
 
@@ -383,5 +412,14 @@ abstract class IngestDeltaJob[ScrapeItemType <: ScrapedItem](
         }
         .await()
     }
+  }
+
+  override protected def getContext: Option[IngestJobContext] = {
+    args.crawlerName.map(crawlerName => {
+      IngestJobContext(
+        crawlerInfo =
+          Some(CrawlerInfo(new CrawlerName(crawlerName), args.crawlerVersion))
+      )
+    })
   }
 }

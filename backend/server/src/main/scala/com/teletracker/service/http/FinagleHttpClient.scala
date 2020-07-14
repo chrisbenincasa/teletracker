@@ -23,7 +23,7 @@ class FinagleHttpClient @Inject()(
   @Assisted host: String,
   @Assisted options: HttpClientOptions
 )(implicit executionContext: ExecutionContext)
-    extends HttpClient(host, options) {
+    extends HttpClient {
   private lazy val client = {
     Http.client
       .withTls(host)
@@ -48,7 +48,13 @@ class FinagleHttpClient @Inject()(
     val resFut = client(req)
 
     resFut.onSuccess(res => {
-      promise.success(HttpResponse(res.headerMap.toMap, res.contentString))
+      promise.success(
+        HttpResponse(
+          status = res.statusCode,
+          headers = res.headerMap.toMap,
+          content = res.contentString
+        )
+      )
     })
 
     resFut.onFailure(promise.tryFailure)
@@ -76,7 +82,13 @@ class FinagleHttpClient @Inject()(
     resFut.onSuccess(res => {
       val bb = new Array[Byte](res.content.length)
       res.content.write(bb, 0)
-      promise.success(HttpResponse(res.headerMap.toMap, bb))
+      promise.success(
+        HttpResponse(
+          status = res.statusCode,
+          headers = res.headerMap.toMap,
+          content = bb
+        )
+      )
     })
 
     resFut.onFailure(promise.tryFailure)

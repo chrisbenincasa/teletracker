@@ -1,9 +1,31 @@
 package com.teletracker.common.model.scraping.netflix
 
-import com.teletracker.common.db.model.ItemType
-import com.teletracker.common.model.scraping.ScrapedItem
+import com.teletracker.common.db.model.{ExternalSource, ItemType, OfferType}
+import com.teletracker.common.model.scraping.{
+  ScrapedItem,
+  ScrapedItemAvailabilityDetails
+}
 import com.teletracker.common.util.json.circe._
 import io.circe.generic.JsonCodec
+
+object NetflixOriginalScrapeItem {
+  implicit final val availabilityDetails
+    : ScrapedItemAvailabilityDetails[NetflixOriginalScrapeItem] =
+    new ScrapedItemAvailabilityDetails[NetflixOriginalScrapeItem] {
+      override def offerType(t: NetflixOriginalScrapeItem): OfferType =
+        OfferType.Subscription
+
+      override def uniqueKey(t: NetflixOriginalScrapeItem): Option[String] =
+        t.externalId
+
+      override def externalIds(
+        t: NetflixOriginalScrapeItem
+      ): Map[ExternalSource, String] =
+        uniqueKey(t)
+          .map(key => Map(ExternalSource.Netflix -> key))
+          .getOrElse(Map.empty)
+    }
+}
 
 @JsonCodec
 case class NetflixOriginalScrapeItem(
@@ -17,9 +39,7 @@ case class NetflixOriginalScrapeItem(
     extends ScrapedItem {
   override def category: Option[String] = None
 
-  override def isMovie: Boolean = `type` == ItemType.Movie
-
-  override def isTvShow: Boolean = `type` == ItemType.Show
-
   override def description: Option[String] = None
+
+  override def itemType: ItemType = `type`
 }

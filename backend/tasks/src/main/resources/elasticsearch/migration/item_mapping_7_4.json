@@ -84,6 +84,17 @@
           },
           "last_updated_by": {
             "type": "keyword"
+          },
+          "crawler": {
+            "type": "keyword"
+          },
+          "crawler_version": {
+            "type": "long",
+            "fields": {
+              "datetime": {
+                "type": "date"
+              }
+            }
           }
         }
       },

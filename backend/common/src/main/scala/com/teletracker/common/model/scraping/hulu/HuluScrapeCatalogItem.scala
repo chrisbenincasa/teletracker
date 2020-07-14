@@ -1,11 +1,33 @@
 package com.teletracker.common.model.scraping.hulu
 
-import com.teletracker.common.db.model.ItemType
-import com.teletracker.common.model.scraping.ScrapedItem
+import com.teletracker.common.db.model.{ExternalSource, ItemType, OfferType}
+import com.teletracker.common.model.scraping.{
+  ScrapedItem,
+  ScrapedItemAvailabilityDetails
+}
 import com.teletracker.common.util.Slug
 import com.teletracker.common.util.json.circe._
 import io.circe.generic.JsonCodec
 import java.time.{Instant, LocalDate, OffsetDateTime, ZoneOffset}
+
+object HuluScrapeCatalogItem {
+  implicit final val availabilityDetails
+    : ScrapedItemAvailabilityDetails[HuluScrapeCatalogItem] =
+    new ScrapedItemAvailabilityDetails[HuluScrapeCatalogItem] {
+      override def offerType(t: HuluScrapeCatalogItem): OfferType =
+        OfferType.Subscription
+
+      override def uniqueKey(t: HuluScrapeCatalogItem): Option[String] =
+        t.externalId
+
+      override def externalIds(
+        t: HuluScrapeCatalogItem
+      ): Map[ExternalSource, String] =
+        uniqueKey(t)
+          .map(key => Map(ExternalSource.Hulu -> key))
+          .getOrElse(Map.empty)
+    }
+}
 
 /**
   * Result of a scrape against Hulu using the sitemap

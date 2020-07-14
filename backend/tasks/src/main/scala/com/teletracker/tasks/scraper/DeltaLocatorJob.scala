@@ -154,29 +154,3 @@ abstract class DeltaLocatorJob[_ArgsType <: DeltaLocatorJobArgsLike](
     snapshotAfterLocation: URI
   ): List[TeletrackerTaskQueueMessage]
 }
-
-abstract class DeltaLocateAndRunJob[
-  ArgsType <: DeltaLocatorJobArgsLike,
-  T <: IngestDeltaJob[_]: ClassTag
-](
-  s3Client: S3Client,
-  teletrackerConfig: TeletrackerConfig
-)(implicit enc: Encoder.AsObject[T#ArgsType],
-  executionContext: ExecutionContext,
-  argsEnc: Encoder[ArgsType])
-    extends DeltaLocatorJob[ArgsType](
-      s3Client,
-      teletrackerConfig
-    ) {
-  override protected def makeTaskMessages(
-    snapshotBeforeLocation: URI,
-    snapshotAfterLocation: URI
-  ): List[TeletrackerTaskQueueMessage] = {
-    TeletrackerTask.taskMessage[T](
-      IngestDeltaJobArgs(
-        snapshotAfter = snapshotAfterLocation,
-        snapshotBefore = Some(snapshotBeforeLocation)
-      )
-    ) :: Nil
-  }
-}

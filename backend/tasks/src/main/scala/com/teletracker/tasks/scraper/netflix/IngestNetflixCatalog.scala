@@ -24,7 +24,7 @@ import java.net.URI
 import java.time.LocalDate
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
 
 class IngestNetflixCatalog @Inject()(
@@ -32,7 +32,8 @@ class IngestNetflixCatalog @Inject()(
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater,
-  elasticsearchFallbackMatcher: ElasticsearchFallbackMatcher.Factory)
+  elasticsearchFallbackMatcher: ElasticsearchFallbackMatcher.Factory
+)(implicit executionContext: ExecutionContext)
     extends IngestJob[NetflixScrapedCatalogItem]
     with SubscriptionNetworkAvailability[NetflixScrapedCatalogItem] {
 

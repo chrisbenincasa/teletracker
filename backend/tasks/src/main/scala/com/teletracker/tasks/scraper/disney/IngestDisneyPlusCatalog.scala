@@ -14,12 +14,14 @@ import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import java.net.URI
 import java.time.LocalDate
+import scala.concurrent.ExecutionContext
 
 class IngestDisneyPlusCatalog @Inject()(
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
-  protected val itemUpdater: ItemUpdater)
+  protected val itemUpdater: ItemUpdater
+)(implicit executionContext: ExecutionContext)
     extends IngestJob[DisneyPlusCatalogItem]
     with SubscriptionNetworkAvailability[DisneyPlusCatalogItem] {
   override protected def scrapeItemType: ScrapeItemType =

@@ -1,5 +1,6 @@
 package com.teletracker.common.availability
 
+import com.teletracker.common.db.dynamo.CrawlerName
 import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.db.model.{
   OfferType,
@@ -22,7 +23,8 @@ object NetworkAvailability {
       PresentationType.HD),
     availabilityLinks: Map[PresentationType, EsAvailabilityLinks] = Map.empty,
     numSeasonAvailable: Option[Int] = None,
-    updateSource: Option[String] = None
+    updateSource: Option[String] = None,
+    crawlerInfo: Option[CrawlerInfo] = None
   ): List[EsAvailability] = {
     presentationTypes.toList.sorted.map(typ => {
       EsAvailability(
@@ -38,7 +40,9 @@ object NetworkAvailability {
         links = availabilityLinks.get(typ),
         num_seasons_available = numSeasonAvailable,
         last_updated = Some(OffsetDateTime.now()),
-        last_updated_by = updateSource
+        last_updated_by = updateSource,
+        crawler = crawlerInfo.map(_.crawler.name),
+        crawl_version = crawlerInfo.flatMap(_.version)
       )
     })
   }
@@ -52,7 +56,8 @@ object NetworkAvailability {
       PresentationType.HD),
     availabilityLinks: Map[PresentationType, EsAvailabilityLinks] = Map.empty,
     numSeasonAvailable: Option[Int] = None,
-    updateSource: Option[String] = None
+    updateSource: Option[String] = None,
+    crawlerInfo: Option[CrawlerInfo] = None
   ): List[EsAvailability] = {
     supportedNetwork match {
       case SupportedNetwork.Netflix | SupportedNetwork.Hulu |
@@ -65,10 +70,15 @@ object NetworkAvailability {
           presentationTypes,
           availabilityLinks,
           numSeasonAvailable,
-          updateSource
+          updateSource,
+          crawlerInfo
         )
 
       case SupportedNetwork.AmazonVideo => ???
     }
   }
 }
+
+case class CrawlerInfo(
+  crawler: CrawlerName,
+  version: Option[Long])

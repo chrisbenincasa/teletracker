@@ -1,9 +1,29 @@
 package com.teletracker.common.model.scraping.hulu
 
-import com.teletracker.common.db.model.ItemType
+import com.teletracker.common.db.model.{ExternalSource, ItemType, OfferType}
 import com.teletracker.common.util.json.circe._
-import com.teletracker.common.model.scraping.ScrapedItem
+import com.teletracker.common.model.scraping.{
+  ScrapedItem,
+  ScrapedItemAvailabilityDetails
+}
 import io.circe.generic.JsonCodec
+
+object HuluScrapeItem {
+  implicit final val availabilityDetails
+    : ScrapedItemAvailabilityDetails[HuluScrapeItem] =
+    new ScrapedItemAvailabilityDetails[HuluScrapeItem] {
+      override def offerType(t: HuluScrapeItem): OfferType =
+        OfferType.Subscription
+
+      override def uniqueKey(t: HuluScrapeItem): Option[String] =
+        t.externalId
+
+      override def externalIds(t: HuluScrapeItem): Map[ExternalSource, String] =
+        uniqueKey(t)
+          .map(key => Map(ExternalSource.Hulu -> key))
+          .getOrElse(Map.empty)
+    }
+}
 
 @JsonCodec
 case class HuluScrapeItem(
@@ -22,6 +42,8 @@ case class HuluScrapeItem(
 
   override def isTvShow: Boolean =
     !isMovie || category.getOrElse("").toLowerCase().contains("series")
+
+  override def itemType: ItemType = `type`
 }
 
 @JsonCodec

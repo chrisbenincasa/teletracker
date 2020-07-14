@@ -22,12 +22,14 @@ import software.amazon.awssdk.services.s3.S3Client
 import java.net.URI
 import java.time.LocalDate
 import java.util.regex.Pattern
+import scala.concurrent.ExecutionContext
 
 class IngestHboCatalog @Inject()(
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
-  protected val itemUpdater: ItemUpdater)
+  protected val itemUpdater: ItemUpdater
+)(implicit executionContext: ExecutionContext)
     extends IngestJob[HboScrapedCatalogItem]
     with SubscriptionNetworkAvailability[HboScrapedCatalogItem] {
 

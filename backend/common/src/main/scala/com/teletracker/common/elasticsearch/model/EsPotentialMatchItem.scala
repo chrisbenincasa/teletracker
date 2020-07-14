@@ -87,8 +87,6 @@ case class EsGenericScrapedItem(
 
 object EsScrapedItem {
   def fromAnyScrapedItem[T <: ScrapedItem](item: T): EsScrapedItem = {
-    require(item.thingType.isDefined)
-
     EsScrapedItem(
       availableDate = item.availableDate,
       title = item.title,
@@ -97,7 +95,7 @@ object EsScrapedItem {
       status = item.status,
       externalId = item.externalId,
       description = item.description,
-      itemType = item.thingType.get,
+      itemType = item.itemType,
       url = item.url,
       posterImageUrl = item.posterImageUrl,
       cast = item.cast.map(
@@ -111,7 +109,8 @@ object EsScrapedItem {
           c =>
             EsScrapedCrewMember(name = c.name, order = c.order, role = c.role)
         )
-      )
+      ),
+      version = item.version
     )
   }
 }
@@ -129,7 +128,8 @@ case class EsScrapedItem(
   override val url: Option[String],
   override val posterImageUrl: Option[String],
   override val cast: Option[Seq[EsScrapedCastMember]],
-  override val crew: Option[Seq[EsScrapedCrewMember]])
+  override val crew: Option[Seq[EsScrapedCrewMember]],
+  override val version: Option[Long])
     extends ScrapedItem {
   override def isMovie: Boolean = itemType == ItemType.Movie
   override def isTvShow: Boolean = itemType == ItemType.Show

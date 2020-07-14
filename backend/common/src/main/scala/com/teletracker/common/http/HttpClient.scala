@@ -17,6 +17,7 @@ case class HttpRequest(
   headers: List[(String, String)] = Nil)
 
 case class HttpResponse[T](
+  status: Int,
   headers: Map[String, String],
   content: T)
 
@@ -29,10 +30,7 @@ object HttpClient {
   }
 }
 
-abstract class HttpClient(
-  host: String,
-  options: HttpClientOptions)
-    extends AutoCloseable {
+abstract class HttpClient extends AutoCloseable {
   def get(request: HttpRequest): Future[HttpResponse[String]]
   def get(path: String): Future[HttpResponse[String]] =
     get(HttpRequest(path, Nil))

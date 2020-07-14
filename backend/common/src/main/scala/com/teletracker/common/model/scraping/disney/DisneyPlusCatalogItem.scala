@@ -1,10 +1,32 @@
 package com.teletracker.common.model.scraping.disney
 
-import com.teletracker.common.db.model.ItemType
-import com.teletracker.common.model.scraping.ScrapedItem
+import com.teletracker.common.db.model.{ExternalSource, ItemType, OfferType}
+import com.teletracker.common.model.scraping.{
+  ScrapedItem,
+  ScrapedItemAvailabilityDetails
+}
 import com.teletracker.common.util.json.circe._
 import io.circe.generic.JsonCodec
 import java.time.LocalDate
+
+object DisneyPlusCatalogItem {
+  implicit final val availabilityDetails
+    : ScrapedItemAvailabilityDetails[DisneyPlusCatalogItem] =
+    new ScrapedItemAvailabilityDetails[DisneyPlusCatalogItem] {
+      override def offerType(t: DisneyPlusCatalogItem): OfferType =
+        OfferType.Subscription
+
+      override def uniqueKey(t: DisneyPlusCatalogItem): Option[String] =
+        t.externalId
+
+      override def externalIds(
+        t: DisneyPlusCatalogItem
+      ): Map[ExternalSource, String] =
+        uniqueKey(t)
+          .map(key => Map(ExternalSource.DisneyPlus -> key))
+          .getOrElse(Map.empty)
+    }
+}
 
 @JsonCodec
 case class DisneyPlusCatalogItem(

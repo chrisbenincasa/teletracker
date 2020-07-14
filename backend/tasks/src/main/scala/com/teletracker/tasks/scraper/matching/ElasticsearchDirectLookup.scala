@@ -11,7 +11,7 @@ class ElasticsearchDirectLookup @Inject()(
 )(implicit executionContext: ExecutionContext)
     extends LookupMethod.Agnostic {
 
-  override def toMethod[T <: ScrapedItem]: LookupMethod[T] = {
+  override def create[T <: ScrapedItem]: LookupMethod[T] = {
     new LookupMethod[T] {
       override def apply(
         items: List[T],

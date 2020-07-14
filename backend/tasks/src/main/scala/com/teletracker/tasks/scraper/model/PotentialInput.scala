@@ -1,6 +1,11 @@
 package com.teletracker.tasks.scraper.model
 
-import com.teletracker.common.model.scraping.{PartialEsItem, ScrapedItem}
+import com.teletracker.common.db.model.{ExternalSource, ItemType, OfferType}
+import com.teletracker.common.model.scraping.{
+  PartialEsItem,
+  ScrapedItem,
+  ScrapedItemAvailabilityDetails
+}
 import com.teletracker.common.util.json.circe._
 import io.circe.Codec
 
@@ -9,6 +14,20 @@ object PotentialInput {
     implicit tCodec: Codec[T]
   ): Codec.AsObject[PotentialInput[T]] =
     io.circe.generic.semiauto.deriveCodec[PotentialInput[T]]
+
+  implicit def availabilityDetails[T <: ScrapedItem](
+    implicit underlyingAvailabilityDetails: ScrapedItemAvailabilityDetails[T]
+  ): ScrapedItemAvailabilityDetails[PotentialInput[T]] =
+    new ScrapedItemAvailabilityDetails[PotentialInput[T]] {
+      override def offerType(t: PotentialInput[T]): OfferType =
+        underlyingAvailabilityDetails.offerType(t.scraped)
+      override def uniqueKey(t: PotentialInput[T]): Option[String] =
+        underlyingAvailabilityDetails.uniqueKey(t.scraped)
+      override def externalIds(
+        t: PotentialInput[T]
+      ): Map[ExternalSource, String] =
+        underlyingAvailabilityDetails.externalIds(t.scraped)
+    }
 }
 
 case class PotentialInput[T <: ScrapedItem: Codec](
@@ -25,4 +44,5 @@ case class PotentialInput[T <: ScrapedItem: Codec](
   override def isMovie: Boolean = scraped.isMovie
   override def isTvShow: Boolean = scraped.isTvShow
   override def description: Option[String] = scraped.description
+  override def itemType: ItemType = scraped.itemType
 }

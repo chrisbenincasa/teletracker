@@ -98,6 +98,7 @@ class BaseHttp4sClient @Inject()(
       .rethrowT
       .map(value => {
         HttpResponse[T](
+          status = res.status.code,
           headers = res.headers.toList
             .map(header => header.name.value -> header.value)
             .toMap,

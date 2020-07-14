@@ -19,7 +19,7 @@ class ElasticsearchExactTitleLookup @Inject()(
   stopwords: Stopwords
 )(implicit executionContext: ExecutionContext)
     extends LookupMethod.Agnostic { self =>
-  override def toMethod[T <: ScrapedItem]: LookupMethod[T] =
+  override def create[T <: ScrapedItem]: LookupMethod[T] =
     new LookupMethod[T] {
       override def apply(
         items: List[T],
@@ -52,15 +52,15 @@ class ElasticsearchExactTitleLookup @Inject()(
     val requestsAndItems = items.map(item => {
       FuzzyItemLookupRequest(
         title = item.title,
+        strictTitleMatch = true,
         description = item.description,
-        itemType = item.thingType.filter(_ => includeType),
+        itemType = Some(item.itemType).filter(_ => includeType),
         exactReleaseYear = item.releaseYear.map(_ -> 3.0f),
         releaseYearTiers = Some(Seq(RelativeRange.forInt(1) -> 1.0f)),
         looseReleaseYearMatching = false,
         popularityThreshold = Some(1.0),
         castNames = item.cast.map(_.map(_.name).toSet),
-        crewNames = item.crew.map(_.map(_.name).toSet),
-        strictTitleMatch = true
+        crewNames = item.crew.map(_.map(_.name).toSet)
       ) -> item
     })
 

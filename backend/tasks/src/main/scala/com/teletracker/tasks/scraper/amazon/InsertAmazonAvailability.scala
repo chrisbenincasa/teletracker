@@ -210,7 +210,9 @@ class InsertAmazonAvailability @Inject()(
       links = Some(EsAvailabilityLinks(web = Some(link))),
       num_seasons_available = None,
       last_updated = Some(OffsetDateTime.now()),
-      last_updated_by = Some(getClass.getSimpleName)
+      last_updated_by = Some(getClass.getSimpleName),
+      crawler = None,
+      crawl_version = None
     )
   }
 }

@@ -8,7 +8,7 @@ import com.teletracker.common.model.scraping.{
 }
 import com.teletracker.common.model.scraping.disney.DisneyPlusCatalogItem
 import com.teletracker.common.model.scraping.hbo.{
-  HboMaxCatalogItem,
+  HboMaxScrapedCatalogItem,
   HboScrapedCatalogItem
 }
 import com.teletracker.common.model.scraping.hulu.HuluScrapeCatalogItem
@@ -39,7 +39,7 @@ object ScrapeItemStreams {
           .stream[MatchResult[DisneyPlusCatalogItem]](source.getLines())
       case ScrapeItemType.HboMaxCatalog =>
         new IngestJobParser()
-          .stream[MatchResult[HboMaxCatalogItem]](source.getLines())
+          .stream[MatchResult[HboMaxScrapedCatalogItem]](source.getLines())
       case ScrapeItemType.HboChanges =>
         new IngestJobParser()
           .stream[MatchResult[HboScrapeChangesItem]](source.getLines())
@@ -68,7 +68,7 @@ object ScrapeItemStreams {
           .stream[PotentialMatch[DisneyPlusCatalogItem]](source.getLines())
       case ScrapeItemType.HboMaxCatalog =>
         new IngestJobParser()
-          .stream[PotentialMatch[HboMaxCatalogItem]](source.getLines())
+          .stream[PotentialMatch[HboMaxScrapedCatalogItem]](source.getLines())
       case ScrapeItemType.HboChanges =>
         new IngestJobParser()
           .stream[PotentialMatch[HboScrapeChangesItem]](source.getLines())
@@ -107,7 +107,7 @@ object ScrapeItemStreams {
           )
       case ScrapeItemType.HboMaxCatalog =>
         new IngestJobParser()
-          .streamWithParsed[PotentialMatch[HboMaxCatalogItem]](
+          .streamWithParsed[PotentialMatch[HboMaxScrapedCatalogItem]](
             source.getLines()
           )
       case ScrapeItemType.HboChanges =>

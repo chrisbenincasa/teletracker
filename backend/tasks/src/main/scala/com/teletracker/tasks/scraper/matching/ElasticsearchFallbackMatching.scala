@@ -61,7 +61,7 @@ class ElasticsearchFallbackMatcher @Inject()(
             title = item.title,
             strictTitleMatch = false,
             description = item.description,
-            itemType = item.thingType,
+            itemType = Some(item.itemType),
             exactReleaseYear = item.releaseYear.map(_ -> 5.0f),
             releaseYearTiers = Some(
               Seq(
@@ -153,10 +153,10 @@ class ElasticsearchFallbackMatcher @Inject()(
       .must(
         QueryBuilders.existsQuery("release_date")
       )
-      .applyIf(options.requireTypeMatch && nonMatch.thingType.isDefined)(
+      .applyIf(options.requireTypeMatch)(
         _.filter(
           QueryBuilders
-            .termQuery("type", nonMatch.thingType.get.getName.toLowerCase())
+            .termQuery("type", nonMatch.itemType.getName.toLowerCase())
         )
       )
       .applyOptional(nonMatch.description)((builder, desc) => {

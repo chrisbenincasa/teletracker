@@ -138,6 +138,7 @@ class HboMaxItem(scrapy.Item):
     cast = scrapy.Field()
     crew = scrapy.Field()
     runtime = scrapy.Field()
+    version = scrapy.Field()
 
 
 class HboMaxSeasonItem(scrapy.Item):

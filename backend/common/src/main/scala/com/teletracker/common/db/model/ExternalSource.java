@@ -15,7 +15,8 @@ public enum ExternalSource {
     DisneyPlus("disney-plus", 9),
     AmazonVideo("amazon-video", 10),
     AmazonPrimeVideo("amazon-prime-video", 11),
-    HboMax("hbo-max", 12);
+    HboMax("hbo-max", 12),
+    Showtime("showtime", 13);
 
     private final int value;
     private final String name;

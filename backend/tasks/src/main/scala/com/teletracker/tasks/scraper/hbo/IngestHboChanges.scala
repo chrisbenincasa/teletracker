@@ -1,8 +1,12 @@
 package com.teletracker.tasks.scraper.hbo
 
-import com.teletracker.common.db.model.{ExternalSource, ItemType}
+import com.teletracker.common.db.model.{ExternalSource, ItemType, OfferType}
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
-import com.teletracker.common.model.scraping.{ScrapeItemType, ScrapedItem}
+import com.teletracker.common.model.scraping.{
+  ScrapeItemType,
+  ScrapedItem,
+  ScrapedItemAvailabilityDetails
+}
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
@@ -16,6 +20,7 @@ import io.circe.generic.JsonCodec
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import java.time.{Instant, LocalDate, LocalDateTime, ZoneId, ZoneOffset}
+import scala.concurrent.ExecutionContext
 
 object IngestHboChanges extends IngestJobApp[IngestHboChanges]
 
@@ -23,7 +28,8 @@ class IngestHboChanges @Inject()(
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
-  protected val itemUpdater: ItemUpdater)
+  protected val itemUpdater: ItemUpdater
+)(implicit executionContext: ExecutionContext)
     extends IngestJob[HboScrapeChangesItem]
     with SubscriptionNetworkAvailability[HboScrapeChangesItem] {
 
@@ -35,6 +41,28 @@ class IngestHboChanges @Inject()(
 
   override protected def networkTimeZone: ZoneOffset =
     ZoneId.of("US/Eastern").getRules.getOffset(Instant.now())
+}
+
+object HboScrapeChangesItem {
+  implicit final val availabilityDetails
+    : ScrapedItemAvailabilityDetails[HboScrapeChangesItem] =
+    new ScrapedItemAvailabilityDetails[HboScrapeChangesItem] {
+      override def offerType(t: HboScrapeChangesItem): OfferType =
+        OfferType.Subscription
+
+      override def uniqueKey(t: HboScrapeChangesItem): Option[String] =
+        t.externalId
+
+      override def externalIds(
+        t: HboScrapeChangesItem
+      ): Map[ExternalSource, String] =
+        Map(
+          ExternalSource.HboGo -> t.externalId,
+          ExternalSource.HboMax -> t.externalId
+        ).collect {
+          case (source, Some(str)) => source -> str
+        }
+    }
 }
 
 @JsonCodec

@@ -581,8 +581,8 @@ case class FuzzyItemLookupRequest(
   strictTitleMatch: Boolean,
   description: Option[String],
   itemType: Option[ItemType],
-  exactReleaseYear: Option[(Int, Float)], // Year and boost
-  releaseYearTiers: Option[Seq[(RelativeRange[Int], Float)]], // Relative years and boosts
+  exactReleaseYear: Option[(Int, Float)],
+  releaseYearTiers: Option[Seq[(RelativeRange[Int], Float)]],
   looseReleaseYearMatching: Boolean,
   popularityThreshold: Option[Double],
   castNames: Option[Set[String]],

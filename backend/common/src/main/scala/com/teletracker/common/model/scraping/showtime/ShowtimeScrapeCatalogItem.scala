@@ -1,9 +1,31 @@
 package com.teletracker.common.model.scraping.showtime
 
-import com.teletracker.common.db.model.ItemType
-import com.teletracker.common.model.scraping.ScrapedItem
+import com.teletracker.common.db.model.{ExternalSource, ItemType, OfferType}
+import com.teletracker.common.model.scraping.{
+  ScrapedItem,
+  ScrapedItemAvailabilityDetails
+}
 import com.teletracker.common.util.json.circe._
 import io.circe.generic.JsonCodec
+
+object ShowtimeScrapeCatalogItem {
+  implicit final val availabilityDetails
+    : ScrapedItemAvailabilityDetails[ShowtimeScrapeCatalogItem] =
+    new ScrapedItemAvailabilityDetails[ShowtimeScrapeCatalogItem] {
+      override def offerType(t: ShowtimeScrapeCatalogItem): OfferType =
+        OfferType.Subscription
+
+      override def uniqueKey(t: ShowtimeScrapeCatalogItem): Option[String] =
+        t.externalId
+
+      override def externalIds(
+        t: ShowtimeScrapeCatalogItem
+      ): Map[ExternalSource, String] =
+        uniqueKey(t)
+          .map(key => Map(ExternalSource.Showtime -> key))
+          .getOrElse(Map.empty)
+    }
+}
 
 @JsonCodec
 case class ShowtimeScrapeCatalogItem(

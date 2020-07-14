@@ -44,19 +44,19 @@
           "slug": {
             "type": "keyword"
           },
-          "images" : {
-            "properties" : {
-              "id" : {
-                "type" : "keyword"
+          "images": {
+            "properties": {
+              "id": {
+                "type": "keyword"
               },
-              "image_type" : {
-                "type" : "keyword"
+              "image_type": {
+                "type": "keyword"
               },
-              "provider_id" : {
-                "type" : "integer"
+              "provider_id": {
+                "type": "integer"
               },
-              "provider_shortname" : {
-                "type" : "keyword"
+              "provider_shortname": {
+                "type": "keyword"
               }
             }
           },
@@ -100,6 +100,42 @@
               },
               "posterImageUrl": {
                 "type": "keyword"
+              },
+              "cast": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "text"
+                  },
+                  "order": {
+                    "type": "integer"
+                  },
+                  "role": {
+                    "type": "keyword"
+                  }
+                }
+              },
+              "crew": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "text"
+                  },
+                  "order": {
+                    "type": "integer"
+                  },
+                  "role": {
+                    "type": "keyword"
+                  }
+                }
+              },
+              "version": {
+                "type": "long",
+                "fields": {
+                  "timestamp": {
+                    "type": "date"
+                  }
+                }
               }
             }
           },
@@ -109,35 +145,35 @@
           }
         }
       },
-      "availability" : {
-        "type" : "object",
-        "properties" : {
-          "cost" : {
-            "type" : "double"
+      "availability": {
+        "type": "object",
+        "properties": {
+          "cost": {
+            "type": "double"
           },
-          "currency" : {
-            "type" : "keyword"
+          "currency": {
+            "type": "keyword"
           },
-          "end_date" : {
-            "type" : "date"
+          "end_date": {
+            "type": "date"
           },
-          "network_id" : {
-            "type" : "integer"
+          "network_id": {
+            "type": "integer"
           },
           "network_name": {
             "type": "keyword"
           },
-          "offer_type" : {
-            "type" : "keyword"
+          "offer_type": {
+            "type": "keyword"
           },
-          "presentation_type" : {
-            "type" : "keyword"
+          "presentation_type": {
+            "type": "keyword"
           },
-          "region" : {
-            "type" : "keyword"
+          "region": {
+            "type": "keyword"
           },
-          "start_date" : {
-            "type" : "date"
+          "start_date": {
+            "type": "date"
           },
           "num_seasons_available": {
             "type": "integer"

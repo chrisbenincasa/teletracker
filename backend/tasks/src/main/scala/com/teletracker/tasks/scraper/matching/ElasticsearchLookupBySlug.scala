@@ -13,7 +13,7 @@ class ElasticsearchLookupBySlug @Inject()(
 )(implicit executionContext: ExecutionContext)
     extends LookupMethod.Agnostic {
 
-  override def toMethod[T <: ScrapedItem]: LookupMethod[T] = {
+  override def create[T <: ScrapedItem]: LookupMethod[T] = {
     new LookupMethod[T] {
       override def apply(
         items: List[T],
@@ -28,15 +28,11 @@ class ElasticsearchLookupBySlug @Inject()(
           })
           .toMap
 
-        val missingType = itemsBySlug.filter {
-          case (_, item) => item.thingType.isEmpty
-        }.values
-
         val lookupTriples = itemsBySlug.collect {
-          case (slug, item) if item.thingType.nonEmpty =>
+          case (slug, item) =>
             (
               slug,
-              item.thingType.get,
+              item.itemType,
               item.releaseYear.map(ry => (ry - 1) to (ry + 1))
             )
         }.toList
@@ -62,7 +58,7 @@ class ElasticsearchLookupBySlug @Inject()(
                   )
             }
 
-            matchResultsForSlugs.toList -> (missing ++ withoutReleaseYear ++ missingType)
+            matchResultsForSlugs.toList -> (missing ++ withoutReleaseYear)
           })
       }
     }

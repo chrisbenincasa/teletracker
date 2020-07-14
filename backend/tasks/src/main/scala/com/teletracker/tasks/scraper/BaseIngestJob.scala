@@ -1,6 +1,6 @@
 package com.teletracker.tasks.scraper
 
-import com.teletracker.common.availability.NetworkAvailability
+import com.teletracker.common.availability.{CrawlerInfo, NetworkAvailability}
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.db.model.PresentationType
@@ -286,6 +286,8 @@ abstract class BaseIngestJob[
     item: EsItem,
     scrapeItem: T
   ): Seq[EsAvailability]
+
+  protected def getContext: Option[IngestJobContext] = None
 }
 
 trait BaseSubscriptionNetworkAvailability[
@@ -320,12 +322,15 @@ trait BaseSubscriptionNetworkAvailability[
             availableWindow = OpenDateRange(start, end),
             presentationTypes = presentationTypes,
             numSeasonAvailable = scrapeItem.numSeasonsAvailable,
-            updateSource = Some(getClass.getSimpleName)
+            updateSource = Some(getClass.getSimpleName),
+            crawlerInfo = getContext.flatMap(_.crawlerInfo)
           )
       }
     }) ++ unaffectedNetworks.toList.flatMap(availabilitiesByNetwork.get).flatten
   }
 }
+
+case class IngestJobContext(crawlerInfo: Option[CrawlerInfo])
 
 trait SubscriptionNetworkAvailability[T <: ScrapedItem]
     extends BaseSubscriptionNetworkAvailability[T, IngestJobArgs] {

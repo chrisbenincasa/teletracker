@@ -13,12 +13,14 @@ import com.teletracker.tasks.scraper.{
 }
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
+import scala.concurrent.ExecutionContext
 
 class IngestDisneyPlusPotentialMatches @Inject()(
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater,
   protected val s3: S3Client,
-  protected val networkCache: NetworkCache)
+  protected val networkCache: NetworkCache
+)(implicit executionContext: ExecutionContext)
     extends IngestPotentialMatches[DisneyPlusCatalogItem]
     with SubscriptionNetworkAvailability[PotentialInput[DisneyPlusCatalogItem]] {
 

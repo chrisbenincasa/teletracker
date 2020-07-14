@@ -6,7 +6,9 @@ import com.teletracker.common.model.scraping.ScrapedItem
 import io.circe.Decoder
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
+import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Success
 
 case class CrawlAvailabilityItemLoaderArgs(
   override val supportedNetworks: Set[SupportedNetwork],
@@ -30,7 +32,40 @@ class CrawlAvailabilityItemLoader[T <: ScrapedItem: Decoder](
   s3AvailabilityItemLoader: UriAvailabilityItemLoader[T]
 )(implicit executionContext: ExecutionContext)
     extends AvailabilityItemLoader[T, CrawlAvailabilityItemLoaderArgs] {
+  @volatile private var loadedVersion: Long = 0L
   private val logger = LoggerFactory.getLogger(getClass)
+
+  def getLoadedVersion: Option[Long] = Option(loadedVersion).filterNot(_ == 0)
+
+  override def load(args: CrawlAvailabilityItemLoaderArgs): Future[List[T]] = {
+    def loadInner() = {
+      loadImpl(args).andThen {
+        case Success(value) =>
+          setCache(value)
+          markAsLoadedOnce()
+      }
+    }
+
+    synchronized {
+      if (args.version.isEmpty) {
+        loadInner()
+      } else if (loadedVersion > 0) {
+        if (args.version.get > loadedVersion) {
+          loadInner()
+        } else if (args.version.get < loadedVersion) {
+          Future.failed(
+            new IllegalArgumentException(
+              s"Attempting to load version lower than previously loaded: ${args.version.get} vs. ${loadedVersion}"
+            )
+          )
+        } else {
+          super.load(args)
+        }
+      } else {
+        super.load(args)
+      }
+    }
+  }
 
   override def loadImpl(
     args: CrawlAvailabilityItemLoaderArgs
@@ -44,13 +79,14 @@ class CrawlAvailabilityItemLoader[T <: ScrapedItem: Decoder](
     }).map {
         case Some(value) =>
           logger.info(
-            s"Found crawl for ${args.crawlerName} with version ${value.version}"
+            s"Found crawl for ${args.crawlerName} with version ${value.version} (${Instant
+              .ofEpochSecond(value.version)})"
           )
 
           value.getOutputWithScheme("s3") match {
             case Some((loc, _)) =>
               logger.info(s"Found s3 output for crawl at: $loc")
-              loc
+              loc -> value
             case None =>
               throw new IllegalArgumentException(
                 s"Could not find s3 output for latest crawler version: ${value.spider} version=${value.version}"
@@ -62,9 +98,14 @@ class CrawlAvailabilityItemLoader[T <: ScrapedItem: Decoder](
             else args.version.get} version for crawler: ${args.crawlerName}"
           )
       }
-      .flatMap(loc => {
-        s3AvailabilityItemLoader
-          .load(UriAvailabilityItemLoaderArgs(args.supportedNetworks, loc))
-      })
+      .flatMap {
+        case (uri, crawl) =>
+          s3AvailabilityItemLoader
+            .load(UriAvailabilityItemLoaderArgs(args.supportedNetworks, uri))
+            .andThen {
+              case Success(_) =>
+                synchronized(loadedVersion = crawl.version)
+            }
+      }
   }
 }

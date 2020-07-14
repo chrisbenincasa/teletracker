@@ -14,7 +14,13 @@ import com.teletracker.common.elasticsearch.model.EsAvailability.AvailabilityKey
 import com.teletracker.common.elasticsearch.model.{
   EsAvailability,
   EsExternalId,
-  EsItem
+  EsGenericScrapedItem,
+  EsItem,
+  EsPotentialMatchItem,
+  EsPotentialMatchItemUpdateView,
+  EsPotentialMatchState,
+  EsScrapedItem,
+  UpdateableEsItem
 }
 import com.teletracker.common.elasticsearch.scraping.EsPotentialMatchItemStore
 import com.teletracker.common.elasticsearch.util.ItemUpdateApplier
@@ -24,7 +30,12 @@ import com.teletracker.common.elasticsearch.{
   ItemUpdater
 }
 import com.teletracker.common.inject.SingleThreaded
-import com.teletracker.common.model.scraping.{MatchResult, ScrapedItem}
+import com.teletracker.common.model.scraping.{
+  MatchResult,
+  PartialEsItem,
+  ScrapedItem,
+  ScrapedItemAvailabilityDetails
+}
 import com.teletracker.common.pubsub.EsIngestItemDenormArgs
 import com.teletracker.common.tasks.TeletrackerTask.JsonableArgs
 import com.teletracker.common.util.Futures._
@@ -46,7 +57,7 @@ import java.io.{
   PrintWriter
 }
 import java.net.URI
-import java.time.LocalDate
+import java.time.{LocalDate, OffsetDateTime}
 import java.util.UUID
 import java.util.concurrent.ScheduledExecutorService
 import scala.concurrent.duration._
@@ -59,22 +70,6 @@ trait IngestDeltaJobArgsLike extends IngestJobArgsLike {
   val deltaSizeThreshold: Double
   val disableDeltaSizeCheck: Boolean
 }
-
-@JsonCodec
-case class IngestDeltaJobArgs(
-  snapshotAfter: URI,
-  snapshotBefore: Option[URI],
-  override val offset: Int = 0,
-  override val limit: Int = -1,
-  dryRun: Boolean = true,
-  itemIdFilter: Option[UUID] = None,
-  externalIdFilter: Option[String] = None,
-  override val parallelism: Option[Int] = None,
-  override val processBatchSleep: Option[FiniteDuration] = None,
-  deltaSizeThreshold: Double = 5.0,
-  disableDeltaSizeCheck: Boolean = false,
-  override val sleepBetweenWriteMs: Option[Long] = None)
-    extends IngestDeltaJobArgsLike
 
 class IngestDeltaJobDependencies @Inject()(
   val externalIdLookup: ElasticsearchExternalIdLookup.Factory,
@@ -96,17 +91,14 @@ class IngestDeltaJobDependencies @Inject()(
 
 abstract class IngestDeltaJobLike[
   ExistingItemType,
-  IncomingItemType <: ScrapedItem,
+  IncomingItemType <: ScrapedItem: ScrapedItemAvailabilityDetails,
   IngestJobArgs <: IngestDeltaJobArgsLike
 ](
   protected val deps: IngestDeltaJobDependencies
 )(implicit codec: Codec[IncomingItemType],
-  typedArgs: JsonableArgs[IngestJobArgs])
-    extends BaseIngestJob[IncomingItemType, IngestJobArgs]()(
-      typedArgs,
-      deps.executionContext,
-      codec
-    ) {
+  typedArgs: JsonableArgs[IngestJobArgs],
+  executionContext: ExecutionContext)
+    extends BaseIngestJob[IncomingItemType, IngestJobArgs] {
 
   protected lazy val changesFile = new File(
     s"${today}_${getClass.getSimpleName}-changes.json"
@@ -123,9 +115,6 @@ abstract class IngestDeltaJobLike[
   protected val singleThreadExecutor: ScheduledExecutorService =
     deps.singleThreadExecutorProvider.get()
 
-  implicit protected val execCtx: ExecutionContext =
-    deps.executionContext
-
   protected def supportedNetworks: Set[SupportedNetwork]
   protected def externalSource: ExternalSource
   protected def offerType: OfferType
@@ -136,8 +125,8 @@ abstract class IngestDeltaJobLike[
     new CustomElasticsearchLookup[IncomingItemType](
       List(
         deps.externalIdLookup
-          .createOpt[IncomingItemType](externalSource, uniqueKeyForIncoming),
-        deps.elasticsearchLookup.toMethod[IncomingItemType]
+          .create[IncomingItemType],
+        deps.elasticsearchLookup.create[IncomingItemType]
       )
     )
 
@@ -167,6 +156,11 @@ abstract class IngestDeltaJobLike[
     AsyncStream
       .fromSeq(afterItems)
       .filter(item => containsUniqueKey(newIds, item))
+      .filter(item => {
+        item.externalId.isDefined && args.externalIdFilter.forall(
+          _ == item.externalId.get
+        )
+      })
       .throughApply(processAll(_, networks))
       .map {
         case (matchResults, nonMatches) =>
@@ -349,6 +343,61 @@ abstract class IngestDeltaJobLike[
           logger.warn(s"${failures.size} permanently failed")
           Future.unit
       }
+  }
+
+  override protected def writePotentialMatches(
+    potentialMatches: Iterable[(EsItem, IncomingItemType)]
+  ): Unit = {
+    import UpdateableEsItem.syntax._
+    import ScrapedItemAvailabilityDetails.syntax._
+
+    super.writePotentialMatches(potentialMatches)
+
+    val writePotentialMatchesToEs = rawArgs.valueOrDefault(
+      "writePotentialMatchesToEs",
+      false
+    )
+
+    if (!args.dryRun || writePotentialMatchesToEs) {
+      val networks = getNetworksOrExit()
+
+      val items = for {
+        (item, t) <- potentialMatches.toList
+        (externalSource, externalId) <- t.externalIds.toList
+      } yield {
+        val esExternalId = EsExternalId(externalSource, externalId)
+        val now = OffsetDateTime.now()
+        val insert = EsPotentialMatchItem(
+          id = EsPotentialMatchItem.id(item.id, esExternalId),
+          created_at = now,
+          state = EsPotentialMatchState.Unmatched,
+          last_updated_at = now,
+          last_state_change = now,
+          potential = PartialEsItem.forEsItem(item),
+          scraped = EsGenericScrapedItem(
+            scrapeItemType,
+            EsScrapedItem.fromAnyScrapedItem(t),
+            t.asJson
+          ),
+          availability = Some(createAvailabilities(networks, item, t).toList)
+        )
+
+        val update: EsPotentialMatchItemUpdateView = insert.toUpdateable
+
+        update.copy(state = None, last_state_change = None) -> insert
+      }
+
+      deps.esPotentialMatchItemStore
+        .upsertBatchWithFallback[EsPotentialMatchItemUpdateView](items)
+        .recover {
+          case NonFatal(e) =>
+            logger.warn(
+              "Failed while attempting to write potential matches to ES.",
+              e
+            )
+        }
+        .await()
+    }
   }
 
   protected def writeChangesFile(allChanges: List[PendingChange]): Unit = {

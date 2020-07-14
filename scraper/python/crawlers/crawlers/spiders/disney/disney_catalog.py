@@ -17,7 +17,8 @@ class DisneyPlusCatalogSpider(BaseSitemapSpider):
                        'search-api-disney.svcs.dssott.com']
 
     sitemap_urls = [
-        "https://www.disneyplus.com/sitemap.xml"
+        "https://www.disneyplus.com/sitemap.xml",
+        "https://cde-lumiere-disneyplus.bamgrid.com/sitemap.xml"
     ]
 
     sitemap_rules = [
