@@ -100,6 +100,8 @@ abstract class IngestDeltaJobLike[
   executionContext: ExecutionContext)
     extends BaseIngestJob[IncomingItemType, IngestJobArgs] {
 
+  import ScrapedItemAvailabilityDetails.syntax._
+
   protected lazy val changesFile = new File(
     s"${today}_${getClass.getSimpleName}-changes.json"
   )
@@ -135,6 +137,8 @@ abstract class IngestDeltaJobLike[
   protected def getBeforeIds(): Set[String]
 
   protected def getAllAfterItems(): List[IncomingItemType]
+
+  protected def shouldIncludeAfterItem(item: IncomingItemType): Boolean = true
 
   protected def getAllBeforeItems(): List[ExistingItemType]
 
@@ -497,7 +501,8 @@ abstract class IngestDeltaJobLike[
     }
   }
 
-  protected def uniqueKeyForIncoming(item: IncomingItemType): Option[String]
+  protected def uniqueKeyForIncoming(item: IncomingItemType): Option[String] =
+    item.externalId
 
   protected def uniqueKeyForExisting(item: ExistingItemType): Option[String]
 
@@ -506,7 +511,15 @@ abstract class IngestDeltaJobLike[
     item: IncomingItemType
   ): Boolean = uniqueKeyForIncoming(item).exists(it.contains)
 
-  protected def externalIds(item: IncomingItemType): Map[ExternalSource, String]
+  protected def containsExistingUniqueKey(
+    it: Set[String],
+    item: ExistingItemType
+  ): Boolean =
+    uniqueKeyForExisting(item).exists(it.contains)
+
+  protected def externalIds(
+    item: IncomingItemType
+  ): Map[ExternalSource, String] = item.externalIds
 
   override protected def handleMatchResults(
     results: List[MatchResult[IncomingItemType]],

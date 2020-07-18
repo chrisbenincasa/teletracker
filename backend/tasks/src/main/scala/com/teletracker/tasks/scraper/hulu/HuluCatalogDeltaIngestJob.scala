@@ -64,18 +64,6 @@ class HuluCatalogDeltaIngestJob @Inject()(
       .getOrElse(Map.empty)
   }
 
-  override protected def processItemChange(
-    before: EsItem,
-    after: HuluScrapeCatalogItem
-  ): Seq[ItemChange] = {
-    after.additionalServiceRequired match {
-      // Item is now exclusive to an addon
-      case Some(_) => Seq(ItemChange(before, after, ItemChangeRemove))
-      // Item is not exclusive to another additional service anymore
-      case None => Seq(ItemChange(before, after, ItemChangeUpdate))
-    }
-  }
-
   override protected val crawlerName: CrawlerName = CrawlStore.HuluCatalog
 
   override protected def processExistingAvailability(
@@ -83,7 +71,14 @@ class HuluCatalogDeltaIngestJob @Inject()(
     incoming: EsAvailability,
     scrapedItem: HuluScrapeCatalogItem,
     esItem: EsItem
-  ): Option[ItemChange] = None
+  ): Option[ItemChange] = {
+    scrapedItem.additionalServiceRequired match {
+      // Item is now exclusive to an addon
+      case Some(_) => Some(ItemChange(esItem, scrapedItem, ItemChangeRemove))
+      // Item is not exclusive to another additional service anymore
+      case None => Some(ItemChange(esItem, scrapedItem, ItemChangeUpdate))
+    }
+  }
 
   override protected def createDeltaAvailabilities(
     networks: Set[StoredNetwork],
@@ -92,5 +87,13 @@ class HuluCatalogDeltaIngestJob @Inject()(
     isAvailable: Boolean
   ): List[EsAvailability] = {
     createAvailabilities(networks, item, scrapedItem).toList
+  }
+
+  override protected def shouldIncludeAfterItem(
+    item: HuluScrapeCatalogItem
+  ): Boolean = {
+    val noAdditionalServiceRequired = item.additionalServiceRequired.isEmpty || item.additionalServiceRequired.get.isEmpty
+    val isEnEspanol = item.title.toLowerCase.contains("en español")
+    noAdditionalServiceRequired && !isEnEspanol
   }
 }

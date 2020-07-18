@@ -45,7 +45,8 @@ case class LiveIngestDeltaJobArgs(
   override val dryRun: Boolean = true,
   override val sleepBetweenWriteMs: Option[Long],
   override val processBatchSleep: Option[FiniteDuration],
-  override val parallelism: Option[Int])
+  override val parallelism: Option[Int],
+  additionsOnly: Boolean = false)
     extends IngestDeltaJobArgsLike
 
 abstract class LiveIngestDeltaJob[
@@ -66,9 +67,6 @@ abstract class LiveIngestDeltaJob[
   protected def crawlerName: CrawlerName
 
   override def preparseArgs(args: RawArgs): LiveIngestDeltaJobArgs =
-    parseArgs(args)
-
-  private def parseArgs(args: Map[String, Any]): LiveIngestDeltaJobArgs = {
     LiveIngestDeltaJobArgs(
       version = args.value[Long]("version"),
       offset = args.valueOrDefault("offset", 0),
@@ -82,9 +80,9 @@ abstract class LiveIngestDeltaJob[
         args.valueOrDefault[Double]("deltaSizeThreshold", 5.0),
       disableDeltaSizeCheck =
         args.valueOrDefault("disableDeltaSizeCheck", false),
-      parallelism = args.value[Int]("parallelism")
+      parallelism = args.value[Int]("parallelism"),
+      additionsOnly = args.valueOrDefault("additionsOnly", false)
     )
-  }
 
   override def runInternal(): Unit = {
     val networks = getNetworksOrExit()
@@ -111,16 +109,19 @@ abstract class LiveIngestDeltaJob[
     val removedIds = beforeIds -- afterIds
     val matchingIds = afterIds.intersect(beforeIds)
 
-    val pctChange = Math.abs(
-      (beforeIds.size - afterIds.size) / beforeIds.size.toDouble
-    ) * 100.0
+    if (!args.additionsOnly) {
+      val pctChange = Math.abs(
+        (beforeIds.size - afterIds.size) / beforeIds.size.toDouble
+      ) * 100.0
 
-    if (pctChange >= args.deltaSizeThreshold && !args.disableDeltaSizeCheck) {
-      handleDiffEarlyExit(newIds = addedIds, removedIds = removedIds)
+      if (pctChange >= args.deltaSizeThreshold && !args.disableDeltaSizeCheck) {
+        handleDiffEarlyExit(newIds = addedIds, removedIds = removedIds)
 
-      throw new RuntimeException(
-        s"Delta ($pctChange)% exceeded configured threshold of ${args.deltaSizeThreshold}. Before: ${beforeIds.size}, After: ${afterIds.size}"
-      )
+        throw new RuntimeException(
+          s"Delta $pctChange% exceeded configured threshold of ${args.deltaSizeThreshold}. Before: ${beforeIds.size}, After: ${afterIds.size}"
+        )
+      }
+
     }
 
     logger.info(
@@ -129,19 +130,23 @@ abstract class LiveIngestDeltaJob[
 
     val additions = getAddedItems()
 
-    val removals = removedIds.toList
-      .map(removedId => {
-        val esItem = beforeItemsById(removedId)
+    val removals = if (args.additionsOnly) {
+      Nil
+    } else {
+      removedIds.toList
+        .map(removedId => {
+          val esItem = beforeItemsById(removedId)
 
-        PendingAvailabilityRemove(
-          esItem,
-          createAvailabilityKeys(networks),
-          Some(removedId)
-        )
-      })
-      .through(removals => {
-        processRemovals(removals).await()
-      })
+          PendingAvailabilityRemove(
+            esItem,
+            createAvailabilityKeys(networks),
+            Some(removedId)
+          )
+        })
+        .through(removals => {
+          processRemovals(removals).await()
+        })
+    }
 
     val (changeUpdates, changeRemovals) = matchingIds.toSeq
       .map(id => {
@@ -243,6 +248,7 @@ abstract class LiveIngestDeltaJob[
         )
       )
       .await()
+      .filter(shouldIncludeAfterItem)
       .safeTake(args.limit)
   }
 
@@ -361,7 +367,7 @@ abstract class LiveIngestDeltaJob[
       .filter(item => containsUniqueKey(newIds, item))
 
     val removedItems = beforeItems
-      .filter(item => containsUniqueKey(removedIds, item))
+      .filter(item => containsExistingUniqueKey(removedIds, item))
 
     val today = LocalDate.now()
     val changes = new File(

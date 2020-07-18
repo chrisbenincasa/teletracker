@@ -227,7 +227,7 @@ trait TeletrackerTask extends TaskArgImplicits {
       validateArgs(this.args)
 
       logger.info(
-        s"Running ${getClass.getSimpleName} (id: $taskId) with args: ${args}"
+        s"Running ${getClass.getSimpleName} (id: $taskId) with passed args: ${args}. Full args: ${this.args}"
       )
 
       registerFollowupTasksCallback()

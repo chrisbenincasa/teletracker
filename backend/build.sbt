@@ -179,7 +179,8 @@ lazy val tasks = project
     ),
     Compile / run / fork := true,
     Compile / run / javaOptions ++= Seq(
-      "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5007"
+      "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5007",
+      "-Dlog.level=DEBUG"
     ),
     connectInput in run := true,
     // Docker

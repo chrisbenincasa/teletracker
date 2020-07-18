@@ -22,9 +22,11 @@ import scala.compat.java8.FutureConverters._
 
 object CrawlStore {
   final val HboCatalog = new CrawlerName("hbo_go_catalog")
+  final val HboChanges = new CrawlerName("hbo_changes")
   final val HboMaxCatalog = new CrawlerName("hbo_max_authenticated")
   final val NetflixCatalog = new CrawlerName("netflix")
   final val HuluCatalog = new CrawlerName("hulu")
+  final val DisneyPlusCatalog = new CrawlerName("disneyplus")
 }
 
 class CrawlerName(val name: String) extends AnyVal {

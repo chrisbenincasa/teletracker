@@ -21,6 +21,7 @@ import javax.inject.Inject
 import java.util.concurrent.ScheduledExecutorService
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
+import scala.util.Success
 
 class NetflixCatalogDeltaIngestJob @Inject()(
   deps: IngestDeltaJobDependencies
@@ -153,5 +154,11 @@ class IngestNetflixCatalogDelta @Inject()(
         case Some(removal) => removal
       }
       .toList
+      .andThen {
+        case Success(value) =>
+          logger.info(
+            s"Found ${value.size} Netflix items that were not crawled but were still available."
+          )
+      }
   }
 }

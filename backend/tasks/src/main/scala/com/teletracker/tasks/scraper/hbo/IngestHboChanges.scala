@@ -1,19 +1,35 @@
 package com.teletracker.tasks.scraper.hbo
 
-import com.teletracker.common.db.model.{ExternalSource, ItemType, OfferType}
-import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
+import com.teletracker.common.db.dynamo.model.StoredNetwork
+import com.teletracker.common.db.dynamo.{CrawlStore, CrawlerName}
+import com.teletracker.common.db.model.{
+  ExternalSource,
+  ItemType,
+  OfferType,
+  SupportedNetwork
+}
+import com.teletracker.common.elasticsearch.model.{EsAvailability, EsItem}
+import com.teletracker.common.elasticsearch.{
+  ItemLookup,
+  ItemUpdater,
+  ItemsScroller
+}
 import com.teletracker.common.model.scraping.{
   ScrapeItemType,
   ScrapedItem,
   ScrapedItemAvailabilityDetails
 }
+import com.teletracker.common.tasks.TeletrackerTask.RawArgs
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.json.circe._
-import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
+import com.teletracker.tasks.scraper.loaders.CrawlAvailabilityItemLoaderFactory
 import com.teletracker.tasks.scraper.{
+  BaseSubscriptionNetworkAvailability,
+  IngestDeltaJobDependencies,
   IngestJob,
   IngestJobApp,
-  IngestJobParser,
+  LiveIngestDeltaJob,
+  LiveIngestDeltaJobArgs,
   SubscriptionNetworkAvailability
 }
 import io.circe.generic.JsonCodec
@@ -41,6 +57,62 @@ class IngestHboChanges @Inject()(
 
   override protected def networkTimeZone: ZoneOffset =
     ZoneId.of("US/Eastern").getRules.getOffset(Instant.now())
+}
+
+class IngestHboChangesDelta @Inject()(
+  deps: IngestDeltaJobDependencies,
+  itemsScroller: ItemsScroller,
+  crawlAvailabilityItemLoaderFactory: CrawlAvailabilityItemLoaderFactory
+)(implicit executionContext: ExecutionContext)
+    extends LiveIngestDeltaJob[HboScrapeChangesItem](
+      deps,
+      itemsScroller,
+      crawlAvailabilityItemLoaderFactory
+    )
+    with BaseSubscriptionNetworkAvailability[
+      HboScrapeChangesItem,
+      LiveIngestDeltaJobArgs
+    ] {
+
+  override def preparseArgs(args: RawArgs): LiveIngestDeltaJobArgs = {
+    super.preparseArgs(args).copy(additionsOnly = true)
+  }
+
+  override protected val crawlerName: CrawlerName = CrawlStore.HboChanges
+
+  override protected def processExistingAvailability(
+    existing: EsAvailability,
+    incoming: EsAvailability,
+    scrapedItem: HboScrapeChangesItem,
+    esItem: EsItem
+  ): Option[ItemChange] = {
+    if (existing.start_date.isEmpty && incoming.start_date.isDefined) {
+      None
+    } else if (existing.end_date.isEmpty && incoming.end_date.isDefined) {
+      Some(ItemChange(esItem, scrapedItem, ItemChangeUpdate))
+    } else {
+      None
+    }
+  }
+
+  override protected val offerType: OfferType = OfferType.Subscription
+
+  override protected val supportedNetworks: Set[SupportedNetwork] =
+    Set(SupportedNetwork.Hbo, SupportedNetwork.HboMax)
+
+  override protected val externalSource: ExternalSource = ExternalSource.HboGo
+
+  override protected val scrapeItemType: ScrapeItemType =
+    ScrapeItemType.HboChanges
+
+  override protected def createDeltaAvailabilities(
+    networks: Set[StoredNetwork],
+    item: EsItem,
+    scrapedItem: HboScrapeChangesItem,
+    isAvailable: Boolean
+  ): List[EsAvailability] = {
+    createAvailabilities(networks, item, scrapedItem).toList
+  }
 }
 
 object HboScrapeChangesItem {
