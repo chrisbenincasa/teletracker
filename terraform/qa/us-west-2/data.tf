@@ -7,6 +7,10 @@
 # name = "teletracker-ecs-t2"
 # }
 
+data "aws_caller_identity" "current" {}
+
+data "aws_region" "current" {}
+
 data "aws_subnet_ids" "teletracker-subnet-ids" {
   vpc_id = "vpc-09a64ee30f2e3e82e"
 }
@@ -46,4 +50,8 @@ data "aws_iam_policy" "s3_full_access_policy" {
 data "aws_ssm_parameter" "datadog_api_key" {
   name            = "datadog-api-key"
   with_decryption = true
+}
+
+data "aws_dynamodb_table" "crawls_table" {
+  name = "teletracker.qa.crawls"
 }

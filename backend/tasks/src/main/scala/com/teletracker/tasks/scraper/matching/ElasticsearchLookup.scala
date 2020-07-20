@@ -6,7 +6,6 @@ import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class ElasticsearchLookup @Inject()(
-  elasticsearchLookupBySlug: ElasticsearchLookupBySlug,
   elasticsearchExactTitleLookup: ElasticsearchExactTitleLookup
 )(implicit executionContext: ExecutionContext)
     extends LookupMethod.Agnostic {

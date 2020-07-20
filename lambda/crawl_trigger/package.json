@@ -1,0 +1,22 @@
+{
+  "name": "teletracker-crawl-trigger",
+  "version": "0.0.1",
+  "description": "Responds to crawl events that are persisted to DyanmoDB",
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb-streams-node": "^0.1.0-preview.2",
+    "@aws-sdk/client-sqs-node": "^0.1.0-preview.2",
+    "uuid": "^8.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^14.0.23",
+    "prettier": "2.0.2",
+    "ts-node": "^8.6.2",
+    "typescript": "^3.8.3",
+    "yargs": "^14.2.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "main": "ts-node src/runner.ts"
+  }
+}

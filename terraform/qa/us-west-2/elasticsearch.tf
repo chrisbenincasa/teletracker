@@ -35,9 +35,6 @@ resource "aws_elasticsearch_domain" "teletracker-qa-es" {
   }
 }
 
-data "aws_region" "current" {}
-
-data "aws_caller_identity" "current" {}
 
 resource "aws_elasticsearch_domain_policy" "main" {
   domain_name = aws_elasticsearch_domain.teletracker-qa-es.domain_name

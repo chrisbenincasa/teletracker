@@ -77,7 +77,7 @@ class IngestDeltaJobDependencies @Inject()(
   val itemUpdateQueue: EsIngestQueue,
   val esExternalIdMapper: ElasticsearchExternalIdMappingStore,
   val esPotentialMatchItemStore: EsPotentialMatchItemStore,
-  val elasticsearchLookup: ElasticsearchLookup,
+  val elasticsearchExactTitleLookup: ElasticsearchExactTitleLookup,
   val teletrackerConfig: TeletrackerConfig,
   val elasticsearchExecutor: ElasticsearchExecutor,
   val itemLookup: ItemLookup,
@@ -128,7 +128,7 @@ abstract class IngestDeltaJobLike[
       List(
         deps.externalIdLookup
           .create[IncomingItemType],
-        deps.elasticsearchLookup.create[IncomingItemType]
+        deps.elasticsearchExactTitleLookup.create[IncomingItemType]
       )
     )
 
@@ -161,7 +161,7 @@ abstract class IngestDeltaJobLike[
       .fromSeq(afterItems)
       .filter(item => containsUniqueKey(newIds, item))
       .filter(item => {
-        item.externalId.isDefined && args.externalIdFilter.forall(
+        args.externalIdFilter.forall(
           _ == item.externalId.get
         )
       })

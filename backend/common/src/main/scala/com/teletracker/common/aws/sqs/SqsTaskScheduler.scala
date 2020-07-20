@@ -32,8 +32,9 @@ class SqsTaskScheduler @Inject()(
     ]
   ): Future[Unit] = {
     val taskRecords = teletrackerTaskQueueMessage
-      .collect {
+      .map {
         case (message, _) if message.id.isDefined => message
+        case (message, _)                         => message.copy(id = Some(UUID.randomUUID()))
       }
       .map(message => {
         taskRecordCreator
