@@ -203,7 +203,7 @@ trait TeletrackerTask extends TaskArgImplicits {
         )
 
         selfLogger.info(
-          s"Logs for ${getClass.getSimpleName} (id: $taskId) can be found at s3://${teletrackerConfig.data.s3_bucket}/$s3LogKey"
+          s"Logs for ${getClass.getSimpleName} (id: $taskId) can be found at s3://${teletrackerConfig.data.s3_bucket}/$remoteArtifactPrefix"
         )
 
         _logger = s3Logger
