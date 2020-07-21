@@ -135,7 +135,7 @@ abstract class BaseIngestJob[
               .builder()
               .bucket(teletrackerConfig.data.s3_bucket)
               .key(
-                s"task-output/${getClass.getSimpleName}/$now/${artifact.getName}"
+                s"$remoteArtifactPrefix/${artifact.getName}"
               )
               .build(),
             artifact.toPath

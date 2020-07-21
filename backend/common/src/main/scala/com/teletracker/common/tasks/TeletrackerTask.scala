@@ -161,11 +161,13 @@ trait TeletrackerTask extends TaskArgImplicits {
 
   def retryable: Boolean = false
 
-  def remoteLogLocation: URI =
-    URI.create(s"s3://${teletrackerConfig.data.s3_bucket}/$s3LogKey")
-
-  private lazy val s3LogKey =
+  protected lazy val remoteArtifactPrefix: String =
     s"task-output/${getClass.getSimpleName}/${LocalDate.now()}/${OffsetDateTime.now()}"
+
+  def remoteLogLocation: URI =
+    URI.create(
+      s"s3://${teletrackerConfig.data.s3_bucket}/$remoteArtifactPrefix"
+    )
 
   protected def runInternal(): Unit
 
@@ -196,7 +198,7 @@ trait TeletrackerTask extends TaskArgImplicits {
           getClass,
           s3,
           teletrackerConfig.data.s3_bucket,
-          s3LogKey,
+          remoteArtifactPrefix,
           outputToConsole = logToConsole
         )
 
