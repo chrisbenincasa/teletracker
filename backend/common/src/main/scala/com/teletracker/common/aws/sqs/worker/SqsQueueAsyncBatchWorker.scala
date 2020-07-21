@@ -38,7 +38,10 @@ abstract class SqsQueueAsyncBatchWorker[T <: EventBase: Manifest](
   config: ReloadableConfig[SqsQueueWorkerConfig]
 )(implicit
   executionContext: ExecutionContext)
-    extends SqsQueueWorkerBase[T, Seq, Future](queue, config) {
+    extends SqsQueueWorkerBase[T](queue, config) {
+
+  final override type Wrapper[A] = Seq[A]
+  final override type ReturnWrapper[A] = Future[A]
 
   override protected def runInternal(): Unit = runInternalFinal()
 
@@ -108,7 +111,9 @@ abstract class SqsQueueAsyncBatchWorker[T <: EventBase: Manifest](
     runInternalFinal()
   }
 
-  private def handleProcessFinished(actions: Seq[FinishedAction]) = {
+  private def handleProcessFinished(
+    actions: Seq[FinishedAction]
+  ): Future[Unit] = {
     val acks = actions.collect {
       case Ack(handle) => handle
     }.toList

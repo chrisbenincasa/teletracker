@@ -70,17 +70,18 @@ object SqsQueueThroughputWorker {
   }
 }
 
-abstract class SqsQueueThroughputWorker[T <: EventBase: Manifest](
+abstract class SqsQueueThroughputWorker[T <: EventBase](
   override protected val queue: QueueReader[T],
   reloadableConfig: ReloadableConfig[SqsQueueThroughputWorkerConfig]
 )(implicit
   executionContext: ExecutionContext)
     extends SqsQueueWorkerBase[
-      T,
-      SqsQueueWorkerBase.Id,
-      Future
+      T
     ](queue, reloadableConfig)
     with Heartbeats[T] {
+
+  final override type Wrapper[A] = A
+  final override type ReturnWrapper[A] = Future[A]
 
   private val outstanding = new AtomicInteger(0)
 

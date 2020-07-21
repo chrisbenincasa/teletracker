@@ -13,16 +13,28 @@ import com.teletracker.common.inject.{
   QueueConfigAnnotations,
   Modules => CommonModules
 }
+import com.teletracker.consumers.{RunMode, TaskConsumer}
 import com.teletracker.consumers.config.ConsumerConfig
+import com.teletracker.tasks.inject.FactoriesModule
 import com.twitter.inject.TwitterModule
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 object Modules {
-  def apply()(implicit executionContext: ExecutionContext): Seq[Module] = {
-    CommonModules() ++ Seq(
+  def apply(
+    runMode: RunMode
+  )(implicit executionContext: ExecutionContext
+  ): Seq[Module] = {
+    val baseModules = CommonModules() ++ Seq(
+      new HttpClientModule,
       new ConsumerConfigModule()
     )
+
+    runMode match {
+      case TaskConsumer =>
+        baseModules ++ Seq(new FactoriesModule)
+      case _ => baseModules
+    }
   }
 }
 

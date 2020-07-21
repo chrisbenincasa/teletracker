@@ -39,8 +39,11 @@ abstract class SqsQueueBatchWorker[T <: EventBase: Manifest](
   config: ReloadableConfig[SqsQueueWorkerConfig]
 )(implicit
   executionContext: ExecutionContext)
-    extends SqsQueueWorkerBase[T, Seq, SqsQueueWorkerBase.Id](queue, config)
+    extends SqsQueueWorkerBase[T](queue, config)
     with Heartbeats[T] {
+
+  final override type Wrapper[A] = Seq[A]
+  final override type ReturnWrapper[A] = A
 
   override protected def runInternal(): Unit = runInternalFinal()
 

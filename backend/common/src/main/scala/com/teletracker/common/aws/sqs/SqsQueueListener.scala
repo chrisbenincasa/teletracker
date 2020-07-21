@@ -2,15 +2,11 @@ package com.teletracker.common.aws.sqs
 
 import com.teletracker.common.aws.sqs.worker.SqsQueueWorkerBase
 import com.teletracker.common.pubsub.EventBase
-import javax.inject.Inject
 import org.slf4j.LoggerFactory
 import scala.concurrent.Future
 
-class SqsQueueListener[
-  T <: EventBase: Manifest,
-  Wrapper[_],
-  RetWrapper[_]] @Inject()(
-  protected val worker: SqsQueueWorkerBase[T, Wrapper, RetWrapper]) {
+class SqsQueueListener[T <: EventBase: Manifest](
+  protected val worker: SqsQueueWorkerBase[T]) {
 
   protected lazy val logger = LoggerFactory.getLogger(getClass)
 

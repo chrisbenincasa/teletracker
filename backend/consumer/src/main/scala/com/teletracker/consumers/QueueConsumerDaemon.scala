@@ -2,16 +2,10 @@ package com.teletracker.consumers
 
 import com.google.inject.Module
 import com.teletracker.common.aws.sqs.SqsQueueListener
-import com.teletracker.common.aws.sqs.worker.SqsQueueWorkerBase
-import com.teletracker.consumers.impl.{
-  EsDenormalizeItemWorker,
-  EsDenormalizePersonWorker,
-  EsIngestQueueWorker,
-  ScrapeItemImportWorker,
-  TaskQueueWorker
-}
-import com.teletracker.consumers.inject.{HttpClientModule, Modules}
+import com.teletracker.consumers.impl._
+import com.teletracker.consumers.inject.Modules
 import com.twitter.app.Flaggable
+import com.twitter.inject.Injector
 import com.twitter.util.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -22,12 +16,28 @@ object QueueConsumerDaemon extends com.twitter.inject.app.App {
   )
 
   override protected def modules: Seq[Module] =
-    Modules() ++ Seq(new HttpClientModule)
+    Modules(mode())
 
   override protected def run(): Unit = {
     logger.info(s"Starting consumer in ${mode()} mode")
 
-    val listener = mode() match {
+    val listener = listenerForMode(injector, mode())
+    listener.start()
+
+    Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
+      override def run(): Unit = {
+        listener.stop()
+      }
+    }))
+
+    Await.ready(this)
+  }
+
+  def listenerForMode(
+    injector: Injector,
+    runMode: RunMode
+  ): SqsQueueListener[_] = {
+    runMode match {
       case TaskConsumer =>
         new SqsQueueListener(injector.instance[TaskQueueWorker])
       case EsIngestConsumer =>
@@ -39,16 +49,6 @@ object QueueConsumerDaemon extends com.twitter.inject.app.App {
       case ScrapeItemImportConsumer =>
         new SqsQueueListener(injector.instance[ScrapeItemImportWorker])
     }
-
-    listener.start()
-
-    Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
-      override def run(): Unit = {
-        listener.stop()
-      }
-    }))
-
-    Await.ready(this)
   }
 }
 
@@ -71,6 +71,14 @@ object RunMode {
         case _                               => throw new IllegalArgumentException
       }
   }
+
+  final val all: Seq[RunMode] = Seq(
+    TaskConsumer,
+    EsIngestConsumer,
+    EsItemDenormalizeConsumer,
+    EsPersonDenormalizeConsumer,
+    ScrapeItemImportConsumer
+  )
 }
 
 sealed trait RunMode

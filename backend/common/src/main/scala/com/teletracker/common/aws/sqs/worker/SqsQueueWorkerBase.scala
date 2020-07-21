@@ -18,6 +18,11 @@ import scala.util.control.NonFatal
 object SqsQueueWorkerBase {
   type Id[A] = A
   type FutureOption[A] = Future[Option[A]]
+  type Aux[_T <: EventBase, _Wrapper[_], _ReturnWrapper[_]] =
+    SqsQueueWorkerBase[_T] {
+      type Wrapper[A] = _Wrapper[A]
+      type ReturnWrapper[A] = _ReturnWrapper[A]
+    }
 
   sealed trait FinishedAction
   case class Ack(handle: String) extends FinishedAction
@@ -25,15 +30,15 @@ object SqsQueueWorkerBase {
   case object DoNothing extends FinishedAction
 }
 
-abstract class SqsQueueWorkerBase[
-  T <: EventBase: Manifest,
-  Wrapper[_],
-  ReturnWrapper[_]
-](
+abstract class SqsQueueWorkerBase[T <: EventBase](
   queue: QueueReader[T],
   reloadable: ReloadableConfig[SqsQueueWorkerConfig]
 )(implicit
   executionContext: ExecutionContext) {
+
+  type Wrapper[_]
+  type ReturnWrapper[_]
+
   protected val logger = LoggerFactory.getLogger(getClass)
 
   private val queueName = queue.name

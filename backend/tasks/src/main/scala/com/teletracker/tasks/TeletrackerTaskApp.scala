@@ -2,13 +2,9 @@ package com.teletracker.tasks
 
 import com.google.inject.Module
 import com.google.inject.util.{Modules => GuiceModules}
-import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.inject.Modules
-import com.teletracker.tasks.inject.{
-  FactoriesModule,
-  HttpClientModule,
-  TaskModules
-}
+import com.teletracker.common.tasks.TeletrackerTask
+import com.teletracker.tasks.inject.TaskModules
 import com.twitter.app.Flaggable
 import java.net.URI
 import scala.util.control.NonFatal
