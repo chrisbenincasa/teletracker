@@ -4,6 +4,10 @@ data "aws_s3_bucket" "teletracker-data-bucket" {
   bucket = "teletracker-data"
 }
 
+data "aws_s3_bucket" "teletracker_config_bucket" {
+  bucket = "teletracker-config"
+}
+
 resource "aws_s3_bucket" "teletracker-artifacts-us-west-2" {
   bucket = "us-west-2-teletracker-artifacts"
   region = "us-west-2"

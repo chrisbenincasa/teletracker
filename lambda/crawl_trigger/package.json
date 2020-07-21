@@ -5,6 +5,7 @@
   "license": "MIT",
   "dependencies": {
     "@aws-sdk/client-dynamodb-streams-node": "^0.1.0-preview.2",
+    "@aws-sdk/client-s3-node": "^0.1.0-preview.2",
     "@aws-sdk/client-sqs-node": "^0.1.0-preview.2",
     "uuid": "^8.2.0"
   },

@@ -1,0 +1,5 @@
+{
+  "hbo_changes": {
+    "jobClass": "com.teletracker.tasks.scraper.hbo.IngestHboChangesDelta"
+  }
+}

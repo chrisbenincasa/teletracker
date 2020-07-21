@@ -5,6 +5,7 @@ node_modules/
 !package.json
 !tsconfig.json
 !jsconfig.json
+!mappings.json
 *.tsv
 
 *.iml

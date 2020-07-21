@@ -88,6 +88,8 @@ resource "aws_lambda_function" "crawl_trigger_function" {
   environment {
     variables = {
       TASK_QUEUE_URL = module.task-consumer.queue_id
+      CONFIG_BUCKET = data.aws_s3_bucket.teletracker_config_bucket.id
+      CONFIG_KEY = "crawl_triggers/mappings.json"
     }
   }
 }
