@@ -1,11 +1,11 @@
 package com.teletracker.consumers.inject
 
 import com.google.inject.{Module, Provides, Singleton}
+import com.teletracker.common.aws.sqs.worker.poll.HeartbeatConfig
 import com.teletracker.common.aws.sqs.worker.{
   SqsQueueThroughputWorkerConfig,
   SqsQueueWorkerConfig
 }
-import com.teletracker.common.aws.sqs.worker.poll.HeartbeatConfig
 import com.teletracker.common.config.core.ConfigLoader
 import com.teletracker.common.config.core.api.ReloadableConfig
 import com.teletracker.common.inject.QueueConfigAnnotations.ScrapeItemQueueConfig
@@ -13,7 +13,6 @@ import com.teletracker.common.inject.{
   QueueConfigAnnotations,
   Modules => CommonModules
 }
-import com.teletracker.consumers.{RunMode, TaskConsumer}
 import com.teletracker.consumers.config.ConsumerConfig
 import com.teletracker.tasks.inject.FactoriesModule
 import com.twitter.inject.TwitterModule
@@ -21,20 +20,12 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 object Modules {
-  def apply(
-    runMode: RunMode
-  )(implicit executionContext: ExecutionContext
-  ): Seq[Module] = {
-    val baseModules = CommonModules() ++ Seq(
+  def apply()(implicit executionContext: ExecutionContext): Seq[Module] = {
+    CommonModules() ++ Seq(
       new HttpClientModule,
-      new ConsumerConfigModule()
+      new ConsumerConfigModule(),
+      new FactoriesModule
     )
-
-    runMode match {
-      case TaskConsumer =>
-        baseModules ++ Seq(new FactoriesModule)
-      case _ => baseModules
-    }
   }
 }
 

@@ -10,13 +10,13 @@ import com.twitter.util.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object QueueConsumerDaemon extends com.twitter.inject.app.App {
-  private val mode = flag[RunMode](
+  val mode = flag[RunMode](
     "mode",
     "The consumer daemon to run."
   )
 
   override protected def modules: Seq[Module] =
-    Modules(mode())
+    Modules()
 
   override protected def run(): Unit = {
     logger.info(s"Starting consumer in ${mode()} mode")
