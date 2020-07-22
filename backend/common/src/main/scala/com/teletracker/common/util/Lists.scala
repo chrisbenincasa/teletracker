@@ -1,6 +1,8 @@
 package com.teletracker.common.util
 
 import java.time.LocalDate
+import scala.collection.TraversableLike
+import scala.collection.generic.CanBuildFrom
 import scala.math.Ordering.OptionOrdering
 
 object Lists {
@@ -52,6 +54,23 @@ class RichList[T](val l: List[T]) extends AnyVal {
 
 class ListWithSafeTake[T](val l: List[T]) extends AnyVal {
   def safeTake(n: Int): List[T] = if (n < 0) l else l.take(n)
+}
+
+class TraversableWithSafeTake[T, Coll[_] <: Traversable[T]](val l: Coll[T])
+    extends AnyVal {
+  def safeTake(
+    n: Int
+  )(implicit cbf: CanBuildFrom[Coll[T], T, Coll[T]]
+  ): Coll[T] = {
+    if (n < 0) {
+      l
+    } else {
+      val builder = cbf()
+      builder.sizeHint(if (n < 0) l.size else n)
+      l.take(n).foreach(builder += _)
+      builder.result()
+    }
+  }
 }
 
 class IteratorWithSafeTake[T](val l: Iterator[T]) extends AnyVal {

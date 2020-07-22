@@ -15,7 +15,7 @@ import java.net.URI
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
 
-class DeleteMovies @Inject()(
+class DeleteItems @Inject()(
   sourceRetriever: SourceRetriever,
   teletrackerConfig: TeletrackerConfig,
   elasticsearchExecutor: ElasticsearchExecutor

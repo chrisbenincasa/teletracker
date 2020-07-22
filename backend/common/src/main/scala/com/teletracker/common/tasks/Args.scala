@@ -91,6 +91,10 @@ class RichArgs(val args: Map[String, Any]) extends AnyVal {
     key: String,
     default: => String
   ): String = valueOrDefault[String](key, default)
+
+  // Special args
+  def limit: Int = int("limit", -1)
+  def dryRun: Boolean = valueOrDefault("dryRun", true)
 }
 
 trait LowPriArgParsers {
