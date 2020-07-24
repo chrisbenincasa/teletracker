@@ -1,5 +1,20 @@
 {
   "hbo_changes": {
     "jobClass": "com.teletracker.tasks.scraper.hbo.IngestHboChangesDelta"
+  },
+  "hulu": {
+    "jobClass": "com.teletracker.tasks.scraper.hulu.HuluCatalogDeltaIngestJob"
+  },
+  "hbo_go_catalog": {
+    "jobClass": "com.teletracker.tasks.scraper.hbo.IngestHboLiveCatalogDelta"
+  },
+  "hbo_max_authenticated": {
+    "jobClass": "com.teletracker.tasks.scraper.hbo.IngestHboMaxCatalogDelta"
+  },
+  "disneyplus": {
+    "jobClass": "com.teletracker.tasks.scraper.disney.IngestDisneyPlusCatalog"
+  },
+  "netflix": {
+    "jobClass": "com.teletracker.tasks.scraper.netflix.IngestNetflixCatalogDelta"
   }
 }
