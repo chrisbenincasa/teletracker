@@ -13,7 +13,7 @@ from scrapy.settings.default_settings import DOWNLOADER_MIDDLEWARES
 BOT_NAME = 'crawlers'
 
 SPIDER_MODULES = ['crawlers.spiders', 'crawlers.spiders.disney', 'crawlers.spiders.hbo', 'crawlers.spiders.google',
-                  'crawlers.spiders.netflix']
+                  'crawlers.spiders.netflix', 'crawlers.spiders.amazon']
 NEWSPIDER_MODULE = 'crawlers.spiders'
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent

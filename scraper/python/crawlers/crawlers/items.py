@@ -146,6 +146,7 @@ class ShowtimeItemEpisode(scrapy.Item):
     releaseDate = scrapy.Field()
     description = scrapy.Field()
 
+
 class ShowtimeCastMember(scrapy.Item):
     name = scrapy.Field()
     order = scrapy.Field()
@@ -156,3 +157,41 @@ class ShowtimeCrewMember(scrapy.Item):
     name = scrapy.Field()
     role = scrapy.Field()
     order = scrapy.Field()
+
+
+class AmazonItem(scrapy.Item):
+    type = 'AmazonItem'
+    id = scrapy.Field()
+    title = scrapy.Field()
+    externalId = scrapy.Field()
+    description = scrapy.Field()
+    itemType = scrapy.Field()
+    network = scrapy.Field()
+    url = scrapy.Field()
+    releaseDate = scrapy.Field()
+    releaseYear = scrapy.Field()
+    cast = scrapy.Field()
+    crew = scrapy.Field()
+    runtime = scrapy.Field()
+    availableOnPrime = scrapy.Field()
+    offers = scrapy.Field()
+    internalId = scrapy.Field()
+
+
+class AmazonCastMember(scrapy.Item):
+    name = scrapy.Field()
+    order = scrapy.Field()
+    role = scrapy.Field()
+
+
+class AmazonCrewMember(scrapy.Item):
+    name = scrapy.Field()
+    order = scrapy.Field()
+    role = scrapy.Field()
+
+
+class AmazonItemOffer(scrapy.Item):
+    offerType = scrapy.Field()
+    price = scrapy.Field()
+    currency = scrapy.Field()
+    quality = scrapy.Field()
