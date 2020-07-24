@@ -6,6 +6,7 @@ import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch.ItemLookup
 import com.teletracker.common.process.tmdb.TmdbItemLookup
 import com.teletracker.common.tasks.TeletrackerTask.RawArgs
+import com.teletracker.common.tasks.args.GenArgParser
 import com.teletracker.common.util.{AsyncStream, ClosedDateRange}
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.json.circe._
@@ -22,6 +23,7 @@ import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
 @JsonCodec
+@GenArgParser
 case class FindMissingChangedItemsArgs(
   start: LocalDate,
   end: LocalDate,
@@ -34,13 +36,6 @@ class FindMissingChangedItems @Inject()(
   itemExpander: TmdbItemLookup
 )(implicit executionContext: ExecutionContext)
     extends TypedTeletrackerTask[FindMissingChangedItemsArgs] {
-
-  override def preparseArgs(args: RawArgs): FindMissingChangedItemsArgs =
-    FindMissingChangedItemsArgs(
-      start = args.valueOrThrow[LocalDate]("start"),
-      end = args.valueOrThrow[LocalDate]("end"),
-      itemType = args.valueOrThrow[ItemType]("itemType")
-    )
 
   override protected def runInternal(): Unit = {
     val missingIds = AsyncStream

@@ -7,6 +7,7 @@ import com.teletracker.common.pubsub.{
   TeletrackerTaskQueueMessage
 }
 import com.teletracker.common.tasks.TeletrackerTask.{JsonableArgs, RawArgs}
+import com.teletracker.common.tasks.args.{ArgParser, TaskArgImplicits}
 import com.teletracker.common.util.EnvironmentDetection
 import com.teletracker.common.util.Futures._
 import io.circe.syntax._
@@ -19,6 +20,7 @@ import java.time.{LocalDate, OffsetDateTime}
 import java.util.UUID
 import scala.collection.mutable
 import scala.reflect.ClassTag
+import scala.util.{Failure, Success}
 import scala.util.control.NonFatal
 
 object TeletrackerTask {
@@ -157,7 +159,7 @@ trait TeletrackerTask extends TaskArgImplicits {
 
   def validateArgs(args: ArgsType): Unit = {}
 
-  def argsAsJson(args: RawArgs): Json // = typedArgs.asJson(preparseArgs(args))
+  def argsAsJson(args: RawArgs): Json
 
   def retryable: Boolean = false
 
@@ -335,10 +337,17 @@ trait DefaultAnyArgs { self: TeletrackerTask =>
 }
 
 abstract class TypedTeletrackerTask[_ArgsType <: AnyRef](
-  implicit jsonArgs: JsonableArgs[_ArgsType])
+  implicit jsonArgs: JsonableArgs[_ArgsType],
+  parser: ArgParser[_ArgsType])
     extends TeletrackerTask {
   override type ArgsType = _ArgsType
 
   override def argsAsJson(args: RawArgs): Json =
     jsonArgs.asJson(preparseArgs(args))
+
+  override def preparseArgs(args: RawArgs): _ArgsType =
+    args.parse[_ArgsType] match {
+      case Failure(exception) => throw exception
+      case Success(value)     => value
+    }
 }

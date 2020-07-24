@@ -15,11 +15,40 @@ lazy val `teletracker` = Project("teletracker", file("."))
     publishArtifact := false
   )
   .aggregate(
+    args,
+    model,
     server,
     common,
     consumer,
     tasks
   )
+
+lazy val model = project
+  .in(file("model"))
+  .settings(BuildConfig.commonSettings)
+  .settings(
+    name := "model",
+    libraryDependencies ++= Seq(
+      "com.fasterxml.jackson.core" % "jackson-annotations" % versions.jackson
+    )
+  )
+
+lazy val args = project
+  .in(file("args"))
+  .settings(BuildConfig.commonSettings)
+  .settings(
+    name := "args",
+    libraryDependencies ++= Seq(
+      "org.typelevel" %% "cats-core" % "1.1.0",
+      "org.typelevel" %% "macro-compat" % "1.1.1",
+      "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
+      "com.chuusai" %% "shapeless" % "2.3.3",
+      compilerPlugin(
+        "org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.patch
+      )
+    ) ++ Dependencies.circe
+  )
+  .dependsOn(model)
 
 lazy val common = project
   .in(file("common"))
@@ -87,6 +116,7 @@ lazy val common = project
       "com.lihaoyi" %% "pprint" % "0.5.6" % Test
     ) ++ Dependencies.circe
   )
+  .dependsOn(args, model)
 
 lazy val consumer = project
   .in(file("consumer"))
@@ -214,7 +244,7 @@ lazy val tasks = project
     )
   )
   .enablePlugins(DockerPlugin)
-  .dependsOn(common)
+  .dependsOn(common, args)
 
 lazy val server = project
   .in(file("server"))

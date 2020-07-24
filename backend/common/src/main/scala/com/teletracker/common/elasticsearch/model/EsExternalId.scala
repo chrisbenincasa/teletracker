@@ -32,4 +32,7 @@ object EsExternalId {
   def fromMap(map: Map[ExternalSource, String]): Option[List[EsExternalId]] =
     if (map.isEmpty) None
     else Some(map.toList.map(Function.tupled(apply)))
+
+  def tmdb(id: Int): EsExternalId =
+    EsExternalId(ExternalSource.TheMovieDb, id.toString)
 }

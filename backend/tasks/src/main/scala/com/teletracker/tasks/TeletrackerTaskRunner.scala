@@ -7,7 +7,8 @@ import com.teletracker.common.tasks.storage.{
   TaskRecordStore,
   TaskStatus
 }
-import com.teletracker.common.tasks.{TaskArgs, TeletrackerTask}
+import com.teletracker.common.tasks.TeletrackerTask
+import com.teletracker.common.tasks.args.{JsonTaskArgs}
 import com.teletracker.common.util.Futures._
 import com.teletracker.tasks.inject.TaskSchedulerModule
 import io.circe.Json
@@ -163,7 +164,7 @@ class TeletrackerTaskRunner @Inject()(injector: Injector) {
     clazz: String,
     args: Map[String, Json]
   ): TeletrackerTask.TaskResult = {
-    runFromString(clazz, TaskArgs.extractArgs(args))
+    runFromString(clazz, JsonTaskArgs.extractArgs(args))
   }
 
   def run(

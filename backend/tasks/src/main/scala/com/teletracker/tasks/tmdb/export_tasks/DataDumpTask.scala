@@ -3,6 +3,7 @@ package com.teletracker.tasks.tmdb.export_tasks
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.tasks.{TeletrackerTask, TypedTeletrackerTask}
 import com.teletracker.common.tasks.TeletrackerTask.RawArgs
+import com.teletracker.common.tasks.args.GenArgParser
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.json.circe._
@@ -31,6 +32,7 @@ trait DataDumpTaskApp[T <: DataDumpTask[_, _]] extends TeletrackerTaskApp[T] {
 }
 
 @JsonCodec
+@GenArgParser
 case class DataDumpTaskArgs(
   input: URI,
   offset: Int = 0,
@@ -54,44 +56,25 @@ abstract class DataDumpTask[T: Decoder, Id](
 
   private val dumpTime = Instant.now().toString
 
-  override def preparseArgs(args: RawArgs): DataDumpTaskArgs = {
-    DataDumpTaskArgs(
-      input = args.value[URI]("input").get,
-      offset = args.valueOrDefault[Int]("offset", 0),
-      limit = args.valueOrDefault("limit", -1),
-      sleepMs = args.valueOrDefault("sleepMs", 250),
-      flushEvery = args.valueOrDefault("flushEvery", 100),
-      rotateEvery = args.valueOrDefault("rotateEvery", 1000),
-      baseOutputPath = args.value[String]("baseOutputPath")
-    )
-  }
-
   override def runInternal(): Unit = {
-    val file = rawArgs.value[URI]("input").get
-    val offset = rawArgs.valueOrDefault("offset", 0)
-    val limit = rawArgs.valueOrDefault("limit", -1)
-    val sleepMs = rawArgs.valueOrDefault("sleepMs", 250)
-    val flushEvery = rawArgs.valueOrDefault("flushEvery", 100)
-    val rotateEvery = rawArgs.valueOrDefault("rotateEvery", 1000)
-
     logger.info(
       s"Preparing to dump data to: s3://${teletrackerConfig.data.s3_bucket}/$fullPath/"
     )
 
     val rotater = FileRotator.everyNLines(
       baseFileName,
-      rotateEvery,
+      args.rotateEvery,
       args.baseOutputPath
     )
 
-    val source = new SourceRetriever(s3).getSource(file)
+    val source = new SourceRetriever(s3).getSource(args.input)
 
     val processed = new AtomicLong(0)
 
     val parser = new IngestJobParser
 
     sourceRetriever
-      .getSourceStream(file)
+      .getSourceStream(args.input)
       .foreach(source => {
         try {
           parser
@@ -102,8 +85,8 @@ abstract class DataDumpTask[T: Decoder, Id](
                 None
               case Right(value) => Some(value)
             }
-            .drop(offset)
-            .safeTake(limit)
+            .drop(args.offset)
+            .safeTake(args.limit)
             .foreach(thing => {
               getRawJson(getCurrentId(thing))
                 .map(
@@ -120,11 +103,11 @@ abstract class DataDumpTask[T: Decoder, Id](
 
               val total = processed.incrementAndGet()
 
-              if (total % flushEvery == 0) {
+              if (total % args.flushEvery == 0) {
                 logger.info(s"Processed ${total} items so far.")
               }
 
-              Thread.sleep(sleepMs)
+              Thread.sleep(args.sleepMs)
             })
         } finally {
           source.close()

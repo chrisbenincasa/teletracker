@@ -2,9 +2,10 @@ package com.teletracker.tasks.tmdb
 
 import cats.effect.{Blocker, ContextShift, IO}
 import com.teletracker.common.config.TeletrackerConfig
+import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.http.{BaseHttp4sClient, HttpRequest}
-import com.teletracker.common.tasks.TeletrackerTask.RawArgs
-import com.teletracker.common.tasks.TypedTeletrackerTask
+import com.teletracker.common.tasks.args.GenArgParser
+import com.teletracker.common.tasks.{TeletrackerTask, TypedTeletrackerTask}
 import com.teletracker.tasks.model.{
   MovieDumpFileRow,
   PersonDumpFileRow,
@@ -28,10 +29,11 @@ import scala.io.Source
 import scala.sys.process._
 
 @JsonCodec
+@GenArgParser
 case class DumpAllIdsArgs(
-  itemType: String,
-  date: LocalDate,
-  local: Boolean)
+  itemType: String = "movie",
+  date: LocalDate = LocalDate.now(),
+  local: Boolean = false)
 
 object DumpAllIds {
   def getIdsPath(
@@ -53,33 +55,43 @@ class DumpAllIds @Inject()(
 
   private val blocker: Blocker = Blocker.liftExecutionContext(blockingExecCtx)
 
-  override def preparseArgs(args: RawArgs): DumpAllIdsArgs =
-    DumpAllIdsArgs(
-      itemType = args.valueOrDefault("itemType", "movie"),
-      date = args.valueOrDefault("date", LocalDate.now()),
-      local = args.valueOrDefault("local", false)
-    )
+  prerun {
+    val typesToPull = if (args.itemType == "all") {
+      ItemType.values().toSeq
+    } else {
+      Seq(ItemType.fromString(args.itemType))
+    }
+
+    typesToPull
+      .map(itemType => {
+        TeletrackerTask.taskMessage[AllTmdbIdsDumpDeltaLocator](
+          AllTmdbIdsDumpDeltaLocatorArgs(
+            seedDumpDate = Some(args.date),
+            itemType = itemType
+          )
+        )
+      })
+      .foreach(registerFollowupTask)
+  }
 
   override protected def runInternal(): Unit = {
     val DumpAllIdsArgs(itemType, date, local) = args
 
-    val sanitizedTypes = itemType match {
-      case "all"  => Seq("movie", "tv_series", "person")
-      case "show" => Seq("tv_series")
-      case x      => Seq(x)
+    val typesToPull = if (itemType == "all") {
+      ItemType.values().toSeq
+    } else {
+      Seq(ItemType.fromString(itemType))
     }
 
-    sanitizedTypes.foreach(sanitizedType => {
-      val outputLocation = handleType(sanitizedType, date)
+    typesToPull.foreach(typeToPull => {
+      val outputLocation = handleType(typeToPull, date)
 
       val destination = if (local) {
         URI.create(
-          s"file://${System.getProperty("user.dir")}/${sanitizedType}_ids_sorted-${date}.json.gz"
+          s"file://${System.getProperty("user.dir")}/${typeToPull}_ids_sorted-${date}.json.gz"
         )
       } else {
-        URI.create(
-          s"s3://${teletrackerConfig.data.s3_bucket}/scrape-results/tmdb/${date}/${sanitizedType}_ids_sorted-${date}.json.gz"
-        )
+        getOutputS3Path(date, typeToPull)
       }
 
       sourceWriter.writeFile(destination, outputLocation)
@@ -88,15 +100,32 @@ class DumpAllIds @Inject()(
     })
   }
 
+  private def getOutputS3Path(
+    date: LocalDate,
+    itemType: ItemType
+  ): URI = {
+    val tmdbType = itemTypeToTmdbType(itemType)
+    URI.create(
+      s"s3://${teletrackerConfig.data.s3_bucket}/scrape-results/tmdb/${date}/${tmdbType}_ids_sorted-${date}.json.gz"
+    )
+  }
+
+  private def itemTypeToTmdbType(itemType: ItemType): String =
+    itemType match {
+      case ItemType.Movie  => "movie"
+      case ItemType.Show   => "tv_series"
+      case ItemType.Person => "person"
+    }
+
   private def handleType(
-    itemType: String,
+    itemType: ItemType,
     date: LocalDate
   ) = {
-    require(Set("movie", "tv_series", "person").contains(itemType))
+    val tmdbType = itemTypeToTmdbType(itemType)
 
     val client = new BaseHttp4sClient(blocker)
 
-    val tmpFile = Files.createTempFile(itemType, ".tmp")
+    val tmpFile = Files.createTempFile(tmdbType, ".tmp")
     tmpFile.toFile.deleteOnExit()
 
     logger.info(s"Outputting to ${tmpFile.toAbsolutePath}")
@@ -104,7 +133,7 @@ class DumpAllIds @Inject()(
     client
       .toFile(
         "http://files.tmdb.org",
-        HttpRequest(DumpAllIds.getIdsPath(itemType, date)),
+        HttpRequest(DumpAllIds.getIdsPath(tmdbType, date)),
         tmpFile.toFile,
         blocker
       )
@@ -114,7 +143,7 @@ class DumpAllIds @Inject()(
       new GZIPInputStream(new FileInputStream(tmpFile.toFile))
     )
 
-    val tmpTsv = Files.createTempFile(itemType, ".tsv.tmp")
+    val tmpTsv = Files.createTempFile(tmdbType, ".tsv.tmp")
     tmpTsv.toFile.deleteOnExit()
 
     logger.info(s"Translating to TSV at ${tmpTsv.toAbsolutePath}")
@@ -124,11 +153,11 @@ class DumpAllIds @Inject()(
     )
 
     val lineHandler = itemType match {
-      case "movie" =>
+      case ItemType.Movie =>
         handleDumpType[MovieDumpFileRow](_, makeTsvLine, tsvOutput)
-      case "tv_series" =>
+      case ItemType.Show =>
         handleDumpType[TvShowDumpFileRow](_, makeTsvLine, tsvOutput)
-      case "person" =>
+      case ItemType.Person =>
         handleDumpType[PersonDumpFileRow](_, makeTsvLine, tsvOutput)
     }
 
@@ -142,7 +171,7 @@ class DumpAllIds @Inject()(
 
     tsvOutput.flush()
 
-    val sortedJson = Files.createTempFile(s"${itemType}_sorted", ".tmp.gz")
+    val sortedJson = Files.createTempFile(s"${tmdbType}_sorted", ".tmp.gz")
     logger.info(s"Translating to sorted JSON at ${sortedJson.toAbsolutePath}")
 
     val sortedJsonOut = new PrintWriter(
@@ -165,13 +194,13 @@ class DumpAllIds @Inject()(
     }
 
     val tsvLineHandler: String => Unit = itemType match {
-      case "movie" =>
+      case ItemType.Movie =>
         line => handleTsvLine(line, tsvToMovieDump, sortedJsonOut)
 
-      case "tv_series" =>
+      case ItemType.Show =>
         line => handleTsvLine(line, tsvToTvShowDump, sortedJsonOut)
 
-      case "person" =>
+      case ItemType.Person =>
         line => handleTsvLine(line, tsvToPersonDump, sortedJsonOut)
     }
 

@@ -14,6 +14,7 @@ import com.teletracker.common.model.scraping.{
   ScrapedItemAvailabilityDetails
 }
 import com.teletracker.common.tasks.TeletrackerTask.{JsonableArgs, RawArgs}
+import com.teletracker.common.tasks.args.GenArgParser
 import com.teletracker.common.util.{Folds, OnceT}
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Functions._
@@ -34,6 +35,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
 @JsonCodec
+@GenArgParser
 case class LiveIngestDeltaJobArgs(
   version: Option[Long],
   override val offset: Int,
@@ -65,24 +67,6 @@ abstract class LiveIngestDeltaJob[
     crawlAvailabilityItemLoaderFactory.make[T]
 
   protected def crawlerName: CrawlerName
-
-  override def preparseArgs(args: RawArgs): LiveIngestDeltaJobArgs =
-    LiveIngestDeltaJobArgs(
-      version = args.value[Long]("version"),
-      offset = args.valueOrDefault("offset", 0),
-      limit = args.valueOrDefault("limit", -1),
-      dryRun = args.valueOrDefault("dryRun", true),
-      itemIdFilter = args.value[UUID]("itemIdFilter"),
-      externalIdFilter = args.value[String]("externalIdFilter"),
-      sleepBetweenWriteMs = args.value[Long]("perBatchSleepMs"),
-      processBatchSleep = args.value[Long]("perBatchSleepMs").map(_ millis),
-      deltaSizeThreshold =
-        args.valueOrDefault[Double]("deltaSizeThreshold", 5.0),
-      disableDeltaSizeCheck =
-        args.valueOrDefault("disableDeltaSizeCheck", false),
-      parallelism = args.value[Int]("parallelism"),
-      additionsOnly = args.valueOrDefault("additionsOnly", false)
-    )
 
   override def runInternal(): Unit = {
     val networks = getNetworksOrExit()

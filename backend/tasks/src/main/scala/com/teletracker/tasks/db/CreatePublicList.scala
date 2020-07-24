@@ -4,6 +4,7 @@ import com.teletracker.common.db.dynamo.ListsDbAccess
 import com.teletracker.common.db.dynamo.model.StoredUserList
 import com.teletracker.common.tasks.TeletrackerTask.RawArgs
 import com.teletracker.common.tasks.TypedTeletrackerTask
+import com.teletracker.common.tasks.args.GenArgParser
 import com.teletracker.common.util.Futures._
 import io.circe.generic.JsonCodec
 import javax.inject.Inject
@@ -11,6 +12,7 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 @JsonCodec
+@GenArgParser
 case class CreatePublicListArgs(
   name: String,
   isPublic: Boolean,
@@ -19,13 +21,6 @@ case class CreatePublicListArgs(
 
 class CreatePublicList @Inject()(listsDbAccess: ListsDbAccess)
     extends TypedTeletrackerTask[CreatePublicListArgs] {
-  override def preparseArgs(args: RawArgs): CreatePublicListArgs =
-    CreatePublicListArgs(
-      name = args.valueOrThrow[String]("name"),
-      isPublic = args.valueOrDefault("isPublic", false),
-      isDynamic = args.valueOrDefault("isDynamic", false),
-      id = args.value[UUID]("id")
-    )
 
   override def validateArgs(args: CreatePublicListArgs): Unit = {
     require(args.name.nonEmpty, "Name cannot be empty")

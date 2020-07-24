@@ -55,7 +55,7 @@ class SourceRetriever @Inject()(s3: S3Client) {
   ): Source = {
     def getS3ObjectInner() = {
       logger.info(
-        s"Pulling s3://$bucket$key"
+        s"Pulling s3://$bucket/${key.stripPrefix("/")}"
       )
 
       val tmpFile = File.createTempFile(s"${bucket}_${key}", ".tmp.txt")

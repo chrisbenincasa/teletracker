@@ -38,6 +38,7 @@ import com.teletracker.common.model.scraping.{
 }
 import com.teletracker.common.pubsub.EsIngestItemDenormArgs
 import com.teletracker.common.tasks.TeletrackerTask.JsonableArgs
+import com.teletracker.common.tasks.args.ArgParser
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.json.circe._
@@ -92,7 +93,7 @@ class IngestDeltaJobDependencies @Inject()(
 abstract class IngestDeltaJobLike[
   ExistingItemType,
   IncomingItemType <: ScrapedItem: ScrapedItemAvailabilityDetails,
-  IngestJobArgs <: IngestDeltaJobArgsLike
+  IngestJobArgs <: IngestDeltaJobArgsLike: ArgParser
 ](
   protected val deps: IngestDeltaJobDependencies
 )(implicit codec: Codec[IncomingItemType],

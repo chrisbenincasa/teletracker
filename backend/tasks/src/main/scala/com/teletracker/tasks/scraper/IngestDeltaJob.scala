@@ -10,6 +10,7 @@ import com.teletracker.common.model.scraping.{
   ScrapedItemAvailabilityDetails
 }
 import com.teletracker.common.tasks.TeletrackerTask.{JsonableArgs, RawArgs}
+import com.teletracker.common.tasks.args.GenArgParser
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.json.circe._
@@ -26,6 +27,7 @@ import scala.util.control.NonFatal
 import scala.concurrent.duration._
 
 @JsonCodec
+@GenArgParser
 case class IngestDeltaJobArgs(
   snapshotAfter: URI,
   snapshotBefore: Option[URI],
@@ -59,29 +61,6 @@ abstract class IngestDeltaJob[
       ScrapeItemType,
       ScrapeItemType
     ] {
-
-  override def preparseArgs(args: RawArgs): IngestDeltaJobArgs = parseArgs(args)
-
-  private def parseArgs(args: Map[String, Any]): IngestDeltaJobArgs = {
-    IngestDeltaJobArgs(
-      snapshotAfter = args.valueOrThrow[URI]("snapshotAfter"),
-      snapshotBefore = args.value[URI]("snapshotBefore"),
-      offset = args.valueOrDefault("offset", 0),
-      limit = args.valueOrDefault("limit", -1),
-      dryRun = args.valueOrDefault("dryRun", true),
-      itemIdFilter = args.value[UUID]("itemIdFilter"),
-      sleepBetweenWriteMs = args.value[Long]("perBatchSleepMs"),
-      processBatchSleep = args.value[Long]("perBatchSleepMs").map(_ millis),
-      deltaSizeThreshold =
-        args.valueOrDefault[Double]("deltaSizeThreshold", 5.0),
-      disableDeltaSizeCheck =
-        args.valueOrDefault("disableDeltaSizeCheck", false),
-      externalIdFilter = args.value[String]("externalIdFilter"),
-      parallelism = args.value[Int]("parallelism"),
-      crawlerName = args.value[String]("crawler_name"),
-      crawlerVersion = args.value[Long]("crawler_version")
-    )
-  }
 
   override def runInternal(): Unit = {
     val networks = getNetworksOrExit()
@@ -337,7 +316,7 @@ abstract class IngestDeltaJob[
     args.snapshotBefore
       .map(
         deps.fileUtils
-          .readAllLinesToUniqueIdSet[ScrapeItemType](
+          .readAllLinesToUniqueIdSet[ScrapeItemType, String](
             _,
             uniqueKeyForIncoming,
             consultSourceCache = true

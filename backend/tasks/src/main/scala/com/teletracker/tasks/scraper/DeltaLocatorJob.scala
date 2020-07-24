@@ -3,6 +3,7 @@ package com.teletracker.tasks.scraper
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
 import com.teletracker.common.tasks.TeletrackerTask.RawArgs
+import com.teletracker.common.tasks.args.{ArgParser, GenArgParser}
 import com.teletracker.common.tasks.{TeletrackerTask, TypedTeletrackerTask}
 import com.teletracker.tasks.TeletrackerTaskRunner
 import io.circe.Encoder
@@ -24,13 +25,14 @@ trait DeltaLocatorJobArgsLike {
 }
 
 @JsonCodec
+@GenArgParser
 case class DeltaLocatorJobArgs(
-  maxDaysBack: Int,
-  local: Boolean,
-  seedDumpDate: Option[LocalDate] = None)
+  maxDaysBack: Int = 3,
+  local: Boolean = false,
+  seedDumpDate: Option[LocalDate])
     extends DeltaLocatorJobArgsLike
 
-abstract class DeltaLocatorJob[_ArgsType <: DeltaLocatorJobArgsLike](
+abstract class DeltaLocatorJob[_ArgsType <: DeltaLocatorJobArgsLike: ArgParser](
   s3Client: S3Client,
   teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext,
@@ -40,11 +42,7 @@ abstract class DeltaLocatorJob[_ArgsType <: DeltaLocatorJobArgsLike](
 
   override def preparseArgs(args: RawArgs): ArgsType =
     postParseArgs(
-      DeltaLocatorJobArgs(
-        maxDaysBack = args.valueOrDefault("maxDaysBack", defaultMaxDaysBack),
-        local = args.valueOrDefault("local", false),
-        seedDumpDate = args.value[LocalDate]("seedDumpDate")
-      )
+      args.parse[DeltaLocatorJobArgs].get
     )
 
   protected def postParseArgs(halfParsed: DeltaLocatorJobArgs): ArgsType

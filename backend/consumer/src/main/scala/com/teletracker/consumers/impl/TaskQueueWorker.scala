@@ -14,8 +14,8 @@ import com.teletracker.common.aws.sqs.worker.{
 import com.teletracker.common.config.core.api.ReloadableConfig
 import com.teletracker.common.inject.QueueConfigAnnotations
 import com.teletracker.common.pubsub.{TaskTag, TeletrackerTaskQueueMessage}
-import com.teletracker.common.tasks.TaskArgs
 import com.teletracker.common.tasks.TeletrackerTask.FailureResult
+import com.teletracker.common.tasks.args.JsonTaskArgs
 import com.teletracker.common.tasks.storage.{
   TaskRecord,
   TaskRecordCreator,
@@ -74,7 +74,7 @@ class TaskQueueWorker @Inject()(
       val taskId = message.id.getOrElse(UUID.randomUUID())
       task.taskId = taskId
 
-      val extractedArgs = TaskArgs.extractArgs(message.args)
+      val extractedArgs = JsonTaskArgs.extractArgs(message.args)
       val stringifiedArgs = extractedArgs.collect {
         case (str, x) if x.isDefined => str -> x.get.toString
       }

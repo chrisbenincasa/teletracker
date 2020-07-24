@@ -6,6 +6,7 @@ import com.teletracker.common.elasticsearch.model.EsExternalId
 import com.teletracker.common.inject.SingleThreaded
 import com.teletracker.common.tasks.TeletrackerTask.RawArgs
 import com.teletracker.common.tasks.TypedTeletrackerTask
+import com.teletracker.common.tasks.args.GenArgParser
 import com.teletracker.common.util.AsyncStream
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.model.GenericTmdbDumpFileRow
@@ -26,12 +27,13 @@ import scala.util.control.NonFatal
 // s3://teletracker-data-us-west-2/scrape-results/tmdb/2020-07-14/movie_ids_sorted-2020-07-14.json.gz
 
 @JsonCodec
+@GenArgParser
 case class DeleteItemsArgs(
   dumpInput: URI,
   scrapeInput: URI,
   itemType: ItemType,
-  limit: Int,
-  dryRun: Boolean)
+  limit: Int = -1,
+  dryRun: Boolean = true)
 
 class DeleteItemsViaDump @Inject()(
   sourceRetriever: SourceRetriever,
@@ -39,13 +41,6 @@ class DeleteItemsViaDump @Inject()(
   itemUpdater: ItemUpdater
 )(implicit executionContext: ExecutionContext)
     extends TypedTeletrackerTask[DeleteItemsArgs] {
-  override def preparseArgs(args: RawArgs): DeleteItemsArgs = DeleteItemsArgs(
-    dumpInput = args.valueOrThrow[URI]("dumpInput"),
-    scrapeInput = args.valueOrThrow[URI]("scrapeInput"),
-    itemType = args.valueOrThrow[ItemType]("itemType"),
-    limit = args.limit,
-    dryRun = args.dryRun
-  )
 
   override protected def runInternal(): Unit = {
     val ids = sourceRetriever

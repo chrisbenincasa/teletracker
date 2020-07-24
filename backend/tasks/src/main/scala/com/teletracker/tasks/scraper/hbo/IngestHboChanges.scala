@@ -11,7 +11,6 @@ import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.{
   IngestJob,
-  IngestJobApp,
   SubscriptionNetworkAvailability
 }
 import io.circe.generic.JsonCodec
@@ -19,8 +18,6 @@ import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import java.time._
 import scala.concurrent.ExecutionContext
-
-object IngestHboChanges extends IngestJobApp[IngestHboChanges]
 
 class IngestHboChanges @Inject()(
   protected val s3: S3Client,

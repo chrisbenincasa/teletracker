@@ -9,6 +9,7 @@ import com.teletracker.common.inject.SingleThreaded
 import com.teletracker.common.model.scraping._
 import com.teletracker.common.tasks.TeletrackerTask.JsonableArgs
 import com.teletracker.common.tasks.TypedTeletrackerTask
+import com.teletracker.common.tasks.args.ArgParser
 import com.teletracker.common.util.{AsyncStream, OpenDateRange}
 import com.teletracker.tasks.scraper.matching.{
   ElasticsearchFallbackMatcher,
@@ -36,7 +37,7 @@ import scala.concurrent.{ExecutionContext, Future}
 // Base class for processing a bunch of items
 abstract class BaseIngestJob[
   T <: ScrapedItem,
-  IngestJobArgsType <: IngestJobArgsLike: JsonableArgs
+  IngestJobArgsType <: IngestJobArgsLike: JsonableArgs: ArgParser
 ](
 )(implicit protected val executionContext: ExecutionContext,
   protected val codec: Codec[T])

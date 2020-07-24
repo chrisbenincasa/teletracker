@@ -16,21 +16,21 @@ class FileUtils @Inject()(
     loc: URI,
     consultSourceCache: Boolean
   ): Set[String] = {
-    readAllLinesToUniqueIdSet[String](
+    readAllLinesToUniqueIdSet[String, String](
       loc,
       Some(_),
       consultSourceCache = consultSourceCache
     )
   }
 
-  def readAllLinesToUniqueIdSet[T: Decoder](
+  def readAllLinesToUniqueIdSet[T: Decoder, U](
     loc: URI,
-    uniqueId: T => Option[String],
+    uniqueId: T => Option[U],
     consultSourceCache: Boolean
-  ): Set[String] = {
+  ): Set[U] = {
     sourceRetriever
       .getSourceStream(loc, consultCache = consultSourceCache)
-      .foldLeft(Set.empty[String]) {
+      .foldLeft(Set.empty[U]) {
         case (set, src) =>
           try {
             ingestJobParser

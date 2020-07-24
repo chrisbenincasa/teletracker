@@ -3,6 +3,7 @@ package com.teletracker.tasks.tmdb.import_tasks
 import com.teletracker.common.model.tmdb.{ErrorResponse, HasTmdbId}
 import com.teletracker.common.tasks.TeletrackerTask.RawArgs
 import com.teletracker.common.tasks.TypedTeletrackerTask
+import com.teletracker.common.tasks.args.GenArgParser
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.{AsyncStream, GenreCache}
@@ -29,6 +30,7 @@ object ImportTmdbDumpTaskArgs {
 }
 
 @JsonCodec
+@GenArgParser
 case class ImportTmdbDumpTaskArgs(
   input: URI,
   offset: Int = 0,
@@ -53,19 +55,6 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
   private val failedCounter = new AtomicInteger()
 
   private val retryQueue = new ConcurrentLinkedQueue[T]()
-
-  override def preparseArgs(args: RawArgs): ImportTmdbDumpTaskArgs = {
-    ImportTmdbDumpTaskArgs(
-      input = args.value[URI]("input").get,
-      offset = args.valueOrDefault("offset", 0),
-      limit = args.valueOrDefault("limit", -1),
-      parallelism = args.valueOrDefault("parallelism", 4),
-      perFileLimit = args.valueOrDefault("perFileLimit", -1),
-      perBatchSleepMs = args.value[Int]("perBatchSleepMs"),
-      dryRun = args.valueOrDefault("dryRun", true),
-      insertsOnly = args.valueOrDefault("insertsOnly", false)
-    )
-  }
 
   override def runInternal(): Unit = {
     val typedArgs @ ImportTmdbDumpTaskArgs(

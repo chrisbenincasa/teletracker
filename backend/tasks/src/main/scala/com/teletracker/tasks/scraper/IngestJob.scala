@@ -21,19 +21,18 @@ import com.teletracker.common.model.scraping.{
   ScrapedItemAvailabilityDetails
 }
 import com.teletracker.common.pubsub.EsIngestItemDenormArgs
-import com.teletracker.common.tasks.TeletrackerTask.{JsonableArgs, RawArgs}
+import com.teletracker.common.tasks.TeletrackerTask.{JsonableArgs}
+import com.teletracker.common.tasks.args.GenArgParser
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.json.circe._
 import com.teletracker.common.util.{AsyncStream, NetworkCache}
-import com.teletracker.tasks.TeletrackerTaskApp
 import com.teletracker.tasks.model.{
   BaseTaskArgs,
   PagingTaskArgs,
   ParallelismTaskArgs
 }
-import com.teletracker.tasks.scraper.IngestJobParser.ParseMode
 import com.teletracker.tasks.scraper.matching.{
   CustomElasticsearchLookup,
   ElasticsearchExternalIdLookup,
@@ -54,16 +53,6 @@ import scala.concurrent.duration._
 import scala.io.Source
 import scala.util.control.NonFatal
 
-abstract class IngestJobApp[T <: IngestJob[_]: Manifest]
-    extends TeletrackerTaskApp[T] {
-  val offset = flag[Int]("offset", 0, "The offset to start at")
-  val limit = flag[Int]("limit", -1, "The number of items to process")
-
-  val inputFile = flag[File]("input", "The json file to parse")
-  val titleMatchThreshold = flag[Int]("fuzzyThreshold", 15, "X")
-  val dryRun = flag[Boolean]("dryRun", true, "X")
-}
-
 trait IngestJobArgsLike
     extends BaseTaskArgs
     with PagingTaskArgs
@@ -73,6 +62,7 @@ trait IngestJobArgsLike
 }
 
 @JsonCodec
+@GenArgParser
 case class IngestJobArgs(
   inputFile: URI,
   override val offset: Int,
@@ -148,25 +138,6 @@ abstract class IngestJob[T <: ScrapedItem: ScrapedItemAvailabilityDetails](
   protected def outputLocation: Option[URI] = None
 
   protected def getAdditionalOutputFiles: Seq[(File, String)] = Seq()
-
-  override def preparseArgs(args: RawArgs): ArgsType = parseArgs(args)
-
-  final protected def parseArgs(args: Map[String, Any]): IngestJobArgs = {
-    IngestJobArgs(
-      inputFile = args.valueOrThrow[URI]("inputFile"),
-      offset = args.valueOrDefault("offset", 0),
-      limit = args.valueOrDefault("limit", -1),
-      dryRun = args.valueOrDefault("dryRun", true),
-      parallelism = args.value[Int]("parallelism"),
-      sourceLimit = args.valueOrDefault("sourceLimit", -1),
-      processBatchSleep = args.value[Long]("perBatchSleepMs").map(_ millis),
-      sleepBetweenWriteMs = args.value[Long]("perBatchSleepMs"),
-      enableExternalIdMatching =
-        args.valueOrDefault("enableExternalIdMatching", true),
-      reimport = args.valueOrDefault("reimport", false),
-      externalIdFilter = args.value[String]("externalIdFilter")
-    )
-  }
 
   override def runInternal(): Unit = {
     registerArtifact(Artifact(potentialMatchesWriter, potentialMatchFile))

@@ -12,6 +12,7 @@ import com.teletracker.common.pubsub.{
   EsIngestUpdate
 }
 import com.teletracker.common.tasks.TeletrackerTask.RawArgs
+import com.teletracker.common.tasks.args.GenArgParser
 import com.teletracker.common.util.AsyncStream
 import com.teletracker.common.util.json.circe._
 import com.teletracker.common.util.Functions._
@@ -61,6 +62,7 @@ class UpdateTvShowPopularities @Inject()(
     )
 
 @JsonCodec
+@GenArgParser
 case class UpdatePopularitiesJobArgs(
   snapshotBefore: URI,
   snapshotAfter: URI,
@@ -158,20 +160,6 @@ abstract class UpdatePopularities[T <: TmdbDumpFileRow: Decoder](
   private[this] var teletrackerConfig: TeletrackerConfig = _
   @Inject
   private[this] var esIngestQueue: SqsFifoQueue[EsIngestMessage] = _
-
-  override def preparseArgs(args: RawArgs): UpdatePopularitiesJobArgs = {
-    UpdatePopularitiesJobArgs(
-      snapshotAfter = args.valueOrThrow[URI]("snapshotAfter"),
-      snapshotBefore = args.valueOrThrow[URI]("snapshotBefore"),
-      offset = args.valueOrDefault("offset", 0),
-      limit = args.valueOrDefault("limit", -1),
-      dryRun = args.valueOrDefault("dryRun", true),
-      changeThreshold = args.valueOrDefault("changeThreshold", 1.0f),
-      verbose = args.valueOrDefault("verbose", false),
-      mod = args.value[Int]("mod"),
-      band = args.value[Int]("band")
-    )
-  }
 
   override def runInternal(): Unit = {
     if (args.band.isDefined && args.mod.isEmpty || args.band.isEmpty && args.mod.isDefined) {
