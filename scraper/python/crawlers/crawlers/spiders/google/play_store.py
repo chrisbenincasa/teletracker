@@ -5,7 +5,7 @@ from urllib import parse
 
 
 class GooglePlayStoreSpider(BaseSitemapSpider):
-    name = 'play_store'
+    name = 'google_play_store'
     allowed_domains = ['play.google.com']
 
     sitemap_urls = [
@@ -33,7 +33,6 @@ class GooglePlayStoreSpider(BaseSitemapSpider):
             link = season.attrib['data-value']
             yield scrapy.Request(url='https://play.google.com{}'.format(link), callback=self.parse_show_season)
 
-
     def parse_show_season(self, response):
         pass
 
@@ -56,18 +55,20 @@ class GooglePlayStoreSpider(BaseSitemapSpider):
             for offer in offers:
                 price = offer.xpath('.//meta[@itemprop="price"]')[0].attrib['content']
                 description = offer.xpath('.//meta[@itemprop="description"]')[0].attrib['content']
+                parsed_price = float(price.strip().lstrip('$'))
                 if 'plays in hd' in description.lower():
                     item_offers.append(
                         GooglePlayStoreItemOffer(
                             offerType='rent',
-                            price=price.strip(),
+                            price=parsed_price,
                             quality='hd'
                         )
                     )
+                elif 'plays in sd' in description.lower():
                     item_offers.append(
                         GooglePlayStoreItemOffer(
                             offerType='rent',
-                            price=price.strip(),
+                            price=parsed_price,
                             quality='sd'
                         )
                     )
@@ -79,20 +80,23 @@ class GooglePlayStoreSpider(BaseSitemapSpider):
                 price = offer.xpath('.//meta[@itemprop="price"]')[0].attrib['content']
                 description = offer.xpath('.//meta[@itemprop="description"]')[0].attrib['content']
                 self.log('Buy: description = {}, price = {}'.format(description, price))
+                parsed_price = float(price.strip().lstrip('$'))
                 if 'plays in hd' in description.lower():
                     item_offers.append(
                         GooglePlayStoreItemOffer(
                             offerType='buy',
-                            price=price.strip(),
-                            quality='hd'
+                            price=parsed_price,
+                            quality='hd',
+                            currency='USD'
                         )
                     )
                 elif 'plays in sd' in description.lower():
                     item_offers.append(
                         GooglePlayStoreItemOffer(
                             offerType='buy',
-                            price=price.strip(),
-                            quality='sd'
+                            price=parsed_price,
+                            quality='sd',
+                            currency='USD'
                         )
                     )
 
@@ -130,3 +134,4 @@ class GooglePlayStoreItemOffer(scrapy.Item):
     offerType = scrapy.Field()
     price = scrapy.Field()
     quality = scrapy.Field()
+    currency = scrapy.Field()
