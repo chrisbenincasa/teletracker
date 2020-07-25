@@ -2,16 +2,9 @@ package com.teletracker.common.http
 
 import cats.effect.{Blocker, ContextShift, IO}
 import com.google.inject.assistedinject.Assisted
-import javax.inject.Inject
-import org.http4s.{DecodeFailure, EntityDecoder, Header, Request, Response, Uri}
-import org.http4s.client.JavaNetClientBuilder
-import org.http4s.headers.{Accept, MediaRangeAndQValue}
-import java.util.concurrent.Executors
-import cats.implicits._
-import cats.syntax.all._
-import cats.data.EitherT._
 import io.circe.Json
-import java.io.File
+import javax.inject.Inject
+import java.util.concurrent.Executors
 import scala.concurrent.{ExecutionContext, Future}
 
 class Http4sClient @Inject()(

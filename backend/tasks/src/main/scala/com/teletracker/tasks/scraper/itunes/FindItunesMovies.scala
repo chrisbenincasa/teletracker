@@ -47,7 +47,7 @@ class FindItunesMovies @Inject()(
 
             val urls = xml \\ "urlset" \\ "url" \\ "loc" map (_.text)
 
-            val matching = urls.filter(_.contains("/movies/"))
+            val matching = urls.filter(_.contains("/movie/"))
 
             if (matching.nonEmpty) {
               println(s"Found ${matching} at url ${url}")

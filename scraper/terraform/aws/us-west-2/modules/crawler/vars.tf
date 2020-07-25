@@ -26,3 +26,8 @@ variable "schedule" {
 variable "dynamodb_output_table" {
   type = string
 }
+
+variable "gen_service" {
+  type    = bool
+  default = true
+}

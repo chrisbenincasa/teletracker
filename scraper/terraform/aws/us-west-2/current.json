@@ -5,5 +5,6 @@
   "hulu_catalog_crawler_version": "1.0-1593200418.0d1ef07f",
   "netflix_catalog_crawler_version": "1.0-1594174519.5be6be6b",
   "disneyplus_catalog_crawler_version": "1.0-1594760150.8a7fb745",
-  "showtime_catalog_crawler_version": "1.0-1593200418.0d1ef07f"
+  "showtime_catalog_crawler_version": "1.0-1593200418.0d1ef07f",
+  "amazon_catalog_crawler_version": "1.0-1595624011.78353796"
 }

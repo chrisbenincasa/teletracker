@@ -29,12 +29,15 @@ class AmazonSpider(BaseCrawlSpider):
     name = 'amazon'
     allowed_domains = ['amazon.com', 'imdb.com']
 
+    custom_settings = {
+        'AUTOTHROTTLE_TARGET_CONCURRENCY': 8
+    }
+
     def __init__(self, json_logging=True, *a, **kw):
         super().__init__(json_logging, *a, **kw)
         self._s3_client = boto3.client('s3')
 
     def start_requests(self):
-        today = datetime.now()
         paginator = self._s3_client.get_paginator('list_objects_v2')
 
         self.log('Looking up latest ES dump.')
@@ -74,12 +77,15 @@ class AmazonSpider(BaseCrawlSpider):
                     for (tt_id, imdb_id) in self._handle_s3_select(result['Key']):
                         if (0 < limit <= total_handled) or (0 < ids_limit <= imdb_ids_handled):
                             break
-                        imdb_ids_handled += 1
-                        self.log(f'TT id: {tt_id}, IMDB ID: {imdb_id}', level=logging.DEBUG)
                         raw_id = imdb_id.lstrip('imdb__')
                         if len(raw_id) > 0:
+                            self.log(f'TT id: {tt_id}, IMDB ID: {imdb_id}', level=logging.DEBUG)
+                            imdb_ids_handled += 1
+                            if imdb_ids_handled % 1000 == 0:
+                                self.log(f'Handled {imdb_ids_handled} so far')
                             yield Request(f'https://www.imdb.com/title/{raw_id}/', dont_filter=True,
                                           callback=self._handle_imdb_page, meta={'id': tt_id, 'imdb_id': raw_id})
+            self.log(f'Total imdb ids = {imdb_ids_handled}')
 
     def _handle_s3_select(self, key):
         # Query the ES dump in s3 to extract all external ids
@@ -121,7 +127,6 @@ class AmazonSpider(BaseCrawlSpider):
                               meta=response.meta)
 
     def _handle_amazon_page(self, response):
-        official_id = None
         for script in response.xpath('//script[@type="text/template"]/text()').getall():
             try:
                 loaded = json.loads(script)
@@ -132,7 +137,6 @@ class AmazonSpider(BaseCrawlSpider):
                                       parse(f'$.props.state.detail.headerDetail.{official_id}').find(loaded)]
                     if len(header_details) > 0:
                         header_detail = header_details[0]
-                        print(parse('$.contributors.directors[*]').find(header_detail))
                         item_type = 'movie' if header_detail['titleType'].lower() == 'movie' else 'show'
                         cast = []
                         crew = []
@@ -148,8 +152,8 @@ class AmazonSpider(BaseCrawlSpider):
                         release_date = datetime.strptime(header_detail['releaseDate'], '%B %d, %Y')
 
                         offers = parse(
-                            f'$.props.state.action.atf.{official_id}..children[?(@.__type == "atv.wps#TvodAction")]').find(
-                            loaded)
+                            f'$.props.state.action.atf.{official_id}..children[?(@.__type == "atv.wps#TvodAction")]') \
+                            .find(loaded)
 
                         all_offers = []
                         for offer in offers:
@@ -191,4 +195,3 @@ class AmazonSpider(BaseCrawlSpider):
 
             except JSONDecodeError:
                 continue
-        print(official_id)

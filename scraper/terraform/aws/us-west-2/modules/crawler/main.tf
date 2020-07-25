@@ -58,6 +58,8 @@ resource "aws_security_group" "crawler_sg" {
 }
 
 resource "aws_ecs_service" "crawler_ecs_service" {
+  count = var.gen_service ? 1 : 0
+
   name = var.name
   cluster = data.aws_ecs_cluster.main_cluster.id
   task_definition = aws_ecs_task_definition.crawler_task_def.arn
