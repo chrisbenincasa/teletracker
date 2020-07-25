@@ -6,6 +6,17 @@ from scrapy.spiders import Rule
 from scrapy.linkextractors import LinkExtractor
 
 from crawlers.base_spider import BaseCrawlSpider
+import dateutil.parser
+import json
+import isodate
+import re
+
+from crawlers.items import AppleTvCastMember
+from crawlers.items import AppleTvCrewMember
+from crawlers.items import AppleTvItem
+from crawlers.items import AppleTvItemOffer
+
+PRICE_RE = r'\$(\d+\.\d+)'
 
 
 class ItunesSitemapSpider(BaseCrawlSpider):
@@ -18,7 +29,7 @@ class ItunesSitemapSpider(BaseCrawlSpider):
 
     rules = (
         Rule(LinkExtractor(allow=(r'(https?://itunes.apple.com)?/us/movie',)),
-             callback='parse_item', follow=True),
+             callback='parse_movie', follow=True),
         Rule(LinkExtractor(
             allow=r'(https?://itunes.apple.com)?/us/genre/movies.+'), follow=True)
     )
@@ -56,9 +67,67 @@ class ItunesSitemapSpider(BaseCrawlSpider):
     #     pass
     #
 
-    def parse_item(self, response):
-        self.log('Parse movie: {}'.format(response.url))
+    def parse_movie(self, response):
+        schema = response.xpath('//script[@name="schema:movie"]/text()').get()
+        if schema:
+            external_id = '/'.join(response.url.split('/')[-2:])
+            loaded_schema = json.loads(schema)
+            desc = response.css('.product-hero-desc p::text').get()
 
+            offers = []
+            prices = set([l.strip() for l in response.css('.movie-header__list--price span::text').getall()])
+            for price in prices:
+                matched_price = re.search(PRICE_RE, price)
+                if matched_price:
+                    actual_price = float(matched_price.group(1))
+                    if 'Rent' in price:
+                        offers.append(
+                            AppleTvItemOffer(offerType='rent', price=actual_price, currency='USD', quality='HD'))
+                    elif 'Buy' in price:
+                        offers.append(
+                            AppleTvItemOffer(offerType='buy', price=actual_price, currency='USD', quality='HD'))
 
-    def _valid_loc(self, loc):
-        return 'audiobooks' not in loc and 'itunes_artist' not in loc and 'apps.apple.com' not in loc
+            release_date_sel = response.css('.movie-header__list__item--release-date time')
+            release_date = None
+            release_year = None
+            if len(release_date_sel) > 0:
+                release_year = int(release_date_sel[0].xpath('.//text()').get())
+                release_date = dateutil.parser.isoparse(release_date_sel[0].attrib['datetime'])
+
+            cast = []
+            crew = []
+            if 'actor' in loaded_schema:
+                for (idx, actor) in enumerate(loaded_schema['actor']):
+                    cast.append(AppleTvCastMember(name=actor['name'], order=idx, role='actor'))
+
+            if 'director' in loaded_schema or 'producer' in loaded_schema:
+                directors = loaded_schema['director'] if 'director' in loaded_schema else []
+                producers = loaded_schema['producer'] if 'producer' in loaded_schema else []
+                order = 0
+                for director in directors:
+                    crew.append(AppleTvCrewMember(name=director['name'], order=order, role='director'))
+                    order += 1
+
+                for producer in producers:
+                    crew.append(AppleTvCrewMember(name=producer['name'], order=order, role='producer'))
+                    order += 1
+
+            runtime = None
+            if 'duration' in loaded_schema:
+                runtime = isodate.parse_duration(loaded_schema['duration']).seconds
+
+            yield AppleTvItem(
+                id=external_id,
+                title=loaded_schema['name'],
+                externalId=external_id,
+                description=desc,
+                itemType='movie',
+                network='apple-tv',
+                url=response.url,
+                releaseDate=release_date,
+                releaseYear=release_year,
+                cast=cast,
+                crew=crew,
+                runtime=runtime,
+                offers=offers,
+            )

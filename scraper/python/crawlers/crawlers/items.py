@@ -195,3 +195,39 @@ class AmazonItemOffer(scrapy.Item):
     price = scrapy.Field()
     currency = scrapy.Field()
     quality = scrapy.Field()
+
+
+class AppleTvItem(scrapy.Item):
+    type = 'AppleTv'
+    id = scrapy.Field()
+    title = scrapy.Field()
+    externalId = scrapy.Field()
+    description = scrapy.Field()
+    itemType = scrapy.Field()
+    network = scrapy.Field()
+    url = scrapy.Field()
+    releaseDate = scrapy.Field()
+    releaseYear = scrapy.Field()
+    cast = scrapy.Field()
+    crew = scrapy.Field()
+    runtime = scrapy.Field()
+    offers = scrapy.Field()
+
+
+class AppleTvItemOffer(scrapy.Item):
+    offerType = scrapy.Field()
+    price = scrapy.Field()
+    currency = scrapy.Field()
+    quality = scrapy.Field()
+
+
+class AppleTvCastMember(scrapy.Item):
+    name = scrapy.Field()
+    order = scrapy.Field()
+    role = scrapy.Field()
+
+
+class AppleTvCrewMember(scrapy.Item):
+    name = scrapy.Field()
+    order = scrapy.Field()
+    role = scrapy.Field()
