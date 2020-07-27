@@ -9,7 +9,9 @@ object HttpClientOptions {
   def withTls: HttpClientOptions = HttpClientOptions(useTls = true)
 }
 
-case class HttpClientOptions(useTls: Boolean)
+case class HttpClientOptions(
+  useTls: Boolean,
+  poolSize: Int = 8)
 
 case class HttpRequest(
   path: String,

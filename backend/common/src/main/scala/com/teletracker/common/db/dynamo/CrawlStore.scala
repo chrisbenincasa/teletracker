@@ -3,6 +3,8 @@ package com.teletracker.common.db.dynamo
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.config.core.api.ReloadableConfig
 import com.teletracker.common.db.dynamo.util.syntax._
+import com.teletracker.common.inject.SingleThreaded
+import com.teletracker.common.util.{AsyncToken, Cancellable, FutureToken}
 import io.circe.generic.JsonCodec
 import javax.inject.Inject
 import shapeless.tag.@@
@@ -16,7 +18,8 @@ import software.amazon.awssdk.services.dynamodb.model.{
 }
 import java.net.URI
 import java.time.Instant
-import scala.concurrent.{ExecutionContext, Future}
+import java.util.concurrent.{ScheduledExecutorService, TimeUnit}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters._
 
@@ -35,7 +38,8 @@ class CrawlerName(val name: String) extends AnyVal {
 
 class CrawlStore @Inject()(
   teletrackerConfig: ReloadableConfig[TeletrackerConfig],
-  dynamo: DynamoDbAsyncClient
+  dynamo: DynamoDbAsyncClient,
+  @SingleThreaded scheduledExecutorService: ScheduledExecutorService
 )(implicit executionContext: ExecutionContext) {
   def getCrawlAtVersion(
     crawler: CrawlerName,
@@ -96,6 +100,90 @@ class CrawlStore @Inject()(
           .map(_.asScala.toMap)
           .map(HistoricalCrawl.fromDynamoRow)
       })
+  }
+
+  def getInProgressCrawls(
+    crawler: CrawlerName
+  ): Future[List[HistoricalCrawl]] = {
+    dynamo
+      .query(
+        QueryRequest
+          .builder()
+          .tableName(teletrackerConfig.currentValue().dynamo.crawls.table_name)
+          .keyConditions(
+            Map(
+              "spider" -> Condition
+                .builder()
+                .comparisonOperator(ComparisonOperator.EQ)
+                .attributeValueList(crawler.name.toAttributeValue)
+                .build()
+            ).asJava
+          )
+          .filterExpression("attribute_not_exists(#tc)")
+          .expressionAttributeNames(
+            Map(
+              "#tc" -> "time_closed"
+            ).asJava
+          )
+          .scanIndexForward(false)
+          .build()
+      )
+      .toScala
+      .map(response => {
+        response
+          .items()
+          .asScala
+          .toList
+          .map(_.asScala.toMap)
+          .map(HistoricalCrawl.fromDynamoRow)
+      })
+  }
+
+  def waitForActiveCrawl(
+    crawlerName: CrawlerName,
+    version: Option[Long]
+  ): Future[AsyncToken[Unit, Future] with Cancellable] = {
+    val crawlFut = version match {
+      case Some(value) =>
+        getCrawlAtVersion(crawlerName, value)
+      case None =>
+        getLatestCrawl(crawlerName)
+    }
+
+    crawlFut.map {
+      case Some(value) if value.timeClosed.isDefined =>
+        FutureToken.successful(Unit)
+      case Some(foundCrawl) =>
+        val p = Promise[Unit]()
+        val fut = scheduledExecutorService.schedule(
+          new Runnable {
+            override def run(): Unit = {
+              getCrawlAtVersion(crawlerName, foundCrawl.version).map {
+                case Some(value) if value.timeClosed.isDefined =>
+                  p.success(Unit)
+                case Some(_) =>
+                case None =>
+                  p.failure(
+                    new RuntimeException(
+                      s"Crawler ${crawlerName} at version ${version} doesn't exist anymore}"
+                    )
+                  )
+              }
+            }
+          },
+          10,
+          TimeUnit.SECONDS
+        )
+
+        new FutureToken[Unit](p.future) with Cancellable {
+          override def cancel(): Unit = fut.cancel(true)
+        }
+
+      case None =>
+        throw new IllegalArgumentException(
+          s"No crawler with name: ${crawlerName} found at verison ${version}"
+        )
+    }
   }
 }
 

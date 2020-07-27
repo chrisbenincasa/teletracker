@@ -14,7 +14,9 @@ class Http4sClient @Inject()(
     extends HttpClient {
 
   private val blockingExecCtx =
-    ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
+    ExecutionContext.fromExecutor(
+      Executors.newFixedThreadPool(options.poolSize)
+    )
 
   private val blocker: Blocker = Blocker.liftExecutionContext(blockingExecCtx)
 

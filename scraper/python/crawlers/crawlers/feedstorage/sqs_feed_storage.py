@@ -5,6 +5,8 @@ from urllib.parse import urlparse
 import boto3
 from scrapy.extensions.feedexport import BlockingFeedStorage
 
+from crawlers.util.aws import get_boto3_endpoint_url
+
 
 def _chunk(l, n):
     # looping till length l
@@ -14,13 +16,13 @@ def _chunk(l, n):
 
 class SqsFeedStorage(BlockingFeedStorage):
     def __init__(self, uri, access_key=None, secret_key=None, region=None):
-        # Parse the form sqs:////sqs.us-west-2.amazonaws.com/302782651551/teletracker-es-ingest-qa.fifo
+        # Parse the form sqs://sqs.us-west-2.amazonaws.com/302782651551/teletracker-es-ingest-qa.fifo
         u = urlparse(uri)._replace(scheme='https')
         self.queue_url = u.geturl()
         self.queue_name = u.path[1:].split('/')[-1]
         self.deck = deque()
         self.sqs_client = boto3.client('sqs', region_name=region, aws_access_key_id=access_key,
-                                       aws_secret_access_key=secret_key)
+                                       aws_secret_access_key=secret_key, endpoint_url=get_boto3_endpoint_url())
 
     @classmethod
     def from_crawler(cls, crawler, uri):

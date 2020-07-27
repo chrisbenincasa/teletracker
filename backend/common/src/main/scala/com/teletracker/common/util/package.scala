@@ -71,3 +71,24 @@ package object util {
     }
   }
 }
+
+class ScalaToTwitterFuture[T](val f: SFuture[T]) extends AnyVal {
+  import util.Implicits._
+  def toTwitterFuture(
+    implicit executionContext: ExecutionContext
+  ): TFuture[T] = {
+    val p = TPromise[T]()
+    f.onComplete(p.update(_))
+    p
+  }
+}
+
+class TwitterToScalaFuture[T](val f: TFuture[T]) extends AnyVal {
+  import util.Implicits._
+
+  def toScalaFuture(): SFuture[T] = {
+    val p = SPromise[T]()
+    f.respond(p.complete(_))
+    p.future
+  }
+}

@@ -54,12 +54,6 @@ DOWNLOAD_DELAY = 0.25
 #    'tutorial.middlewares.TutorialSpiderMiddleware': 543,
 # }
 
-# Enable or disable downloader middlewares
-# See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
-# DOWNLOADER_MIDDLEWARES = {
-#    'tutorial.middlewares.TutorialDownloaderMiddleware': 543,
-# }
-
 DOWNLOADER_MIDDLEWARES.update({
     'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
     'scrapy_useragents.downloadermiddlewares.useragents.UserAgentsMiddleware': 500,

@@ -7,7 +7,7 @@ import scrapy
 
 from crawlers.base_spider import BaseSitemapSpider
 from crawlers.items import HboItem, HboCastMember, HboCrewMember
-from crawlers.util import strip_tags
+from crawlers.util.html import strip_tags
 
 
 def _get_band_of_type(react_data, typ):

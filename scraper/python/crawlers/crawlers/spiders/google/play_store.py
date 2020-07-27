@@ -3,9 +3,13 @@ import scrapy
 from crawlers.base_spider import BaseSitemapSpider
 from urllib import parse
 
+from crawlers.spiders.common_settings import DISTRIBUTED_SETTINGS
+
 
 class GooglePlayStoreSpider(BaseSitemapSpider):
     name = 'google_play_store'
+    store_name = name
+
     allowed_domains = ['play.google.com']
 
     sitemap_urls = [
@@ -113,6 +117,12 @@ class GooglePlayStoreSpider(BaseSitemapSpider):
         )
 
 
+class DistributedGooglePlayStoreSpider(GooglePlayStoreSpider):
+    name = 'google_play_store_distributed'
+    is_distributed = True
+    custom_settings = {**DISTRIBUTED_SETTINGS, 'AUTOTHROTTLE_TARGET_CONCURRENCY': 8}
+
+
 class GooglePlayStoreItem(scrapy.Item):
     type = 'GooglePlayStoreItem'
     id = scrapy.Field()
@@ -120,14 +130,14 @@ class GooglePlayStoreItem(scrapy.Item):
     releaseYear = scrapy.Field()
     description = scrapy.Field()
     externalId = scrapy.Field()
-    # seasons = scrapy.Field()
     itemType = scrapy.Field()
     network = scrapy.Field()
+    posterImageUrl = scrapy.Field()
+    offers = scrapy.Field()
+    # seasons = scrapy.Field()
     # premiereDate = scrapy.Field()
     # episodes = scrapy.Field()
     # additionalServiceRequired = scrapy.Field()
-    posterImageUrl = scrapy.Field()
-    offers = scrapy.Field()
 
 
 class GooglePlayStoreItemOffer(scrapy.Item):

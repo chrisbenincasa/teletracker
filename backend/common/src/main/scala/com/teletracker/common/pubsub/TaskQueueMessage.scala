@@ -1,6 +1,6 @@
 package com.teletracker.common.pubsub
 
-import io.circe.Json
+import io.circe.{Codec, Decoder, Encoder, Json}
 import io.circe.generic.JsonCodec
 import java.util.UUID
 
@@ -8,6 +8,19 @@ object TaskTag {
   final val RequiresTmdbApi = "tag/RequiresTmdbApi"
   final val RequiresDbAccess = "tag/RequiresDbAccess"
 }
+
+object TransparentEventBase {
+  implicit def codec[T](
+    implicit dec: Decoder[T],
+    enc: Encoder[T]
+  ): Codec[TransparentEventBase[T]] =
+    Codec.from(
+      dec.map(t => TransparentEventBase(t)),
+      enc.contramap(_.underlying)
+    )
+}
+
+case class TransparentEventBase[T](underlying: T) extends EventBase
 
 class EventBase
     extends Serializable

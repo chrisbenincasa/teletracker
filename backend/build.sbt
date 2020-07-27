@@ -130,7 +130,8 @@ lazy val consumer = project
     scalaVersion := Compilation.scalacVersion,
     scalacOptions ++= Compilation.scalacOpts,
     libraryDependencies ++= Seq(
-      "org.codehaus.janino" % "janino" % "3.1.2"
+      "org.codehaus.janino" % "janino" % "3.1.2",
+      "com.twitter" %% "finagle-redis" % versions.twitter
     ),
     mainClass in assembly := Some(
       "com.teletracker.consumers.QueueConsumerDaemon"

@@ -9,7 +9,7 @@ import com.teletracker.common.aws.sqs.worker.SqsQueueWorkerBase.{
   ClearVisibility,
   FinishedAction
 }
-import com.teletracker.common.pubsub.EventBase
+import com.teletracker.common.pubsub.{EventBase, QueueReader}
 import com.teletracker.common.util.execution.ExecutionContextProvider
 import com.teletracker.common.aws.sqs.worker.poll.Heartbeats
 import com.teletracker.common.config.core.api.ReloadableConfig
@@ -19,7 +19,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object SqsQueueBatchWorker {
   def apply[T <: EventBase: Manifest](
-    queue: SqsQueue[T],
+    queue: QueueReader[T],
     config: ReloadableConfig[SqsQueueWorkerConfig]
   )(
     processFunc: Seq[T] => Seq[FinishedAction]
@@ -35,7 +35,7 @@ object SqsQueueBatchWorker {
 }
 
 abstract class SqsQueueBatchWorker[T <: EventBase: Manifest](
-  protected val queue: SqsQueue[T],
+  protected val queue: QueueReader[T],
   config: ReloadableConfig[SqsQueueWorkerConfig]
 )(implicit
   executionContext: ExecutionContext)

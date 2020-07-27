@@ -1,5 +1,6 @@
 package com.teletracker.common.util
 
+import com.teletracker.common.TwitterToScalaFuture
 import com.teletracker.common.util.execution.SequentialFutures
 import java.util.concurrent.CompletableFuture
 import scala.collection.generic.CanBuildFrom
@@ -15,6 +16,11 @@ object Futures {
     l: Collection[T]
   ): RichFutureTraversable[T, Collection] =
     new RichFutureTraversable[T, Collection](l)
+
+  implicit def toTwitterToScalaFuture[T](
+    f: com.twitter.util.Future[T]
+  ): TwitterToScalaFuture[T] =
+    new TwitterToScalaFuture[T](f)
 }
 
 class RichFuture[T](val f: Future[T]) extends AnyVal {
