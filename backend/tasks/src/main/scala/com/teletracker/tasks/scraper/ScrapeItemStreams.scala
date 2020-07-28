@@ -1,5 +1,6 @@
 package com.teletracker.tasks.scraper
 
+import com.teletracker.common.model.scraping.amazon.AmazonItem
 import com.teletracker.common.model.scraping.{
   MatchResult,
   PotentialMatch,
@@ -20,32 +21,37 @@ import com.teletracker.tasks.scraper.hbo.HboScrapeChangesItem
 import scala.io.Source
 
 object ScrapeItemStreams {
+  private val parser = new IngestJobParser()
+
   def getMatchResultStream(
     source: Source,
     scrapeItemType: ScrapeItemType
   ): Stream[Either[Exception, MatchResult[_ <: ScrapedItem]]] = {
     scrapeItemType match {
       case ScrapeItemType.HuluCatalog =>
-        new IngestJobParser()
+        parser
           .stream[MatchResult[HuluScrapeCatalogItem]](source.getLines())
       case ScrapeItemType.HboCatalog =>
-        new IngestJobParser()
+        parser
           .stream[MatchResult[HboScrapedCatalogItem]](source.getLines())
       case ScrapeItemType.NetflixCatalog =>
-        new IngestJobParser()
+        parser
           .stream[MatchResult[NetflixScrapedCatalogItem]](source.getLines())
       case ScrapeItemType.DisneyPlusCatalog =>
-        new IngestJobParser()
+        parser
           .stream[MatchResult[DisneyPlusCatalogItem]](source.getLines())
       case ScrapeItemType.HboMaxCatalog =>
-        new IngestJobParser()
+        parser
           .stream[MatchResult[HboMaxScrapedCatalogItem]](source.getLines())
       case ScrapeItemType.HboChanges =>
-        new IngestJobParser()
+        parser
           .stream[MatchResult[HboScrapeChangesItem]](source.getLines())
       case ScrapeItemType.NetflixOriginalsArriving =>
-        new IngestJobParser()
+        parser
           .stream[MatchResult[NetflixOriginalScrapeItem]](source.getLines())
+      case ScrapeItemType.AmazonVideo =>
+        parser.stream[MatchResult[AmazonItem]](source.getLines())
+
     }
   }
 
@@ -55,26 +61,28 @@ object ScrapeItemStreams {
   ): Stream[Either[Exception, PotentialMatch[_ <: ScrapedItem]]] = {
     scrapeItemType match {
       case ScrapeItemType.HuluCatalog =>
-        new IngestJobParser()
+        parser
           .stream[PotentialMatch[HuluScrapeCatalogItem]](source.getLines())
       case ScrapeItemType.HboCatalog =>
-        new IngestJobParser()
+        parser
           .stream[PotentialMatch[HboScrapedCatalogItem]](source.getLines())
       case ScrapeItemType.NetflixCatalog =>
-        new IngestJobParser()
+        parser
           .stream[PotentialMatch[NetflixScrapedCatalogItem]](source.getLines())
       case ScrapeItemType.DisneyPlusCatalog =>
-        new IngestJobParser()
+        parser
           .stream[PotentialMatch[DisneyPlusCatalogItem]](source.getLines())
       case ScrapeItemType.HboMaxCatalog =>
-        new IngestJobParser()
+        parser
           .stream[PotentialMatch[HboMaxScrapedCatalogItem]](source.getLines())
       case ScrapeItemType.HboChanges =>
-        new IngestJobParser()
+        parser
           .stream[PotentialMatch[HboScrapeChangesItem]](source.getLines())
       case ScrapeItemType.NetflixOriginalsArriving =>
-        new IngestJobParser()
+        parser
           .stream[PotentialMatch[NetflixOriginalScrapeItem]](source.getLines())
+      case ScrapeItemType.AmazonVideo =>
+        parser.stream[PotentialMatch[AmazonItem]](source.getLines())
     }
   }
 
@@ -86,40 +94,42 @@ object ScrapeItemStreams {
   ] = {
     scrapeItemType match {
       case ScrapeItemType.HuluCatalog =>
-        new IngestJobParser()
+        parser
           .streamWithParsed[PotentialMatch[HuluScrapeCatalogItem]](
             source.getLines()
           )
       case ScrapeItemType.HboCatalog =>
-        new IngestJobParser()
+        parser
           .streamWithParsed[PotentialMatch[HboScrapedCatalogItem]](
             source.getLines()
           )
       case ScrapeItemType.NetflixCatalog =>
-        new IngestJobParser()
+        parser
           .streamWithParsed[PotentialMatch[NetflixScrapedCatalogItem]](
             source.getLines()
           )
       case ScrapeItemType.DisneyPlusCatalog =>
-        new IngestJobParser()
+        parser
           .streamWithParsed[PotentialMatch[DisneyPlusCatalogItem]](
             source.getLines()
           )
       case ScrapeItemType.HboMaxCatalog =>
-        new IngestJobParser()
+        parser
           .streamWithParsed[PotentialMatch[HboMaxScrapedCatalogItem]](
             source.getLines()
           )
       case ScrapeItemType.HboChanges =>
-        new IngestJobParser()
+        parser
           .streamWithParsed[PotentialMatch[HboScrapeChangesItem]](
             source.getLines()
           )
       case ScrapeItemType.NetflixOriginalsArriving =>
-        new IngestJobParser()
+        parser
           .streamWithParsed[PotentialMatch[NetflixOriginalScrapeItem]](
             source.getLines()
           )
+      case ScrapeItemType.AmazonVideo =>
+        parser.streamWithParsed[PotentialMatch[AmazonItem]](source.getLines())
     }
   }
 }

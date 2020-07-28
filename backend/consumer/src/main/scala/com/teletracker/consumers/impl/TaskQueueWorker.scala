@@ -76,7 +76,7 @@ class TaskQueueWorker @Inject()(
 
       val extractedArgs = JsonTaskArgs.extractArgs(message.args)
       val stringifiedArgs = extractedArgs.collect {
-        case (str, x) if x.isDefined => str -> x.get.toString
+        case (str, x) => str -> x.toString
       }
 
       val taskRecord = taskRecordCreator.create(

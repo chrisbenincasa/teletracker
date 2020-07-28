@@ -1,5 +1,12 @@
 package com.teletracker.common.tasks.args
 
+import com.teletracker.common.tasks.args.ArgParser.{
+  anyArg,
+  doubleArg,
+  stringArg
+}
+import shapeless.tag
+import shapeless.tag.@@
 import java.io.File
 import java.net.URI
 import java.time.LocalDate
@@ -34,25 +41,34 @@ trait SuperLowPriArgParsers {
   }
 }
 
+class OptArgParser[T](parser: ArgParser[T]) extends ValueArgParser[Option[T]] {
+  override def parseOptValue(in: Option[Any]): Try[Option[T]] = in match {
+    case None | Some(None) => Success(None)
+    case Some(value)       => parseValue(value)
+  }
+
+  override def parseValue(in: Any): Try[Option[T]] =
+    parser.parse(ArgValue(in)).map(Some(_))
+}
+
 trait LowPriArgParsers extends SuperLowPriArgParsers {
   implicit def optArg[T](implicit parser: ArgParser[T]): ArgParser[Option[T]] =
-    new ValueArgParser[Option[T]] {
-
-      override def parseOptValue(in: Option[Any]): Try[Option[T]] = in match {
-        case Some(value) => parseValue(value)
-        case None        => Success(None)
-      }
-
-      override def parseValue(in: Any): Try[Option[T]] =
-        parser.parse(ArgValue(in)).map(Some(_))
-    }
+    new OptArgParser(parser)
 }
 
 object ArgParser extends LowPriArgParsers {
+  import scala.concurrent.duration._
+
+  sealed trait Millis
+
   implicit val stringArg: ArgParser[String] = anyArg[String]
 
   implicit val doubleArg: ArgParser[Double] =
     anyArg[Double].or(stringArg andThen (_.toDouble))
+
+  implicit val longArg: ArgParser[Long] =
+    anyArg[Long]
+      .or(doubleArg andThen (_.toLong))
 
   implicit val intArg: ArgParser[Int] =
     anyArg[Int].or(doubleArg andThen (_.toInt)).or(stringArg andThen (_.toInt))
@@ -72,14 +88,17 @@ object ArgParser extends LowPriArgParsers {
   implicit val uuidArg: ArgParser[UUID] =
     stringArg.andThen(UUID.fromString)
 
+  implicit val localDateArg: ArgParser[LocalDate] =
+    stringArg.andThen(LocalDate.parse)
+
+  implicit val finiteDurationMillisArg: ArgParser[FiniteDuration @@ Millis] =
+    longArg.andThen(l => tag[Millis](l millis))
+
   implicit def javaEnumArg[T <: Enum[T]: Manifest]: ArgParser[T] = {
     val enums = manifest[T].runtimeClass.asInstanceOf[Class[T]].getEnumConstants
 
     stringArg.andThenOpt(str => enums.find(_.name().equalsIgnoreCase(str)))
   }
-
-  implicit val localDateArg: ArgParser[LocalDate] =
-    stringArg.andThen(LocalDate.parse)
 
   implicit def listArg[T](implicit inner: ArgParser[T]): ArgParser[List[T]] = {
     stringArg.andThen(
@@ -148,7 +167,12 @@ trait ValueArgParser[T] extends ArgParser[T] {
   def parseOptValue(in: Option[Any]): Try[T] = {
     in match {
       case x if x.isDefined => parseValue(x.get)
-      case x if x.isEmpty   => Failure(new IllegalArgumentException("Empty"))
+      case x if x.isEmpty =>
+        Failure(
+          new IllegalArgumentException(
+            s"Trying to parse: $in, but it was empty"
+          )
+        )
     }
   }
 

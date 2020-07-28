@@ -1,6 +1,7 @@
 package com.teletracker.tasks.scraper.netflix
 
-import com.teletracker.common.db.model.ExternalSource
+import com.teletracker.common.db.dynamo.{CrawlStore, CrawlerName}
+import com.teletracker.common.db.model.{ExternalSource, SupportedNetwork}
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.model.scraping.ScrapeItemType
 import com.teletracker.common.model.scraping.netflix.NetflixOriginalScrapeItem
@@ -22,16 +23,21 @@ class IngestNetflixOriginalsArrivals @Inject()(
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater
 )(implicit executionContext: ExecutionContext)
-    extends IngestJob[NetflixOriginalScrapeItem]
+    extends IngestJob[NetflixOriginalScrapeItem](networkCache)
     with SubscriptionNetworkAvailability[NetflixOriginalScrapeItem] {
+  override protected val crawlerName: CrawlerName =
+    CrawlStore.NetflixOriginalsArriving
 
-  override protected def scrapeItemType: ScrapeItemType =
+  override protected val supportedNetworks: Set[SupportedNetwork] = Set(
+    SupportedNetwork.Netflix
+  )
+
+  override protected val externalSource: ExternalSource = ExternalSource.Netflix
+
+  override protected val scrapeItemType: ScrapeItemType =
     ScrapeItemType.NetflixOriginalsArriving
 
   private val farIntoTheFuture = LocalDate.now().plusYears(1)
-
-  override protected def externalSources: List[ExternalSource] =
-    List(ExternalSource.Netflix)
 
   override protected def networkTimeZone: ZoneOffset =
     ZoneId.of("US/Pacific").getRules.getOffset(Instant.now())

@@ -1,6 +1,11 @@
 package com.teletracker.common.model.scraping
 
-import com.teletracker.common.db.model.{ExternalSource, ItemType, OfferType}
+import com.teletracker.common.db.model.{
+  ExternalSource,
+  ItemType,
+  OfferType,
+  PresentationType
+}
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -20,6 +25,9 @@ trait ScrapedItem {
   def actualItemId: Option[UUID] = None
   def version: Option[Long] = None
 
+  // Populated if the scraper was able to make an association with an internal ID, without matching.
+  def internalId: Option[UUID] = None
+
   lazy val availableLocalDate: Option[LocalDate] =
     availableDate.map(LocalDate.parse(_, DateTimeFormatter.ISO_LOCAL_DATE))
 
@@ -31,6 +39,8 @@ trait ScrapedItem {
 
   def cast: Option[Seq[ScrapedCastMember]] = None
   def crew: Option[Seq[ScrapedCrewMember]] = None
+
+  def offers: Option[List[ScrapedOffer]] = None
 }
 
 trait ScrapedCastMember {
@@ -43,6 +53,13 @@ trait ScrapedCrewMember {
   def name: String
   def order: Option[Int]
   def role: Option[String]
+}
+
+trait ScrapedOffer {
+  def offerType: OfferType
+  def price: Option[Double]
+  def currency: Option[String]
+  def quality: Option[PresentationType]
 }
 
 object ScrapedItemAvailabilityDetails {

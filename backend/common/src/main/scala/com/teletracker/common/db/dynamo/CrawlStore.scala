@@ -28,8 +28,13 @@ object CrawlStore {
   final val HboChanges = new CrawlerName("hbo_changes")
   final val HboMaxCatalog = new CrawlerName("hbo_max_authenticated")
   final val NetflixCatalog = new CrawlerName("netflix")
+  final val NetflixOriginalsArriving = new CrawlerName(
+    "netflix_originals_arriving"
+  )
   final val HuluCatalog = new CrawlerName("hulu")
+  final val HuluChanges = new CrawlerName("hulu_changes")
   final val DisneyPlusCatalog = new CrawlerName("disneyplus")
+  final val AmazonCatalog = new CrawlerName("amazon")
 }
 
 class CrawlerName(val name: String) extends AnyVal {

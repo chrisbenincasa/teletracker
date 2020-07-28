@@ -3,14 +3,19 @@ package com.teletracker.tasks.scraper
 import com.teletracker.common.availability.{CrawlerInfo, NetworkAvailability}
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.dynamo.model.StoredNetwork
-import com.teletracker.common.db.model.PresentationType
+import com.teletracker.common.db.model.{
+  ExternalSource,
+  PresentationType,
+  SupportedNetwork
+}
+import com.teletracker.common.util.Futures._
 import com.teletracker.common.elasticsearch.model.{EsAvailability, EsItem}
 import com.teletracker.common.inject.SingleThreaded
 import com.teletracker.common.model.scraping._
 import com.teletracker.common.tasks.TeletrackerTask.JsonableArgs
 import com.teletracker.common.tasks.TypedTeletrackerTask
 import com.teletracker.common.tasks.args.ArgParser
-import com.teletracker.common.util.{AsyncStream, OpenDateRange}
+import com.teletracker.common.util.{AsyncStream, NetworkCache, OpenDateRange}
 import com.teletracker.tasks.scraper.matching.{
   ElasticsearchFallbackMatcher,
   ElasticsearchFallbackMatcherOptions,
@@ -39,6 +44,7 @@ abstract class BaseIngestJob[
   T <: ScrapedItem,
   IngestJobArgsType <: IngestJobArgsLike: JsonableArgs: ArgParser
 ](
+  networkCache: NetworkCache
 )(implicit protected val executionContext: ExecutionContext,
   protected val codec: Codec[T])
     extends TypedTeletrackerTask[IngestJobArgsType] {
@@ -60,6 +66,13 @@ abstract class BaseIngestJob[
   protected def presentationTypes: Set[PresentationType] =
     Set(PresentationType.SD, PresentationType.HD)
 
+  // The networks this job generates availability for
+  protected def supportedNetworks: Set[SupportedNetwork]
+
+  // The external source that pulled data for this job. External IDs should be unique within this namespace.
+  protected def externalSource: ExternalSource
+
+  // The type of items scraped from this data source.
   protected def scrapeItemType: ScrapeItemType
 
   protected val missingItemsFile = new File(
@@ -282,6 +295,30 @@ abstract class BaseIngestJob[
       })
   }
 
+  protected def getNetworksOrExit(): Set[StoredNetwork] = {
+    val foundNetworks = networkCache
+      .getAllNetworks()
+      .await()
+      .collect {
+        case network
+            if network.supportedNetwork.isDefined && supportedNetworks.contains(
+              network.supportedNetwork.get
+            ) =>
+          network
+      }
+      .toSet
+
+    if (supportedNetworks
+          .diff(foundNetworks.flatMap(_.supportedNetwork))
+          .nonEmpty) {
+      throw new IllegalStateException(
+        s"""Could not find all networks "${supportedNetworks}" network from datastore"""
+      )
+    }
+
+    foundNetworks
+  }
+
   protected def createAvailabilities(
     networks: Set[StoredNetwork],
     item: EsItem,
@@ -308,9 +345,10 @@ trait BaseSubscriptionNetworkAvailability[
 
     val availabilitiesByNetwork = item.availabilityGrouped
 
-    val unaffectedNetworks = availabilitiesByNetwork.keySet -- networks.map(
-      _.id
-    )
+    val unaffectedNetworks = availabilitiesByNetwork.keySet -- networks
+      .map(
+        _.id
+      )
 
     networks.toList.flatMap(network => {
       availabilitiesByNetwork.get(network.id) match {

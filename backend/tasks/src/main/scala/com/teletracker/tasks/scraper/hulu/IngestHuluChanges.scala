@@ -1,6 +1,7 @@
 package com.teletracker.tasks.scraper.hulu
 
-import com.teletracker.common.db.model.ExternalSource
+import com.teletracker.common.db.dynamo.{CrawlStore, CrawlerName}
+import com.teletracker.common.db.model.{ExternalSource, SupportedNetwork}
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.model.scraping.hulu.HuluScrapeItem
 import com.teletracker.common.model.scraping.{NonMatchResult, ScrapeItemType}
@@ -18,16 +19,20 @@ class IngestHuluChanges @Inject()(
   protected val itemUpdater: ItemUpdater,
   huluFallbackMatching: HuluFallbackMatching
 )(implicit executionContext: ExecutionContext)
-    extends IngestJob[HuluScrapeItem]
+    extends IngestJob[HuluScrapeItem](networkCache)
     with SubscriptionNetworkAvailability[HuluScrapeItem] {
+  override protected val crawlerName: CrawlerName = CrawlStore.HuluChanges
 
-  override protected def scrapeItemType: ScrapeItemType =
+  override protected val scrapeItemType: ScrapeItemType =
     ScrapeItemType.HuluCatalog
 
-  private val premiumNetworks = Set("hbo", "starz", "showtime")
+  override protected val supportedNetworks: Set[SupportedNetwork] = Set(
+    SupportedNetwork.Hulu
+  )
 
-  override protected def externalSources: List[ExternalSource] =
-    List(ExternalSource.Hulu)
+  override protected val externalSource: ExternalSource = ExternalSource.Hulu
+
+  private val premiumNetworks = Set("hbo", "starz", "showtime")
 
   override protected def networkTimeZone: ZoneOffset =
     ZoneId.of("US/Pacific").getRules.getOffset(Instant.now())

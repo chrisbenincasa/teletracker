@@ -20,14 +20,14 @@ class CrawlAvailabilityItemLoaderFactory @Inject()(
   crawlStore: CrawlStore,
   s3AvailabilityItemLoaderFactory: UriAvailabilityItemLoaderFactory
 )(implicit executionContext: ExecutionContext) {
-  def make[T <: ScrapedItem: Decoder]: CrawlAvailabilityItemLoader[T] =
+  def make[T: Decoder]: CrawlAvailabilityItemLoader[T] =
     new CrawlAvailabilityItemLoader[T](
       crawlStore,
       s3AvailabilityItemLoaderFactory.make[T]
     )
 }
 
-class CrawlAvailabilityItemLoader[T <: ScrapedItem: Decoder](
+class CrawlAvailabilityItemLoader[T: Decoder](
   crawlStore: CrawlStore,
   s3AvailabilityItemLoader: UriAvailabilityItemLoader[T]
 )(implicit executionContext: ExecutionContext)

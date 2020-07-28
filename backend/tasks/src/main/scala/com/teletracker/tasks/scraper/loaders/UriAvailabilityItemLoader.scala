@@ -1,7 +1,6 @@
 package com.teletracker.tasks.scraper.loaders
 
 import com.teletracker.common.db.model.SupportedNetwork
-import com.teletracker.common.model.scraping.ScrapedItem
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.util.SourceRetriever
 import io.circe.Decoder
@@ -18,11 +17,11 @@ case class UriAvailabilityItemLoaderArgs(
 class UriAvailabilityItemLoaderFactory @Inject()(
   sourceRetriever: SourceRetriever
 )(implicit executionContext: ExecutionContext) {
-  def make[T <: ScrapedItem: Decoder]: UriAvailabilityItemLoader[T] =
+  def make[T: Decoder]: UriAvailabilityItemLoader[T] =
     new UriAvailabilityItemLoader[T](sourceRetriever)
 }
 
-class UriAvailabilityItemLoader[T <: ScrapedItem: Decoder](
+class UriAvailabilityItemLoader[T: Decoder](
   sourceRetriever: SourceRetriever
 )(implicit executionContext: ExecutionContext)
     extends AvailabilityItemLoader[T, UriAvailabilityItemLoaderArgs] {
@@ -31,7 +30,7 @@ class UriAvailabilityItemLoader[T <: ScrapedItem: Decoder](
   override protected def loadImpl(
     args: UriAvailabilityItemLoaderArgs
   ): Future[List[T]] = {
-    val source = sourceRetriever.getSource(args.location)
+    val source = sourceRetriever.getSource(args.location, consultCache = true)
     try {
       // TODO Don't block calling thread
       val items = new IngestJobParser()

@@ -1,6 +1,7 @@
 package com.teletracker.tasks.scraper.hulu
 
-import com.teletracker.common.db.model.ExternalSource
+import com.teletracker.common.db.dynamo.{CrawlStore, CrawlerName}
+import com.teletracker.common.db.model.{ExternalSource, SupportedNetwork}
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.model.scraping.ScrapeItemType
 import com.teletracker.common.model.scraping.hulu.HuluScrapeCatalogItem
@@ -29,14 +30,18 @@ class IngestHuluCatalog @Inject()(
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater
 )(implicit executionContext: ExecutionContext)
-    extends IngestJob[HuluScrapeCatalogItem]
+    extends IngestJob[HuluScrapeCatalogItem](networkCache)
     with SubscriptionNetworkAvailability[HuluScrapeCatalogItem] {
+  override protected val crawlerName: CrawlerName = CrawlStore.HuluCatalog
 
-  override protected def scrapeItemType: ScrapeItemType =
+  override protected val supportedNetworks: Set[SupportedNetwork] = Set(
+    SupportedNetwork.Hulu
+  )
+
+  override protected val externalSource: ExternalSource = ExternalSource.Hulu
+
+  override protected val scrapeItemType: ScrapeItemType =
     ScrapeItemType.HuluCatalog
-
-  override protected def externalSources: List[ExternalSource] =
-    List(ExternalSource.Hulu)
 
   override protected def shouldProcessItem(
     item: HuluScrapeCatalogItem

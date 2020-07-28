@@ -5,7 +5,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 public enum PresentationType {
     SD("sd"),
     HD("hd"),
-    FourK("4k");
+    FourK("4k"),
+    UHD("uhd");
 
     private final String name;
 

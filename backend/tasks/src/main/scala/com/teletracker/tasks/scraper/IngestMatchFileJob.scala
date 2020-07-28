@@ -1,5 +1,6 @@
 package com.teletracker.tasks.scraper
-import com.teletracker.common.db.model.ExternalSource
+import com.teletracker.common.db.dynamo.CrawlerName
+import com.teletracker.common.db.model.{ExternalSource, SupportedNetwork}
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.model.scraping.netflix.NetflixScrapedCatalogItem
 import com.teletracker.common.model.scraping.{
@@ -17,8 +18,10 @@ import scala.concurrent.ExecutionContext
 
 abstract class IngestMatchFileJob[
   T <: ScrapedItem: Codec: ScrapedItemAvailabilityDetails
-](implicit executionContext: ExecutionContext)
-    extends IngestJob[MatchInput[T]] {
+](
+  networkCache: NetworkCache
+)(implicit executionContext: ExecutionContext)
+    extends IngestJob[MatchInput[T]](networkCache) {
   @Inject private[this] var directLookupMethod: DirectLookupMethod = _
 
   // Csst is safe because we know scrapedItem is not accessed
@@ -33,12 +36,17 @@ class IngestNetflixCatalogMatchFile @Inject()(
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater
 )(implicit executionContext: ExecutionContext)
-    extends IngestMatchFileJob[NetflixScrapedCatalogItem]
+    extends IngestMatchFileJob[NetflixScrapedCatalogItem](networkCache)
     with SubscriptionNetworkAvailability[MatchInput[NetflixScrapedCatalogItem]] {
+  override protected def crawlerName: CrawlerName =
+    throw new UnsupportedOperationException("crawler mode not supported")
 
-  override protected def scrapeItemType: ScrapeItemType =
+  override protected val supportedNetworks: Set[SupportedNetwork] = Set(
+    SupportedNetwork.Netflix
+  )
+
+  override protected val externalSource: ExternalSource = ExternalSource.Netflix
+
+  override protected val scrapeItemType: ScrapeItemType =
     ScrapeItemType.NetflixCatalog
-
-  override protected def externalSources: List[ExternalSource] =
-    List(ExternalSource.Netflix)
 }

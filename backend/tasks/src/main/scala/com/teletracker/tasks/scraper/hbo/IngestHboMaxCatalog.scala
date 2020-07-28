@@ -38,9 +38,16 @@ class IngestHboMaxCatalog @Inject()(
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater
 )(implicit executionContext: ExecutionContext)
-    extends IngestJob[HboMaxScrapedCatalogItem]
+    extends IngestJob[HboMaxScrapedCatalogItem](networkCache)
     with SubscriptionNetworkAvailability[HboMaxScrapedCatalogItem]
     with CommonHboMaxCatalogIngest {
+  override protected val crawlerName: CrawlerName = CrawlStore.HboMaxCatalog
+
+  override protected val supportedNetworks: Set[SupportedNetwork] = Set(
+    SupportedNetwork.HboMax
+  )
+
+  override protected val externalSource: ExternalSource = ExternalSource.HboMax
 
   override protected def isAvailable(
     item: HboMaxScrapedCatalogItem,

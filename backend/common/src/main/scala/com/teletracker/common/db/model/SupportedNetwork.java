@@ -2,20 +2,24 @@ package com.teletracker.common.db.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 
+import javax.annotation.Nullable;
+
 public enum SupportedNetwork {
-    Netflix(ExternalSource.Netflix.getName(), 1),
-    Hulu(ExternalSource.Hulu.getName(), 2),
-    Hbo("hbo", 3),
-    HboMax(ExternalSource.HboMax.getName(), 4),
-    DisneyPlus(ExternalSource.DisneyPlus.getName(), 5),
-    AmazonPrimeVideo(ExternalSource.AmazonPrimeVideo.getName(), 6),
-    AmazonVideo(ExternalSource.AmazonVideo.getName(), 7);
+    Netflix(ExternalSource.Netflix, null, 1),
+    Hulu(ExternalSource.Hulu, null, 2),
+    Hbo(ExternalSource.HboGo, "hbo", 3),
+    HboMax(ExternalSource.HboMax, null, 4),
+    DisneyPlus(ExternalSource.DisneyPlus, null, 5),
+    AmazonPrimeVideo(ExternalSource.AmazonPrimeVideo, null, 6),
+    AmazonVideo(ExternalSource.AmazonVideo, null, 7);
 
     private final int value;
     private final String name;
+    private final ExternalSource externalSource;
 
-    SupportedNetwork(final String name, final int value) {
-        this.name = name;
+    SupportedNetwork(final ExternalSource externalSource, @Nullable final String name, final int value) {
+        this.externalSource = externalSource;
+        this.name = name == null ? externalSource.getName() : name;
         this.value = value;
     }
 
@@ -26,6 +30,8 @@ public enum SupportedNetwork {
     public int getValue() {
         return value;
     }
+
+    public ExternalSource getExternalSource() { return externalSource; }
 
     public static SupportedNetwork fromValue(final int i) {
         for (SupportedNetwork src : SupportedNetwork.values()) {

@@ -10,7 +10,7 @@ import scala.util.control.NonFatal
 class TeletrackerTaskRunnable(
   val originalMessage: TeletrackerTaskQueueMessage,
   teletrackerTask: TeletrackerTask,
-  args: Map[String, Option[Any]])
+  args: Map[String, Any])
     extends Runnable {
 
   val id = UUID.randomUUID()

@@ -26,7 +26,11 @@ class Deriver(val c: whitebox.Context)
     q"""
        c match {
           case _root_.com.teletracker.common.tasks.args.AllArgs(a) =>
-            $decode.parse(_root_.com.teletracker.common.tasks.args.ArgValue(a.get($name)))
+            $decode.parse(_root_.com.teletracker.common.tasks.args.ArgValue(a.get($name))) match {
+              case v @ _root_.scala.util.Success(_) => v
+              case _root_.scala.util.Failure(e) =>
+                _root_.scala.util.Failure(new IllegalArgumentException("Could not parse field " + $name, e))
+            }
           case _root_.com.teletracker.common.tasks.args.ArgValue(v) =>
             _root_.scala.util.Failure(new IllegalArgumentException("Expected all args, got value."))
        }

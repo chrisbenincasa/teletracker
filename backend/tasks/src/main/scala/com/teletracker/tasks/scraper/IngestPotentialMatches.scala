@@ -8,7 +8,7 @@ import com.teletracker.common.model.scraping.{
   ScrapedItemAvailabilityDetails
 }
 import com.teletracker.common.tasks.TeletrackerTask.RawArgs
-import com.teletracker.common.util.Folds
+import com.teletracker.common.util.{Folds, NetworkCache}
 import com.teletracker.tasks.scraper.model.PotentialInput
 import com.teletracker.common.util.json.circe._
 import io.circe.generic.JsonCodec
@@ -22,8 +22,10 @@ import scala.concurrent.duration.FiniteDuration
 // Job that takes in a hand-filtered potential match file output and imports the items
 abstract class IngestPotentialMatches[
   T <: ScrapedItem: Codec: ScrapedItemAvailabilityDetails
-](implicit executionContext: ExecutionContext)
-    extends IngestJob[PotentialInput[T]]
+](
+  networkCache: NetworkCache
+)(implicit executionContext: ExecutionContext)
+    extends IngestJob[PotentialInput[T]](networkCache)
 
 @JsonCodec
 case class IngestPotentialMatchesDeltaArgs(

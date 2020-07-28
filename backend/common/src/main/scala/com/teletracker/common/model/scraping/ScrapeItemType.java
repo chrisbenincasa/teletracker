@@ -7,7 +7,8 @@ public enum ScrapeItemType {
     DisneyPlusCatalog("DisneyPlusCatalog"),
     HboMaxCatalog("HboMaxCatalog"),
     HboChanges("HboChanges"),
-    NetflixOriginalsArriving("NetflixOriginalsArriving");
+    NetflixOriginalsArriving("NetflixOriginalsArriving"),
+    AmazonVideo("AmazonVideo");
 
     private final String type;
 

@@ -1,9 +1,9 @@
 package com.teletracker.common.util
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Awaitable, Future, Promise}
+import scala.concurrent.{Await, Future, Promise}
 
-trait AsyncToken[X, F[_] <: Awaitable[X]] {
+trait AsyncToken[X, F[_]] {
   def await(duration: Duration = Duration.Inf): X
 }
 

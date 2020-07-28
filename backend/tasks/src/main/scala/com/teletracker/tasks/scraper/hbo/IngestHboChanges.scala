@@ -1,6 +1,12 @@
 package com.teletracker.tasks.scraper.hbo
 
-import com.teletracker.common.db.model.{ExternalSource, ItemType, OfferType}
+import com.teletracker.common.db.dynamo.{CrawlStore, CrawlerName}
+import com.teletracker.common.db.model.{
+  ExternalSource,
+  ItemType,
+  OfferType,
+  SupportedNetwork
+}
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.model.scraping.{
   ScrapeItemType,
@@ -25,14 +31,17 @@ class IngestHboChanges @Inject()(
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater
 )(implicit executionContext: ExecutionContext)
-    extends IngestJob[HboScrapeChangesItem]
+    extends IngestJob[HboScrapeChangesItem](networkCache)
     with SubscriptionNetworkAvailability[HboScrapeChangesItem] {
+  override protected val crawlerName: CrawlerName = CrawlStore.HboChanges
 
-  override protected def scrapeItemType: ScrapeItemType =
+  override protected val supportedNetworks: Set[SupportedNetwork] =
+    Set(SupportedNetwork.Hbo, SupportedNetwork.HboMax)
+
+  override protected val externalSource: ExternalSource = ExternalSource.HboGo
+
+  override protected val scrapeItemType: ScrapeItemType =
     ScrapeItemType.HboChanges
-
-  override protected def externalSources: List[ExternalSource] =
-    List(ExternalSource.HboGo, ExternalSource.HboNow)
 
   override protected def networkTimeZone: ZoneOffset =
     ZoneId.of("US/Eastern").getRules.getOffset(Instant.now())

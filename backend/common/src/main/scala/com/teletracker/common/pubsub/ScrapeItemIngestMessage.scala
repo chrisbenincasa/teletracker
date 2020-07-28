@@ -1,20 +1,27 @@
 package com.teletracker.common.pubsub
 
 import com.teletracker.common.model.scraping.ScrapedItem
+import com.teletracker.common.model.scraping.amazon.AmazonItem
+import com.teletracker.common.model.scraping.apple.AppleTvItem
 import com.teletracker.common.model.scraping.disney.DisneyPlusCatalogItem
+import com.teletracker.common.model.scraping.google.GooglePlayStoreItem
 import com.teletracker.common.model.scraping.hbo.HboScrapedCatalogItem
 import com.teletracker.common.model.scraping.hulu.HuluScrapeCatalogItem
 import com.teletracker.common.model.scraping.netflix.NetflixScrapedCatalogItem
+import com.teletracker.common.model.scraping.showtime.ShowtimeScrapeCatalogItem
 import io.circe.generic.JsonCodec
 import io.circe.{Decoder, Json}
 import scala.util.{Failure, Try}
 
 object ScrapeItemIngestMessage {
   final private val HboCatalogItemType = "HboItem"
-  final private val ShowtimeCatalogItem = "ShowtimeItem"
+  final private val ShowtimeCatalogItemType = "ShowtimeItem"
   final private val NetflixCatalogItemType = "NetflixItem"
   final private val HuluCatalogItemType = "HuluItem"
   final private val DisneyPlusCatalogItemType = "DisneyPlusCatalogItem"
+  final private val AmazonItemType = "AmazonItem"
+  final private val AppleTvItemType = "AppleTv"
+  final private val GooglePlayStoreItemType = "GooglePlayStoreItem"
 }
 
 @JsonCodec
@@ -32,6 +39,10 @@ case class ScrapeItemIngestMessage(
       case NetflixCatalogItemType    => item.as[NetflixScrapedCatalogItem].toTry
       case HuluCatalogItemType       => item.as[HuluScrapeCatalogItem].toTry
       case DisneyPlusCatalogItemType => item.as[DisneyPlusCatalogItem].toTry
+      case AmazonItemType            => item.as[AmazonItem].toTry
+      case AppleTvItemType           => item.as[AppleTvItem].toTry
+      case GooglePlayStoreItemType   => item.as[GooglePlayStoreItem].toTry
+      case ShowtimeCatalogItemType   => item.as[ShowtimeScrapeCatalogItem].toTry
       case _ =>
         Failure(
           new IllegalArgumentException(s"Type ${`type`} is not recognized")

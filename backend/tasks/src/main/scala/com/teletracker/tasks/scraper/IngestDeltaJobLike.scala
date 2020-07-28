@@ -99,7 +99,7 @@ abstract class IngestDeltaJobLike[
 )(implicit codec: Codec[IncomingItemType],
   typedArgs: JsonableArgs[IngestJobArgs],
   executionContext: ExecutionContext)
-    extends BaseIngestJob[IncomingItemType, IngestJobArgs] {
+    extends BaseIngestJob[IncomingItemType, IngestJobArgs](deps.networkCache) {
 
   import ScrapedItemAvailabilityDetails.syntax._
 
@@ -118,7 +118,6 @@ abstract class IngestDeltaJobLike[
   protected val singleThreadExecutor: ScheduledExecutorService =
     deps.singleThreadExecutorProvider.get()
 
-  protected def supportedNetworks: Set[SupportedNetwork]
   protected def externalSource: ExternalSource
   protected def offerType: OfferType
 
@@ -208,30 +207,6 @@ abstract class IngestDeltaJobLike[
           )
           PendingAvailabilityAdd(esItem, Some(scrapedItem), newAvailabilities)
       }
-  }
-
-  protected def getNetworksOrExit(): Set[StoredNetwork] = {
-    val foundNetworks = deps.networkCache
-      .getAllNetworks()
-      .await()
-      .collect {
-        case network
-            if network.supportedNetwork.isDefined && supportedNetworks.contains(
-              network.supportedNetwork.get
-            ) =>
-          network
-      }
-      .toSet
-
-    if (supportedNetworks
-          .diff(foundNetworks.flatMap(_.supportedNetwork))
-          .nonEmpty) {
-      throw new IllegalStateException(
-        s"""Could not find all networks "${supportedNetworks}" network from datastore"""
-      )
-    }
-
-    foundNetworks
   }
 
   protected def saveAvailabilities(

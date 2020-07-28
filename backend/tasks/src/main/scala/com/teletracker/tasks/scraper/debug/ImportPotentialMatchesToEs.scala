@@ -193,6 +193,7 @@ class ImportPotentialMatchesToEs @Inject()(
       case ScrapeItemType.HboMaxCatalog            => ExternalSource.HboMax
       case ScrapeItemType.HboChanges               => ExternalSource.HboGo
       case ScrapeItemType.NetflixOriginalsArriving => ExternalSource.Netflix
+      case ScrapeItemType.AmazonVideo              => ExternalSource.AmazonVideo
     }
   }
 
@@ -208,6 +209,8 @@ class ImportPotentialMatchesToEs @Inject()(
         Set(SupportedNetwork.Hbo, SupportedNetwork.HboMax)
       case ScrapeItemType.NetflixOriginalsArriving =>
         Set(SupportedNetwork.Netflix)
+      case ScrapeItemType.AmazonVideo =>
+        Set(SupportedNetwork.AmazonVideo, SupportedNetwork.AmazonPrimeVideo)
     }
   }
 }

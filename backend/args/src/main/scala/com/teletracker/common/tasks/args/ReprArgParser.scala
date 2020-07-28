@@ -45,12 +45,16 @@ object ReprArgParser2 extends ReprArgParserLowPri {
       override def parse(in: ArgType): Try[FieldType[K, H] :: T] = {
         in match {
           case AllArgs(args) =>
-            for {
-              h <- hParser.parse(ArgValue(args.get(fieldName)))
-              t <- tParser.value.parse(args - fieldName)
-            } yield {
-              field[K](h) :: t
+            val h = hParser.parse(ArgValue(args.get(fieldName))) match {
+              case Failure(exception) =>
+                throw new IllegalArgumentException(
+                  s"Couldnt parse ${fieldName}",
+                  exception
+                )
+              case Success(value) => value
             }
+
+            tParser.value.parse(args - fieldName).map(t => field[K](h) :: t)
 
           case ArgValue(_) => throw new IllegalArgumentException("Expected map")
         }

@@ -1,7 +1,8 @@
 package com.teletracker.tasks.scraper.hbo
 
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.db.model.ExternalSource
+import com.teletracker.common.db.dynamo.{CrawlStore, CrawlerName}
+import com.teletracker.common.db.model.{ExternalSource, SupportedNetwork}
 import com.teletracker.common.elasticsearch.{
   ElasticsearchExecutor,
   ItemLookup,
@@ -30,14 +31,19 @@ class IngestHboCatalog @Inject()(
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater
 )(implicit executionContext: ExecutionContext)
-    extends IngestJob[HboScrapedCatalogItem]
+    extends IngestJob[HboScrapedCatalogItem](networkCache)
     with SubscriptionNetworkAvailability[HboScrapedCatalogItem] {
+  override protected val crawlerName: CrawlerName = CrawlStore.HboCatalog
 
-  override protected def scrapeItemType: ScrapeItemType =
+  override protected val supportedNetworks: Set[SupportedNetwork] = Set(
+    SupportedNetwork.Hbo,
+    SupportedNetwork.HboMax
+  )
+
+  override protected val externalSource: ExternalSource = ExternalSource.HboGo
+
+  override protected val scrapeItemType: ScrapeItemType =
     ScrapeItemType.HboCatalog
-
-  override protected def externalSources: List[ExternalSource] =
-    List(ExternalSource.HboGo, ExternalSource.HboMax)
 
   override protected def isAvailable(
     item: HboScrapedCatalogItem,

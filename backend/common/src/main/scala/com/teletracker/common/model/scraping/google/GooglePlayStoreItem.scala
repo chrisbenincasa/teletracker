@@ -1,7 +1,7 @@
 package com.teletracker.common.model.scraping.google
 
-import com.teletracker.common.db.model.{ItemType, OfferType}
-import com.teletracker.common.model.scraping.ScrapedItem
+import com.teletracker.common.db.model.{ItemType, OfferType, PresentationType}
+import com.teletracker.common.model.scraping.{ScrapedItem, ScrapedOffer}
 import com.teletracker.common.util.json.circe._
 import io.circe.generic.JsonCodec
 
@@ -15,7 +15,7 @@ case class GooglePlayStoreItem(
   override val itemType: ItemType,
   override val network: String,
   override val posterImageUrl: Option[String],
-  offers: Option[List[GooglePlayStoreOffer]])
+  override val offers: Option[List[GooglePlayStoreOffer]])
     extends ScrapedItem {
   override def availableDate: Option[String] = None
   override def category: Option[String] = None
@@ -25,6 +25,7 @@ case class GooglePlayStoreItem(
 @JsonCodec
 case class GooglePlayStoreOffer(
   offerType: OfferType,
-  price: Double,
-  quality: Option[String],
+  price: Option[Double],
+  quality: Option[PresentationType],
   currency: Option[String])
+    extends ScrapedOffer

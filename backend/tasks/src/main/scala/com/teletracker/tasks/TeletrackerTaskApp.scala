@@ -27,19 +27,17 @@ abstract class TeletrackerTaskApp[T <: TeletrackerTask: Manifest]
   protected def extraModules: Seq[Module] = Seq()
 
   override protected def run(): Unit = {
-    try {
-      injector.instance[T].run(collectArgs)
-    } catch {
-      case NonFatal(e) =>
-        e.printStackTrace()
-    }
+    injector.instance[T].run(collectArgs)
   }
 
-  protected def collectArgs: Map[String, Option[Any]] = {
+  protected def collectArgs: Map[String, Any] = {
     flag
       .getAll()
-      .map(f => {
-        f.name -> f.getWithDefault
+      .flatMap(f => {
+        f.getWithDefault match {
+          case Some(value) => Some(f.name -> value)
+          case None        => None
+        }
       })
       .toMap
   }

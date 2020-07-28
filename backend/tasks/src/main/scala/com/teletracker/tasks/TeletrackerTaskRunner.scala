@@ -54,7 +54,7 @@ object TeletrackerTaskRunner extends TeletrackerTaskApp[NoopTeletrackerTask] {
     val task = _instance.getInstance(clazzToRun)
     val args = collectArgs
     val strigifiedArgs = args.collect {
-      case (str, option) if option.isDefined => str -> option.get.toString
+      case (str, option) => str -> option.toString
     }
 
     val recordCreator = injector.instance[TaskRecordCreator]
@@ -80,12 +80,12 @@ object TeletrackerTaskRunner extends TeletrackerTaskApp[NoopTeletrackerTask] {
     System.exit(0)
   }
 
-  override protected def collectArgs: Map[String, Option[Any]] = {
+  override protected def collectArgs: Map[String, Any] = {
     args.toList
       .map(arg => {
         try {
           val Array(f, value) = arg.split("=", 2)
-          f.stripPrefix("-") -> Some(value)
+          f.stripPrefix("-") -> value
         } catch {
           case e: MatchError =>
             println(
@@ -155,7 +155,7 @@ class TeletrackerTaskRunner @Inject()(injector: Injector) {
 
   def runFromString(
     clazz: String,
-    args: Map[String, Option[Any]]
+    args: Map[String, Any]
   ): TeletrackerTask.TaskResult = {
     run(getInstance(clazz), args)
   }
@@ -169,7 +169,7 @@ class TeletrackerTaskRunner @Inject()(injector: Injector) {
 
   def run(
     task: TeletrackerTask,
-    args: Map[String, Option[Any]]
+    args: Map[String, Any]
   ): TeletrackerTask.TaskResult = {
     task.run(args)
   }
