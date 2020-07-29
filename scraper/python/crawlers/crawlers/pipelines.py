@@ -6,6 +6,8 @@
 # See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 from scrapy.exceptions import DropItem
 
+from crawlers.base_spider import VersionedSpider
+
 
 class DupeIdFilterPipeline:
     def __init__(self):
@@ -19,3 +21,9 @@ class DupeIdFilterPipeline:
             raise DropItem
         else:
             return item
+
+
+class ItemVersioner:
+    def process_item(self, item, spider):
+        if isinstance(spider, VersionedSpider):
+            item['version'] = spider.version

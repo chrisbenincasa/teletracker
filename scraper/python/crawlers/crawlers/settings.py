@@ -75,6 +75,7 @@ EXTENSIONS = {
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
     'crawlers.pipelines.DupeIdFilterPipeline': 300,
+    'crawlers.pipelines.ItemVersioner': 400,
 }
 
 FEED_EXPORTERS = {

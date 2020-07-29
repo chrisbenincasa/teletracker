@@ -1,4 +1,6 @@
 resource "aws_elasticache_cluster" "crawl_store" {
+  count = 1
+
   cluster_id      = "crawler-store"
   engine          = "redis"
   engine_version  = "5.0.6"

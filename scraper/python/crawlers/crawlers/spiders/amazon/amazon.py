@@ -9,10 +9,12 @@ from jsonpath_ng.ext import parse
 from scrapy import Request
 
 from crawlers.base_spider import BaseCrawlSpider
+from crawlers.extensions.empty_response_recorder import empty_item_signal
 from crawlers.items import AmazonCastMember
 from crawlers.items import AmazonCrewMember
 from crawlers.items import AmazonItem
 from crawlers.items import AmazonItemOffer
+from crawlers.settings import EXTENSIONS
 from crawlers.spiders.common_settings import get_data_bucket
 
 select_sql = """
@@ -30,7 +32,8 @@ class AmazonSpider(BaseCrawlSpider):
     allowed_domains = ['amazon.com', 'imdb.com']
 
     custom_settings = {
-        'AUTOTHROTTLE_TARGET_CONCURRENCY': 8
+        'AUTOTHROTTLE_TARGET_CONCURRENCY': 8,
+        'EXTENSIONS': {**EXTENSIONS, 'crawlers.extensions.empty_response_recorder.EmptyResponseRecorder': 500}
     }
 
     def __init__(self, json_logging=True, *a, **kw):
@@ -127,6 +130,7 @@ class AmazonSpider(BaseCrawlSpider):
                               meta=response.meta)
 
     def _handle_amazon_page(self, response):
+        item = None
         for script in response.xpath('//script[@type="text/template"]/text()').getall():
             try:
                 loaded = json.loads(script)
@@ -175,7 +179,7 @@ class AmazonSpider(BaseCrawlSpider):
                             else:
                                 continue
 
-                        yield AmazonItem(
+                        item = AmazonItem(
                             id=official_id,
                             externalId=official_id,
                             title=header_detail['title'],
@@ -192,6 +196,11 @@ class AmazonSpider(BaseCrawlSpider):
                             internalId=response.meta['id'] if 'id' in response.meta else None,
                             offers=all_offers
                         )
-
+                        break
             except JSONDecodeError:
                 continue
+
+            if not item:
+                self.crawler.signals.send_catch_log(empty_item_signal, response=response)
+
+            return item
