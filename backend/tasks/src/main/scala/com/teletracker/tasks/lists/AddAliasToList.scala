@@ -16,6 +16,8 @@ case class AddAliasToListArgs(
   alias: String,
   userId: String)
 
+object AddAliasToListArgs
+
 class AddAliasToList @Inject()(listsDbAccess: ListsDbAccess)
     extends TypedTeletrackerTask[AddAliasToListArgs] {
 

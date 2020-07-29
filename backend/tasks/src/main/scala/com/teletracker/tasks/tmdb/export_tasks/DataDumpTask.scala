@@ -42,6 +42,8 @@ case class DataDumpTaskArgs(
   rotateEvery: Int = 1000,
   baseOutputPath: Option[String] = None)
 
+object DataDumpTaskArgs
+
 abstract class DataDumpTask[T: Decoder, Id](
 )(implicit executionContext: ExecutionContext)
     extends TypedTeletrackerTask[DataDumpTaskArgs] {

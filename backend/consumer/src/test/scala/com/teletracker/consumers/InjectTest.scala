@@ -15,13 +15,13 @@ import scala.util.control.NonFatal
 class InjectTest extends AnyFlatSpecLike with ScalaCheckPropertyChecks {
   it should "inject each consumer type" in {
     forAll(Table("runMode", RunMode.all: _*)) { mode =>
-      val injector = Guice.createInjector(Modules(mode): _*)
+      val injector = Guice.createInjector(Modules(): _*)
       QueueConsumerDaemon.listenerForMode(Injector(injector), mode)
     }
   }
 
   it should "inject all tasks" in {
-    val injector = Guice.createInjector(Modules(TaskConsumer): _*)
+    val injector = Guice.createInjector(Modules(): _*)
     val reflections = new Reflections("com.teletracker")
     val allTasks = reflections
       .getSubTypesOf(classOf[TeletrackerTask])
@@ -30,13 +30,7 @@ class InjectTest extends AnyFlatSpecLike with ScalaCheckPropertyChecks {
       .filterNot(clazz => Modifier.isAbstract(clazz.getModifiers))
 
     allTasks.foreach(clazz => {
-      try {
-        injector.getInstance(clazz)
-      } catch {
-        case NonFatal(e) =>
-          System.err.println(s"Could not inject ${clazz}")
-          fail(e)
-      }
+      injector.getInstance(clazz)
     })
   }
 }

@@ -63,6 +63,9 @@ object ArgParser extends LowPriArgParsers {
 
   implicit val stringArg: ArgParser[String] = anyArg[String]
 
+  implicit val floatArg: ArgParser[Float] =
+    anyArg[Float].or(stringArg andThen (_.toFloat))
+
   implicit val doubleArg: ArgParser[Double] =
     anyArg[Double].or(stringArg andThen (_.toDouble))
 
@@ -74,7 +77,7 @@ object ArgParser extends LowPriArgParsers {
     anyArg[Int].or(doubleArg andThen (_.toInt)).or(stringArg andThen (_.toInt))
 
   implicit val uriArg: ArgParser[URI] =
-    stringArg.andThen(new URI(_)).or(anyArg[URI])
+    stringArg.andThen(URI.create).or(anyArg[URI])
 
   implicit val fileArg: ArgParser[File] =
     uriArg.andThen(new File(_)).or(build(tryX(_.asInstanceOf[File])))

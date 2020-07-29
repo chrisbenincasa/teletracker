@@ -14,6 +14,7 @@ final private[tasks] class GenericArgParserMacros(val c: blackbox.Context)
 
   protected[this] def semiautoObj: Symbol =
     symbolOf[semiauto.type].asClass.module
+
   protected[this] def deriveMethodPrefix: String = "derive"
 
   def argParserAnnotationMacro(annottees: Tree*): Tree =

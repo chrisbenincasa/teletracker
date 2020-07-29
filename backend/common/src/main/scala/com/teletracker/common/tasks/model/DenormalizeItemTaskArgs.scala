@@ -11,3 +11,5 @@ case class DenormalizeItemTaskArgs(
   creditsChanged: Boolean,
   crewChanged: Boolean,
   dryRun: Boolean = true)
+
+object DenormalizeItemTaskArgs

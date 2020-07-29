@@ -8,10 +8,6 @@ import shapeless.tag.@@
 import java.net.URI
 import scala.concurrent.duration.FiniteDuration
 
-object IngestJobArgs {
-  final val b = ""
-}
-
 @GenArgParser
 @JsonCodec
 case class IngestJobArgs(
@@ -28,3 +24,5 @@ case class IngestJobArgs(
   reimport: Boolean = false,
   externalIdFilter: Option[String])
     extends IngestJobArgsLike
+
+object IngestJobArgs

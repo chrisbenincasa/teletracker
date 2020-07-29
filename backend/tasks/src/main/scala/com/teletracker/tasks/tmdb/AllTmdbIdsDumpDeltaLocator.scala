@@ -32,6 +32,8 @@ case class AllTmdbIdsDumpDeltaLocatorArgs(
   itemType: ItemType)
     extends DeltaLocatorJobArgsLike
 
+object AllTmdbIdsDumpDeltaLocatorArgs
+
 class AllTmdbIdsDumpDeltaLocator @Inject()(
   s3Client: S3Client,
   teletrackerConfig: TeletrackerConfig

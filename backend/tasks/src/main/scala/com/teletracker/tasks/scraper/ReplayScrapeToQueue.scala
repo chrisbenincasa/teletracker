@@ -23,6 +23,8 @@ case class ReplayScrapeToQueueArgs(
   version: Long,
   itemType: String)
 
+object ReplayScrapeToQueueArgs
+
 class ReplayScrapeToQueue @Inject()(
   crawlAvailabilityItemLoaderFactory: CrawlAvailabilityItemLoaderFactory,
   queue: SqsQueue[ScrapeItemIngestMessage]

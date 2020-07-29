@@ -13,6 +13,7 @@ import com.teletracker.common.config.core.api.{ReloadableConfig, WatchToken}
 import org.slf4j.LoggerFactory
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Success
 import scala.util.control.NonFatal
 
 object SqsQueueWorkerBase {
@@ -49,6 +50,7 @@ abstract class SqsQueueWorkerBase[T <: EventBase](
 
   @volatile protected var stopped = false
   @volatile protected var started = false
+  @volatile protected var inited = false
   @volatile private var configWatchToken: WatchToken = _
 
   def run(): Unit = {
@@ -64,6 +66,8 @@ abstract class SqsQueueWorkerBase[T <: EventBase](
           s"Updated config: ${newValue}"
         )
       }
+
+      doInitOnce().await()
 
       started = true
     }
@@ -90,6 +94,19 @@ abstract class SqsQueueWorkerBase[T <: EventBase](
 
     flush()
   }
+
+  private def doInitOnce(): Future[Unit] = {
+    inited.synchronized {
+      if (!inited) {
+        inited = true
+        init()
+      } else {
+        Future.unit
+      }
+    }
+  }
+
+  protected def init(): Future[Unit] = Future.unit
 
   protected def runInternal(): Unit
 

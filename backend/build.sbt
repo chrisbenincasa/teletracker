@@ -113,7 +113,9 @@ lazy val common = project
       compilerPlugin(
         "org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full
       ),
-      "com.lihaoyi" %% "pprint" % "0.5.6" % Test
+      "com.lihaoyi" %% "pprint" % "0.5.6" % Test,
+      "com.github.docker-java" % "docker-java-core" % "3.2.5" % Test,
+      "com.github.docker-java" % "docker-java-transport-zerodep" % "3.2.5" % Test
     ) ++ Dependencies.circe
   )
   .dependsOn(args, model)

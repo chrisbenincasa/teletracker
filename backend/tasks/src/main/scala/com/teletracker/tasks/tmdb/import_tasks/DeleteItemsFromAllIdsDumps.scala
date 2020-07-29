@@ -25,6 +25,8 @@ case class DeleteItemsFromAllIdsDumpsArgs(
   itemType: ItemType)
     extends BaseTaskArgs
 
+object DeleteItemsFromAllIdsDumpsArgs
+
 class DeleteItemsFromAllIdsDumps @Inject()(
   fileUtils: FileUtils,
   externalIdMappingStore: ElasticsearchExternalIdMappingStore

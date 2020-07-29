@@ -33,7 +33,7 @@ object SqsQueueAsyncBatchWorker {
   }
 }
 
-abstract class SqsQueueAsyncBatchWorker[T <: EventBase: Manifest](
+abstract class SqsQueueAsyncBatchWorker[T <: EventBase](
   queue: QueueReader[T],
   config: ReloadableConfig[SqsQueueWorkerConfig]
 )(implicit

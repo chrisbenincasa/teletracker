@@ -14,14 +14,20 @@ import software.amazon.awssdk.services.dynamodb.model.{
   ComparisonOperator,
   Condition,
   GetItemRequest,
+  PutItemRequest,
   QueryRequest
 }
 import java.net.URI
 import java.time.Instant
-import java.util.concurrent.{ScheduledExecutorService, TimeUnit}
+import java.util.concurrent.{
+  ScheduledExecutorService,
+  ScheduledFuture,
+  TimeUnit
+}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters._
+import scala.concurrent.duration._
 
 object CrawlStore {
   final val HboCatalog = new CrawlerName("hbo_go_catalog")
@@ -46,6 +52,21 @@ class CrawlStore @Inject()(
   dynamo: DynamoDbAsyncClient,
   @SingleThreaded scheduledExecutorService: ScheduledExecutorService
 )(implicit executionContext: ExecutionContext) {
+  def saveCrawl(crawl: HistoricalCrawl): Future[Unit] = {
+    dynamo
+      .putItem(
+        PutItemRequest
+          .builder()
+          .tableName(teletrackerConfig.currentValue().dynamo.crawls.table_name)
+          .item(
+            crawl.toDynamoItem
+          )
+          .build()
+      )
+      .toScala
+      .map(_ => {})
+  }
+
   def getCrawlAtVersion(
     crawler: CrawlerName,
     version: Long
@@ -144,10 +165,11 @@ class CrawlStore @Inject()(
       })
   }
 
-  def waitForActiveCrawl(
+  def waitForActiveCrawlCompletion(
     crawlerName: CrawlerName,
-    version: Option[Long]
-  ): Future[AsyncToken[Unit, Future] with Cancellable] = {
+    version: Option[Long],
+    frequency: FiniteDuration = 10 seconds
+  ): Future[InProgressCrawlToken] = {
     val crawlFut = version match {
       case Some(value) =>
         getCrawlAtVersion(crawlerName, value)
@@ -157,7 +179,7 @@ class CrawlStore @Inject()(
 
     crawlFut.map {
       case Some(value) if value.timeClosed.isDefined =>
-        FutureToken.successful(Unit)
+        InProgressCrawlToken.successful
       case Some(foundCrawl) =>
         val p = Promise[Unit]()
         val fut = scheduledExecutorService.schedule(
@@ -165,10 +187,10 @@ class CrawlStore @Inject()(
             override def run(): Unit = {
               getCrawlAtVersion(crawlerName, foundCrawl.version).map {
                 case Some(value) if value.timeClosed.isDefined =>
-                  p.success(Unit)
+                  p.trySuccess(Unit)
                 case Some(_) =>
                 case None =>
-                  p.failure(
+                  p.tryFailure(
                     new RuntimeException(
                       s"Crawler ${crawlerName} at version ${version} doesn't exist anymore}"
                     )
@@ -176,19 +198,32 @@ class CrawlStore @Inject()(
               }
             }
           },
-          10,
-          TimeUnit.SECONDS
+          frequency.toMillis,
+          TimeUnit.MILLISECONDS
         )
 
-        new FutureToken[Unit](p.future) with Cancellable {
-          override def cancel(): Unit = fut.cancel(true)
-        }
+        new InProgressCrawlToken(p.future, Some(fut))
 
       case None =>
         throw new IllegalArgumentException(
           s"No crawler with name: ${crawlerName} found at verison ${version}"
         )
     }
+  }
+}
+
+object InProgressCrawlToken {
+  def successful: InProgressCrawlToken =
+    new InProgressCrawlToken(Future.unit, None)
+}
+
+class InProgressCrawlToken(
+  awaiter: Future[Unit],
+  underlying: Option[ScheduledFuture[_]])
+    extends FutureToken[Unit](awaiter)
+    with Cancellable {
+  override def cancel(): Unit = {
+    underlying.foreach(_.cancel(true))
   }
 }
 
@@ -203,7 +238,9 @@ object HistoricalCrawl {
       totalItemsScraped =
         m.get("total_items_scraped").map(_.fromAttributeValue[Long]),
       metadata =
-        m.get("metadata").map(_.fromAttributeValue[HistoricalCrawlMetadata])
+        m.get("metadata").map(_.fromAttributeValue[HistoricalCrawlMetadata]),
+      numOpenSpiders = m.get("num_open_spiders").map(_.fromAttributeValue[Int]),
+      isDistributed = m.get("is_distributed").map(_.fromAttributeValue[Boolean])
     )
   }
 }
@@ -215,7 +252,9 @@ case class HistoricalCrawl(
   timeOpened: Instant,
   timeClosed: Option[Instant],
   totalItemsScraped: Option[Long],
-  metadata: Option[HistoricalCrawlMetadata]) {
+  metadata: Option[HistoricalCrawlMetadata],
+  numOpenSpiders: Option[Int],
+  isDistributed: Option[Boolean]) {
   private lazy val outputsMap = metadata
     .flatMap(_.outputs)
     .map(_.fold(Map.empty[String, HistoricalCrawlOutput])(_ ++ _))
@@ -237,6 +276,22 @@ case class HistoricalCrawl(
           }
       }.headOption
     }
+  }
+
+  def toDynamoItem: java.util.Map[String, AttributeValue] = {
+    (Map(
+      "spider" -> spider.toAttributeValue,
+      "version" -> version.toAttributeValue,
+      "time_opened" -> timeOpened.toAttributeValueTagged[EpochSeconds]
+    ) ++ Map(
+      "time_closed" -> timeClosed.map(_.toAttributeValueTagged[EpochSeconds]),
+      "total_items_scraped" -> totalItemsScraped.map(_.toAttributeValue),
+      "metadata" -> metadata.map(_.toAttributeValue),
+      "num_open_spiders" -> numOpenSpiders.map(_.toAttributeValue),
+      "is_distributed" -> isDistributed.map(_.toAttributeValue)
+    ).collect {
+      case (k, Some(v)) => k -> v
+    }).asJava
   }
 }
 

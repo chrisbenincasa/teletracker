@@ -9,3 +9,5 @@ import java.util.UUID
 case class DenormalizePersonTaskArgs(
   personId: UUID,
   dryRun: Boolean = true)
+
+object DenormalizePersonTaskArgs

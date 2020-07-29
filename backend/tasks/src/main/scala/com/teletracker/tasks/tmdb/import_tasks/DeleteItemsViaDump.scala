@@ -35,6 +35,8 @@ case class DeleteItemsArgs(
   limit: Int = -1,
   dryRun: Boolean = true)
 
+object DeleteItemsArgs
+
 class DeleteItemsViaDump @Inject()(
   sourceRetriever: SourceRetriever,
   @SingleThreaded scheduledExecutorService: ScheduledExecutorService,

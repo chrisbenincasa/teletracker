@@ -24,7 +24,8 @@ object Modules {
     CommonModules() ++ Seq(
       new HttpClientModule,
       new ConsumerConfigModule(),
-      new FactoriesModule
+      new FactoriesModule,
+      new AmazonItemWriterModule
     )
   }
 }

@@ -1,6 +1,6 @@
 package com.teletracker.common.config.core
 
-import com.teletracker.common.config.core.api.ConfigWithPath
+import com.teletracker.common.config.core.api.{ConfigWithPath, StaticConfig}
 import com.teletracker.common.config.core.sources.AppName
 import com.teletracker.common.util.{Environment, Realm}
 import net.ceedubs.ficus.readers.ValueReader
@@ -57,4 +57,11 @@ class StaticLoader(
   ): T#ConfigType = {
     innerLoader.loadType(loader).currentValue()
   }
+
+  def static[T](
+    path: String
+  )(implicit valueReader: ValueReader[T],
+    tt: ClassTag[T]
+  ): StaticConfig[T] =
+    StaticConfig(load[T](path))
 }

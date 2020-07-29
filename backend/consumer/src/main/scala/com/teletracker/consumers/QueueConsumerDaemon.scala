@@ -2,6 +2,8 @@ package com.teletracker.consumers
 
 import com.google.inject.Module
 import com.teletracker.common.aws.sqs.SqsQueueListener
+import com.teletracker.common.util.Futures._
+import com.teletracker.consumers.crawlers.AmazonItemWriterWorker
 import com.teletracker.consumers.impl._
 import com.teletracker.consumers.inject.Modules
 import com.twitter.app.Flaggable
@@ -26,7 +28,7 @@ object QueueConsumerDaemon extends com.twitter.inject.app.App {
 
     Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
       override def run(): Unit = {
-        listener.stop()
+        listener.stop().await()
       }
     }))
 
@@ -48,6 +50,8 @@ object QueueConsumerDaemon extends com.twitter.inject.app.App {
         new SqsQueueListener(injector.instance[EsDenormalizePersonWorker])
       case ScrapeItemImportConsumer =>
         new SqsQueueListener(injector.instance[ScrapeItemImportWorker])
+      case AmazonItemWriterConsumer =>
+        new SqsQueueListener(injector.instance[AmazonItemWriterWorker])
     }
   }
 }
@@ -59,6 +63,7 @@ object RunMode {
   final private val EsPersonDenormalizeConsumerType =
     "EsPersonDenormalizeConsumer"
   final private val ScrapeItemImportConsumerType = "ScrapeItemImportConsumer"
+  final private val AmazonItemWriterConsumerType = "AmazonItemWriterConsumer"
 
   implicit val flaggable_runMode: Flaggable[RunMode] = new Flaggable[RunMode] {
     override def parse(s: String): RunMode =
@@ -68,6 +73,7 @@ object RunMode {
         case EsItemDenormalizeConsumerType   => EsItemDenormalizeConsumer
         case EsPersonDenormalizeConsumerType => EsPersonDenormalizeConsumer
         case ScrapeItemImportConsumerType    => ScrapeItemImportConsumer
+        case AmazonItemWriterConsumerType    => AmazonItemWriterConsumer
         case _                               => throw new IllegalArgumentException
       }
   }
@@ -87,3 +93,4 @@ case object EsIngestConsumer extends RunMode
 case object EsItemDenormalizeConsumer extends RunMode
 case object EsPersonDenormalizeConsumer extends RunMode
 case object ScrapeItemImportConsumer extends RunMode
+case object AmazonItemWriterConsumer extends RunMode

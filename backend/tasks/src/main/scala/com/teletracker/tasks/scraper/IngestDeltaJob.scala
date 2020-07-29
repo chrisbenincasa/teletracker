@@ -10,6 +10,7 @@ import com.teletracker.common.model.scraping.{
   ScrapedItemAvailabilityDetails
 }
 import com.teletracker.common.tasks.TeletrackerTask.{JsonableArgs, RawArgs}
+import com.teletracker.common.tasks.args.ArgParser.Millis
 import com.teletracker.common.tasks.args.GenArgParser
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Futures._
@@ -18,6 +19,7 @@ import com.teletracker.common.util.{AsyncStream, Folds, OnceT}
 import io.circe.Codec
 import io.circe.generic.JsonCodec
 import io.circe.syntax._
+import shapeless.tag.@@
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
 import java.net.URI
 import java.time.{LocalDate, OffsetDateTime}
@@ -37,13 +39,15 @@ case class IngestDeltaJobArgs(
   itemIdFilter: Option[UUID] = None,
   externalIdFilter: Option[String] = None,
   override val parallelism: Option[Int] = None,
-  override val processBatchSleep: Option[FiniteDuration] = None,
+  override val processBatchSleep: Option[FiniteDuration @@ Millis] = None,
   deltaSizeThreshold: Double = 5.0,
   disableDeltaSizeCheck: Boolean = false,
   override val sleepBetweenWriteMs: Option[Long] = None,
   crawlerName: Option[String],
   crawlerVersion: Option[Long])
     extends IngestDeltaJobArgsLike
+
+object IngestDeltaJobArgs
 
 abstract class IngestDeltaJob[
   ScrapeItemType <: ScrapedItem: ScrapedItemAvailabilityDetails

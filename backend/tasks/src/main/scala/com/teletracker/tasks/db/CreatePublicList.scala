@@ -19,6 +19,8 @@ case class CreatePublicListArgs(
   isDynamic: Boolean,
   id: Option[UUID])
 
+object CreatePublicListArgs
+
 class CreatePublicList @Inject()(listsDbAccess: ListsDbAccess)
     extends TypedTeletrackerTask[CreatePublicListArgs] {
 

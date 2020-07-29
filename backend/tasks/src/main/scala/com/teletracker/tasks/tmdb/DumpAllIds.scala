@@ -35,6 +35,8 @@ case class DumpAllIdsArgs(
   date: LocalDate = LocalDate.now(),
   local: Boolean = false)
 
+object DumpAllIdsArgs
+
 object DumpAllIds {
   def getIdsPath(
     typePrefix: String,

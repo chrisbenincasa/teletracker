@@ -45,7 +45,8 @@ case class AmazonItem(
   runtime: Option[String],
   availableOnPrime: Boolean,
   override val offers: Option[List[AmazonItemOffer]],
-  override val internalId: Option[UUID])
+  override val internalId: Option[UUID],
+  override val version: Long)
     extends ScrapedItem {
   override def availableDate: Option[String] = None
 

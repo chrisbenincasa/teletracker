@@ -123,6 +123,17 @@ object syntax extends AsAttributeValueInstances {
 final class AsAttributeValueOps[T](val value: T) extends AnyVal {
   def toAttributeValue(implicit aav: AsAttributeValue[T]): AttributeValue =
     aav.to(value)
+
+  def toAttributeValueOfType[U](
+    m: T => U
+  )(implicit aav: AsAttributeValue[U]
+  ): AttributeValue =
+    aav.to(m(value))
+
+  def toAttributeValueTagged[U](
+    implicit aav: AsAttributeValue[T @@ U]
+  ): AttributeValue =
+    toAttributeValueOfType[T @@ U](tag[U](_))
 }
 
 final class FromAttributeValueOps(val value: AttributeValue) extends AnyVal {

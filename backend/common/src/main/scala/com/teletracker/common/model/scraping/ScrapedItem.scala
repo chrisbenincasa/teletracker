@@ -23,7 +23,7 @@ trait ScrapedItem {
   def numSeasonsAvailable: Option[Int] = None
   def posterImageUrl: Option[String] = None
   def actualItemId: Option[UUID] = None
-  def version: Option[Long] = None
+  def version: Long = -1
 
   // Populated if the scraper was able to make an association with an internal ID, without matching.
   def internalId: Option[UUID] = None

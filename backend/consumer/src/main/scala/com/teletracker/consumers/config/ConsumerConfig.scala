@@ -14,10 +14,15 @@ case class ConsumerConfig(
   es_ingest_worker: ThroughputWorkerConfig,
   es_item_denorm_worker: BatchWorkerConfig,
   es_person_denorm_worker: BatchWorkerConfig,
-  scrape_item_worker: ThroughputWorkerConfig)
+  scrape_item_worker: ThroughputWorkerConfig,
+  amazon_item_worker: ScrapeItemWorkerConfig)
 
 case class ConsumerLoggingConfig(output_to_console: Boolean)
 
 case class ThroughputWorkerConfig(max_outstanding: Int)
 
 case class BatchWorkerConfig(batch_size: Int)
+
+case class ScrapeItemWorkerConfig(
+  output_prefix: String,
+  batch_size: Int)

@@ -4,6 +4,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future, Promise}
 
 trait AsyncToken[X, F[_]] {
+  def awaitable: F[X]
   def await(duration: Duration = Duration.Inf): X
 }
 
@@ -11,9 +12,10 @@ trait Cancellable {
   def cancel(): Unit
 }
 
-case class PromiseToken[X](p: Promise[X]) extends AsyncToken[X, Promise] {
+case class PromiseToken[X](awaitable: Promise[X])
+    extends AsyncToken[X, Promise] {
   override def await(duration: Duration = Duration.Inf): X =
-    Await.result(p.future, duration)
+    Await.result(awaitable.future, duration)
 }
 
 object FutureToken {
@@ -23,7 +25,7 @@ object FutureToken {
     }
 }
 
-case class FutureToken[X](f: Future[X]) extends AsyncToken[X, Future] {
+case class FutureToken[X](awaitable: Future[X]) extends AsyncToken[X, Future] {
   override def await(duration: Duration = Duration.Inf): X =
-    Await.result(f, duration)
+    Await.result(awaitable, duration)
 }

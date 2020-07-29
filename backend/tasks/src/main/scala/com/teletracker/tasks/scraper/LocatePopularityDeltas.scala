@@ -99,7 +99,6 @@ class LocateMoviePopularityDelta @Inject()(
 
 class LocateShowPopularityDelta @Inject()(
   s3Client: S3Client,
-  sourceRetriever: SourceRetriever,
   teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext)
     extends LocatePopularityDeltas[UpdateTvShowPopularities](

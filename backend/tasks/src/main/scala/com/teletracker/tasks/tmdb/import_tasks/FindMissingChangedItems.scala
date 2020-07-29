@@ -29,6 +29,8 @@ case class FindMissingChangedItemsArgs(
   end: LocalDate,
   itemType: ItemType)
 
+object FindMissingChangedItemsArgs
+
 class FindMissingChangedItems @Inject()(
   teletrackerConfig: TeletrackerConfig,
   s3Client: S3Client,

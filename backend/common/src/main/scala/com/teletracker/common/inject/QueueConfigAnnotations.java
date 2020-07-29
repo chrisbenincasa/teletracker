@@ -33,4 +33,9 @@ public final class QueueConfigAnnotations {
     @Target({ FIELD, PARAMETER, METHOD })
     @Retention(RUNTIME)
     public @interface ScrapeItemQueueConfig { }
+
+    @BindingAnnotation
+    @Target({ FIELD, PARAMETER, METHOD })
+    @Retention(RUNTIME)
+    public @interface AmazonItemWriterConfig { }
 }

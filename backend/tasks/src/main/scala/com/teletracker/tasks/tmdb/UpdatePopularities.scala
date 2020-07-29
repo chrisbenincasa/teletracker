@@ -74,6 +74,8 @@ case class UpdatePopularitiesJobArgs(
   mod: Option[Int],
   band: Option[Int])
 
+object UpdatePopularitiesJobArgs
+
 abstract class UpdateItemPopularities[T <: TmdbDumpFileRow: Decoder](
   itemType: ItemType,
   deps: UpdatePopularitiesDependencies

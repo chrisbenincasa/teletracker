@@ -14,6 +14,7 @@ import com.teletracker.common.model.scraping.{
   ScrapedItemAvailabilityDetails
 }
 import com.teletracker.common.tasks.TeletrackerTask.{JsonableArgs, RawArgs}
+import com.teletracker.common.tasks.args.ArgParser.Millis
 import com.teletracker.common.tasks.args.GenArgParser
 import com.teletracker.common.util.{Folds, OnceT}
 import com.teletracker.common.util.Futures._
@@ -28,6 +29,7 @@ import io.circe.Codec
 import io.circe.generic.JsonCodec
 import io.circe.syntax._
 import org.elasticsearch.index.query.QueryBuilders
+import shapeless.tag.@@
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
 import java.time.LocalDate
 import java.util.UUID
@@ -46,10 +48,12 @@ case class LiveIngestDeltaJobArgs(
   override val disableDeltaSizeCheck: Boolean,
   override val dryRun: Boolean = true,
   override val sleepBetweenWriteMs: Option[Long],
-  override val processBatchSleep: Option[FiniteDuration],
+  override val processBatchSleep: Option[FiniteDuration @@ Millis],
   override val parallelism: Option[Int],
   additionsOnly: Boolean = false)
     extends IngestDeltaJobArgsLike
+
+object LiveIngestDeltaJobArgs
 
 abstract class LiveIngestDeltaJob[
   T <: ScrapedItem: ScrapedItemAvailabilityDetails

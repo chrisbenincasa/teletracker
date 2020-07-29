@@ -32,6 +32,8 @@ case class DeltaLocatorJobArgs(
   seedDumpDate: Option[LocalDate])
     extends DeltaLocatorJobArgsLike
 
+object DeltaLocatorJobArgs
+
 abstract class DeltaLocatorJob[_ArgsType <: DeltaLocatorJobArgsLike: ArgParser](
   s3Client: S3Client,
   teletrackerConfig: TeletrackerConfig

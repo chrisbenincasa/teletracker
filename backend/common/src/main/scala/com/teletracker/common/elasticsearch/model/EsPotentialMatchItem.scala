@@ -129,7 +129,7 @@ case class EsScrapedItem(
   override val posterImageUrl: Option[String],
   override val cast: Option[Seq[EsScrapedCastMember]],
   override val crew: Option[Seq[EsScrapedCrewMember]],
-  override val version: Option[Long])
+  override val version: Long)
     extends ScrapedItem {
   override def isMovie: Boolean = itemType == ItemType.Movie
   override def isTvShow: Boolean = itemType == ItemType.Show

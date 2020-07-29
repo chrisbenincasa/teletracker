@@ -31,7 +31,8 @@ case class AsyncConfig(
   esIngestQueue: QueueConfig,
   esItemDenormalizationQueue: QueueConfig,
   esPersonDenormalizationQueue: QueueConfig,
-  scrapeItemQueue: QueueConfig)
+  scrapeItemQueue: QueueConfig,
+  amazonItemQueue: QueueConfig)
 
 case class QueueConfig(
   url: String,

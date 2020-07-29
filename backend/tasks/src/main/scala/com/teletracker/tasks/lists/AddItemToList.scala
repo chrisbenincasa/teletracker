@@ -15,6 +15,8 @@ case class AddItemToListArgs(
   itemId: UUID,
   userId: String)
 
+object AddItemToListArgs
+
 class AddItemToList @Inject()(itemUpdater: ItemUpdater)
     extends TypedTeletrackerTask[AddItemToListArgs] {
   override protected def runInternal(): Unit = {
