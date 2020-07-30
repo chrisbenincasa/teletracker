@@ -36,3 +36,8 @@ variable "redis_host" {
   type = string
   default = ""
 }
+
+variable "extra_args" {
+  type = list(string)
+  default = []
+}

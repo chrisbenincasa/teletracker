@@ -30,7 +30,7 @@ resource "aws_ecs_task_definition" "crawler_task_def" {
       ]),
       command: concat([
         "./run_spider.sh",
-        var.spider_name], var.outputs)
+        var.spider_name], var.outputs, var.extra_args)
     }
   ])
 
