@@ -36,10 +36,10 @@ case class ShowtimeScrapeCatalogItem(
   itemType: ItemType,
   network: String,
   override val url: Option[String],
-  seasons: Option[List[ShowtimeScrapeSeasonItem]])
+  seasons: Option[List[ShowtimeScrapeSeasonItem]],
+  releaseYear: Option[Int])
     extends ScrapedItem {
   override val availableDate: Option[String] = None
-  override def releaseYear: Option[Int] = ???
   override val category: Option[String] = None
   override def status: String = ""
   override def isMovie: Boolean = itemType == ItemType.Movie
