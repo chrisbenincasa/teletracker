@@ -18,8 +18,7 @@ module "amazon_crawler" {
   ]
 
   extra_args = [
-    "-sEMPTY_RESPONSE_RECORDER_ENABLED=True",
-    "-sEMPTY_RESPONSE_OUTPUT_PREFIX=scrape-results/amazon/catalog/empty_results"
+    "-sEMPTY_RESPONSE_RECORDER_ENABLED=True"
   ]
 
   dynamodb_output_table = aws_dynamodb_table.crawls.name
