@@ -12,10 +12,16 @@ SPIDER_NAME=$1
 shift
 
 OUTPUTS_STR=()
+REST=()
 
 for output in "$@"; do
-  formatted_name="${output//$date_param/$DATE}"
-  OUTPUTS_STR+=(-o "${formatted_name//$time_param/$TS}")
+  if [[ $output == -s* ]];
+  then
+    REST+=($output )
+  else
+    formatted_name="${output//$date_param/$DATE}"
+    OUTPUTS_STR+=(-o "${formatted_name//$time_param/$TS}")
+  fi
 done
 
 DYNAMO_CMD=()
@@ -28,5 +34,5 @@ scrapy crawl "$SPIDER_NAME" \
   --set LOG_ENABLED=False \
   --set JSON_LOGGING=True \
   --set LOG_FORMATTER='crawlers.logformatter.LogFormatter' \
-  "${DYNAMO_CMD[@]}"
-  $@
+  "${DYNAMO_CMD[@]}" \
+  "${REST[@]}"
