@@ -15,5 +15,5 @@ DISTRIBUTED_SETTINGS = {
     'SCHEDULER': "scrapy_redis.scheduler.Scheduler",
     'DUPEFILTER_CLASS': "scrapy_redis.dupefilter.RFPDupeFilter",
     'ITEM_PIPELINES': {**ITEM_PIPELINES, 'scrapy_redis.pipelines.RedisPipeline': 400},
-    'REDIS_HOST': os.environ['REDIS_HOST']
+    'REDIS_HOST': os.environ['REDIS_HOST'] if 'REDIS_HOST' in os.environ else None
 }
