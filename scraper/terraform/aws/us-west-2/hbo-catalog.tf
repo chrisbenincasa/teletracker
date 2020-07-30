@@ -26,6 +26,8 @@ module "hbo_crawler" {
   schedule = [
     "cron(0 7 ? * */3 *)",
   "cron(0 7 1 * ? *)"]
+
+  gen_service = false
 }
 
 module "hbo_changes_crawler" {
@@ -46,6 +48,8 @@ module "hbo_changes_crawler" {
   schedule = [
     "cron(0 7 ? * */3 *)",
   "cron(0 7 1 * ? *)"]
+
+  gen_service = false
 }
 
 module "hbo_max_crawler" {
@@ -68,4 +72,6 @@ module "hbo_max_crawler" {
   schedule = [
     "cron(0 7 ? * */3 *)",
   "cron(0 7 1 * ? *)"]
+
+  gen_service = false
 }

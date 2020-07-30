@@ -7,6 +7,8 @@ from json import JSONDecodeError
 import boto3
 from jsonpath_ng.ext import parse
 from scrapy import Request
+from scrapy.spiders import Rule
+from scrapy.linkextractors import LinkExtractor
 
 from crawlers.base_spider import BaseCrawlSpider
 from crawlers.extensions.empty_response_recorder import empty_item_signal
@@ -15,6 +17,7 @@ from crawlers.items import AmazonCrewMember
 from crawlers.items import AmazonItem
 from crawlers.items import AmazonItemOffer
 from crawlers.settings import EXTENSIONS
+from crawlers.spiders.common_settings import DISTRIBUTED_SETTINGS
 from crawlers.spiders.common_settings import get_data_bucket
 
 select_sql = """
@@ -30,65 +33,76 @@ AMAZON_MOVIE_ENTITY_TYPE = 'Movie'
 class AmazonSpider(BaseCrawlSpider):
     name = 'amazon'
     allowed_domains = ['amazon.com', 'imdb.com']
-
+    is_distributed = True
     custom_settings = {
+        **DISTRIBUTED_SETTINGS,
         'AUTOTHROTTLE_TARGET_CONCURRENCY': 8,
         'EXTENSIONS': {**EXTENSIONS, 'crawlers.extensions.empty_response_recorder.EmptyResponseRecorder': 500}
     }
+
+    rules = (
+        Rule(LinkExtractor(allow=(r'(https://www.amazon.com)?/gp/video/detail/.*',)),
+             callback='_handle_amazon_page', follow=True),
+        Rule(LinkExtractor(
+            allow=r'(https://www.amazon.com)?/gp/video/search/?.*'), follow=True),
+        Rule(LinkExtractor(
+            allow=r'(https://www.amazon.com)?/gp/video/storefront/?.*'), follow=True)
+    )
 
     def __init__(self, json_logging=True, *a, **kw):
         super().__init__(json_logging, *a, **kw)
         self._s3_client = boto3.client('s3')
 
     def start_requests(self):
-        paginator = self._s3_client.get_paginator('list_objects_v2')
+        if self.settings.getbool('SEED_FROM_DUMP'):
+            paginator = self._s3_client.get_paginator('list_objects_v2')
 
-        self.log('Looking up latest ES dump.')
+            self.log('Looking up latest ES dump.')
 
-        page_it = paginator.paginate(
-            Bucket=get_data_bucket(self.settings),
-            Prefix='elasticsearch/items/',  # Filter this down further to limit results...maybe by year?
-            Delimiter='/'
-        )
+            page_it = paginator.paginate(
+                Bucket=get_data_bucket(self.settings),
+                Prefix='elasticsearch/items/',  # Filter this down further to limit results...maybe by year?
+                Delimiter='/'
+            )
 
-        latest_prefix = None
-        for page in page_it:
-            latest_prefix = page['CommonPrefixes'][-1]['Prefix']
+            latest_prefix = None
+            for page in page_it:
+                latest_prefix = page['CommonPrefixes'][-1]['Prefix']
 
-        if latest_prefix:
-            self.log(f'Found latest ES dump at {latest_prefix}')
-            limit = -1
-            ids_limit = -1
+            if latest_prefix:
+                self.log(f'Found latest ES dump at {latest_prefix}')
+                limit = -1
+                ids_limit = -1
 
-            if 'OUTPUT_FILE_HANDLE_LIMIT' in self.settings:
-                limit = self.settings.getint('OUTPUT_FILE_HANDLE_LIMIT')
+                if 'OUTPUT_FILE_HANDLE_LIMIT' in self.settings:
+                    limit = self.settings.getint('OUTPUT_FILE_HANDLE_LIMIT')
 
-            if 'IDS_HANDLE_LIMIT' in self.settings:
-                ids_limit = self.settings.getint('IDS_HANDLE_LIMIT')
+                if 'IDS_HANDLE_LIMIT' in self.settings:
+                    ids_limit = self.settings.getint('IDS_HANDLE_LIMIT')
 
-            total_handled = 0
-            imdb_ids_handled = 0
-            for page in paginator.paginate(
-                    Bucket=get_data_bucket(self.settings),
-                    Prefix=latest_prefix):
-                if (0 < limit <= total_handled) or (0 < ids_limit <= imdb_ids_handled):
-                    break
-                for result in page['Contents']:
+                total_handled = 0
+                imdb_ids_handled = 0
+                for page in paginator.paginate(
+                        Bucket=get_data_bucket(self.settings),
+                        Prefix=latest_prefix):
                     if (0 < limit <= total_handled) or (0 < ids_limit <= imdb_ids_handled):
                         break
-                    total_handled += 1
-                    for (tt_id, imdb_id) in self._handle_s3_select(result['Key']):
+                    for result in page['Contents']:
                         if (0 < limit <= total_handled) or (0 < ids_limit <= imdb_ids_handled):
                             break
-                        raw_id = imdb_id.lstrip('imdb__')
-                        if len(raw_id) > 0:
-                            self.log(f'TT id: {tt_id}, IMDB ID: {imdb_id}', level=logging.DEBUG)
-                            imdb_ids_handled += 1
-                            if imdb_ids_handled % 1000 == 0:
-                                self.log(f'Handled {imdb_ids_handled} so far')
-                            yield Request(f'https://www.imdb.com/title/{raw_id}/', dont_filter=True,
-                                          callback=self._handle_imdb_page, meta={'id': tt_id, 'imdb_id': raw_id})
-            self.log(f'Total imdb ids = {imdb_ids_handled}')
+                        total_handled += 1
+                        for (tt_id, imdb_id) in self._handle_s3_select(result['Key']):
+                            if (0 < limit <= total_handled) or (0 < ids_limit <= imdb_ids_handled):
+                                break
+                            raw_id = imdb_id.lstrip('imdb__')
+                            if len(raw_id) > 0:
+                                self.log(f'TT id: {tt_id}, IMDB ID: {imdb_id}', level=logging.DEBUG)
+                                imdb_ids_handled += 1
+                                if imdb_ids_handled % 1000 == 0:
+                                    self.log(f'Handled {imdb_ids_handled} so far')
+                                yield Request(f'https://www.imdb.com/title/{raw_id}/', dont_filter=True,
+                                              callback=self._handle_imdb_page, meta={'id': tt_id, 'imdb_id': raw_id})
+                self.log(f'Total imdb ids = {imdb_ids_handled}')
 
     def _handle_s3_select(self, key):
         # Query the ES dump in s3 to extract all external ids

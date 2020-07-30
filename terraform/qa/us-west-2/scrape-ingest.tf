@@ -11,3 +11,17 @@ module "scrape-item-consumer" {
   service_name  = "scrape-item-consumer"
   vpc_id        = data.aws_vpc.teletracker-qa-vpc.id
 }
+
+module "amazon-item-consumer" {
+  source = "../queue-driven-fargate"
+
+  queue_name = "amazon-scrape-item-queue-qa"
+  fifo       = false
+
+  cluster_id    = aws_ecs_cluster.teletracker-qa.id
+  cluster_name  = aws_ecs_cluster.teletracker-qa.name
+  consumer_mode = "AmazonItemWriterConsumer"
+  image         = var.scrape_item_consumer_image
+  service_name  = "amazon-scrape-item-consumer"
+  vpc_id        = data.aws_vpc.teletracker-qa-vpc.id
+}

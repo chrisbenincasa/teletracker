@@ -17,12 +17,17 @@ resource "aws_ecs_task_definition" "crawler_task_def" {
           "awslogs-create-group": "true"
         }
       },
-      environment: var.dynamodb_output_table == "" ? [] : [
+      environment: concat(var.dynamodb_output_table == "" ? [] : [
         {
           name: "DYNAMO_DB_OUTPUT_TABLE",
           value: var.dynamodb_output_table
         }
-      ],
+      ], var.redis_host == "" ? [] : [
+        {
+          name: "REDIS_HOST",
+          value: var.redis_host
+        }
+      ]),
       command: concat([
         "./run_spider.sh",
         var.spider_name], var.outputs)

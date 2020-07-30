@@ -1,3 +1,5 @@
+import os
+
 from crawlers.settings import ITEM_PIPELINES
 
 DATA_BUCKET = 'DATA_BUCKET'
@@ -13,5 +15,5 @@ DISTRIBUTED_SETTINGS = {
     'SCHEDULER': "scrapy_redis.scheduler.Scheduler",
     'DUPEFILTER_CLASS': "scrapy_redis.dupefilter.RFPDupeFilter",
     'ITEM_PIPELINES': {**ITEM_PIPELINES, 'scrapy_redis.pipelines.RedisPipeline': 400},
-    # 'REDIS_ITEMS_SERIALIZER': 'json.dumps'
+    'REDIS_HOST': os.environ['REDIS_HOST']
 }

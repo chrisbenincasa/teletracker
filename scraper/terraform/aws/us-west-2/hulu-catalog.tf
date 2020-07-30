@@ -22,4 +22,6 @@ module "hulu_crawler" {
   schedule = [
     "cron(0 7 ? * */3 *)",
   "cron(0 7 1 * ? *)"]
+
+  gen_service = false
 }

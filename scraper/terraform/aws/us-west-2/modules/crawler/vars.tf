@@ -31,3 +31,8 @@ variable "gen_service" {
   type    = bool
   default = true
 }
+
+variable "redis_host" {
+  type = string
+  default = ""
+}

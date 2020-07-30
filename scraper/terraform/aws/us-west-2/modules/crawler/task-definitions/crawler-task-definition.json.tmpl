@@ -14,6 +14,12 @@
         "awslogs-create-group": "true"
       }
     },
+    "environment": [
+      {
+        "name": "REDIS_HOST",
+        "value": "${redis_host}"
+      }
+    },
     "command": [
       "./run_spider.sh",
       "${spider_name}",

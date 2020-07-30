@@ -19,6 +19,4 @@ module "google_play_store_crawler" {
   dynamodb_output_table = aws_dynamodb_table.crawls.name
 
   schedule = []
-
-  gen_service = false
 }
