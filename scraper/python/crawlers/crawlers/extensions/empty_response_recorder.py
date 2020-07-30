@@ -17,7 +17,7 @@ empty_item_signal = object()
 
 
 class EmptyResponseRecorder:
-    def __init__(self, bucket, output_prefix):
+    def __init__(self, bucket, output_prefix=None):
         self._s3_bucket = boto3.resource('s3').Bucket(bucket)
         self.output_prefix = output_prefix
         pass
@@ -33,7 +33,8 @@ class EmptyResponseRecorder:
             raise NotConfigured
 
         bucket = get_data_bucket(crawler.settings)
-        output_prefix = crawler.settings.get(OUTPUT_PREFIX_SETTING)
+        output_prefix = crawler.settings.get(
+            OUTPUT_PREFIX_SETTING).value if OUTPUT_PREFIX_SETTING in crawler.settings else None
 
         ext = cls(bucket, output_prefix)
 
@@ -42,12 +43,15 @@ class EmptyResponseRecorder:
         return ext
 
     def empty_item(self, response: Response):
-        logger.info(f'Got empty item for url: {response.url}')
-        url_key = base64.b64encode(response.url).decode(encoding='utf-8')
-        key = f'{self.output_prefix}/{url_key}'
-        d = threads.deferToThread(lambda: self._s3_bucket.put_object(Body=response.body, Key=key))
-        d.addCallback(self._handle_upload_success)
-        d.addErrback(self._handle_upload_error)
+        if self.output_prefix:
+            logger.info(f'Got empty item for url: {response.url}. Uploading page result.')
+            url_key = base64.b64encode(response.url.encode('utf-8')).decode(encoding='utf-8')
+            key = f'{self.output_prefix}/{url_key}'
+            d = threads.deferToThread(lambda: self._s3_bucket.put_object(Body=response.body, Key=key))
+            d.addCallback(self._handle_upload_success)
+            d.addErrback(self._handle_upload_error)
+        else:
+            logger.info(f'Got empty item for url: {response.url}')
 
     def _handle_upload_success(self):
         logger.debug('Successfully uploaded object')

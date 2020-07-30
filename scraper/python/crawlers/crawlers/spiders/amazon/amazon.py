@@ -50,9 +50,9 @@ class AmazonSpider(BaseCrawlSpider):
         Rule(LinkExtractor(allow=(r'(https://www.amazon.com)?/gp/video/detail/.*',)),
              callback='_handle_amazon_page', follow=True),
         Rule(LinkExtractor(
-            allow=r'(https://www.amazon.com)?/gp/video/search/?.*'), follow=True),
+            allow=r'(https://www\.amazon\.com)?/gp/video/search/ref=[A-z_]+\?phrase=[A-z0-9%]+&'), follow=True),
         Rule(LinkExtractor(
-            allow=r'(https://www.amazon.com)?/gp/video/storefront/?.*'), follow=True)
+            allow=r'(https://www\.amazon\.com)?/gp/video/storefront/?.*'), follow=True)
     )
 
     def __init__(self, json_logging=True, *a, **kw):
