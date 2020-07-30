@@ -7,8 +7,9 @@ from json import JSONDecodeError
 import boto3
 from jsonpath_ng.ext import parse
 from scrapy import Request
-from scrapy.spiders import Rule
 from scrapy.linkextractors import LinkExtractor
+from scrapy.spiders import Rule
+from scrapy_redis.spiders import RedisMixin
 
 from crawlers.base_spider import BaseCrawlSpider
 from crawlers.extensions.empty_response_recorder import empty_item_signal
@@ -32,13 +33,18 @@ AMAZON_MOVIE_ENTITY_TYPE = 'Movie'
 
 class AmazonSpider(BaseCrawlSpider):
     name = 'amazon'
+    store_name = 'amazon'
     allowed_domains = ['amazon.com', 'imdb.com']
-    is_distributed = True
-    custom_settings = {
-        **DISTRIBUTED_SETTINGS,
-        'AUTOTHROTTLE_TARGET_CONCURRENCY': 8,
-        'EXTENSIONS': {**EXTENSIONS, 'crawlers.extensions.empty_response_recorder.EmptyResponseRecorder': 500}
-    }
+
+    # custom_settings = {
+    #     **DISTRIBUTED_SETTINGS,
+    #     'AUTOTHROTTLE_TARGET_CONCURRENCY': 1.0,
+    #     'EXTENSIONS': {**EXTENSIONS, 'crawlers.extensions.empty_response_recorder.EmptyResponseRecorder': 500}
+    # }
+
+    start_urls = [
+        'https://www.amazon.com/gp/video/storefront'
+    ]
 
     rules = (
         Rule(LinkExtractor(allow=(r'(https://www.amazon.com)?/gp/video/detail/.*',)),
@@ -103,6 +109,9 @@ class AmazonSpider(BaseCrawlSpider):
                                 yield Request(f'https://www.imdb.com/title/{raw_id}/', dont_filter=True,
                                               callback=self._handle_imdb_page, meta={'id': tt_id, 'imdb_id': raw_id})
                 self.log(f'Total imdb ids = {imdb_ids_handled}')
+        else:
+            for req in BaseCrawlSpider.start_requests(self):
+                yield req
 
     def _handle_s3_select(self, key):
         # Query the ES dump in s3 to extract all external ids
@@ -167,7 +176,8 @@ class AmazonSpider(BaseCrawlSpider):
                         cast.extend([AmazonCastMember(name=c.value['name'], order=idx, role='actor') for (idx, c) in
                                      enumerate(parse('$.contributors.supportingActor[*]').find(header_detail))])
 
-                        release_date = datetime.strptime(header_detail['releaseDate'], '%B %d, %Y')
+                        release_date = datetime.strptime(header_detail['releaseDate'],
+                                                         '%B %d, %Y') if 'releaseDate' in header_detail else None
 
                         offers = parse(
                             f'$.props.state.action.atf.{official_id}..children[?(@.__type == "atv.wps#TvodAction")]') \
@@ -175,22 +185,26 @@ class AmazonSpider(BaseCrawlSpider):
 
                         all_offers = []
                         for offer in offers:
-                            is_buy = offer.value['purchaseData']['offerType'] == 'TVOD_PURCHASE'
-                            is_rent = offer.value['purchaseData']['offerType'] == 'TVOD_RENTAL'
+                            try:
+                                is_buy = offer.value['purchaseData']['offerType'] == 'TVOD_PURCHASE'
+                                is_rent = offer.value['purchaseData']['offerType'] == 'TVOD_RENTAL'
 
-                            price = None
-                            match = re.search(PRICE_RE, offer.value['label'])
-                            if match:
-                                try:
-                                    price = float(match.group(1))
-                                except ValueError:
+                                price = None
+                                match = re.search(PRICE_RE, offer.value['label'])
+                                if match:
+                                    try:
+                                        price = float(match.group(1))
+                                    except ValueError:
+                                        continue
+
+                                if price and is_buy or is_rent:
+                                    offer_type = 'buy' if is_buy else 'rent'
+                                    all_offers.append(AmazonItemOffer(offerType=offer_type, price=price, currency='USD',
+                                                                      quality=offer.value['purchaseData'][
+                                                                          'videoQuality']))
+                                else:
                                     continue
-
-                            if price and is_buy or is_rent:
-                                offer_type = 'buy' if is_buy else 'rent'
-                                all_offers.append(AmazonItemOffer(offerType=offer_type, price=price, currency='USD',
-                                                                  quality=offer.value['purchaseData']['videoQuality']))
-                            else:
+                            except KeyError:
                                 continue
 
                         item = AmazonItem(
@@ -210,11 +224,28 @@ class AmazonSpider(BaseCrawlSpider):
                             internalId=response.meta['id'] if 'id' in response.meta else None,
                             offers=all_offers
                         )
+
+                        yield item
                         break
             except JSONDecodeError:
                 continue
 
-            if not item:
-                self.crawler.signals.send_catch_log(empty_item_signal, response=response)
+        if not item:
+            self.crawler.signals.send_catch_log(empty_item_signal, response=response)
 
-            return item
+
+class AmazonDistributedSpider(AmazonSpider, RedisMixin):
+    name = 'amazon_distributed'
+    custom_settings = {
+        **DISTRIBUTED_SETTINGS,
+        'AUTOTHROTTLE_TARGET_CONCURRENCY': 1.0,
+        'EXTENSIONS': {**EXTENSIONS, 'crawlers.extensions.empty_response_recorder.EmptyResponseRecorder': 500,
+                       'scrapy.extensions.closespider.CloseSpider': 100}
+    }
+    is_distributed = True
+
+    def start_requests(self):
+        for req in super().start_requests():
+            yield req
+        for req in RedisMixin.start_requests(self):
+            yield req

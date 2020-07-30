@@ -4,6 +4,7 @@ import scrapy
 
 from datetime import datetime
 from pythonjsonlogger import jsonlogger
+from scrapy_redis.spiders import RedisMixin
 
 
 def json_translate(obj):
@@ -66,6 +67,8 @@ class BaseCrawlSpider(scrapy.spiders.CrawlSpider, VersionedSpider):
         spider = cls(settings.getbool('JSON_LOGGING'), *args, **kwargs)
         spider._set_crawler(crawler)
         spider._follow_links = crawler.settings.getbool('CRAWLSPIDER_FOLLOW_LINKS', True)
+        if isinstance(spider, RedisMixin):
+            spider.setup_redis(crawler)
         return spider
 
 

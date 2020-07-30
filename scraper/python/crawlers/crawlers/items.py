@@ -8,13 +8,11 @@
 import scrapy
 
 
-class CrawlersItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
-    pass
+class BaseItem(scrapy.Item):
+    version = scrapy.Field()
 
 
-class NetflixItem(scrapy.Item):
+class NetflixItem(BaseItem):
     type = 'NetflixItem'
     id = scrapy.Field()
     title = scrapy.Field()
@@ -33,19 +31,19 @@ class NetflixItem(scrapy.Item):
     crew = scrapy.Field()
 
 
-class NetflixCastMember(scrapy.Item):
+class NetflixCastMember(BaseItem):
     name = scrapy.Field()
     order = scrapy.Field()
     role = scrapy.Field()
 
 
-class NetflixCrewMember(scrapy.Item):
+class NetflixCrewMember(BaseItem):
     name = scrapy.Field()
     order = scrapy.Field()
     role = scrapy.Field()
 
 
-class NetflixItemSeason(scrapy.Item):
+class NetflixItemSeason(BaseItem):
     seasonNameRaw = scrapy.Field()
     seasonNumber = scrapy.Field()
     releaseYear = scrapy.Field()
@@ -53,7 +51,7 @@ class NetflixItemSeason(scrapy.Item):
     episodes = scrapy.Field()
 
 
-class NetflixItemEpisode(scrapy.Item):
+class NetflixItemEpisode(BaseItem):
     seasonNumber = scrapy.Field()
     episodeNumber = scrapy.Field()
     name = scrapy.Field()
@@ -61,7 +59,7 @@ class NetflixItemEpisode(scrapy.Item):
     description = scrapy.Field()
 
 
-class HuluItem(scrapy.Item):
+class HuluItem(BaseItem):
     type = 'HuluItem'
     id = scrapy.Field()
     title = scrapy.Field()
@@ -76,7 +74,7 @@ class HuluItem(scrapy.Item):
     posterImageUrl = scrapy.Field()
 
 
-class HuluEpisodeItem(scrapy.Item):
+class HuluEpisodeItem(BaseItem):
     id = scrapy.Field()
     externalId = scrapy.Field()
     genres = scrapy.Field()
@@ -89,7 +87,7 @@ class HuluEpisodeItem(scrapy.Item):
     duration = scrapy.Field()
 
 
-class HboItem(scrapy.Item):
+class HboItem(BaseItem):
     type = 'HboItem'
     id = scrapy.Field()
     title = scrapy.Field()
@@ -107,19 +105,19 @@ class HboItem(scrapy.Item):
     runtime = scrapy.Field()
 
 
-class HboCastMember(scrapy.Item):
+class HboCastMember(BaseItem):
     name = scrapy.Field()
     order = scrapy.Field()
     role = scrapy.Field()
 
 
-class HboCrewMember(scrapy.Item):
+class HboCrewMember(BaseItem):
     name = scrapy.Field()
     role = scrapy.Field()
     order = scrapy.Field()
 
 
-class ShowtimeItem(scrapy.Item):
+class ShowtimeItem(BaseItem):
     type = 'ShowtimeItem'
     id = scrapy.Field()
     title = scrapy.Field()
@@ -134,32 +132,32 @@ class ShowtimeItem(scrapy.Item):
     crew = scrapy.Field()
 
 
-class ShowtimeItemSeason(scrapy.Item):
+class ShowtimeItemSeason(BaseItem):
     seasonNumber = scrapy.Field()
     releaseDate = scrapy.Field()
     description = scrapy.Field()
     episodes = scrapy.Field()
 
 
-class ShowtimeItemEpisode(scrapy.Item):
+class ShowtimeItemEpisode(BaseItem):
     episodeNumber = scrapy.Field()
     releaseDate = scrapy.Field()
     description = scrapy.Field()
 
 
-class ShowtimeCastMember(scrapy.Item):
+class ShowtimeCastMember(BaseItem):
     name = scrapy.Field()
     order = scrapy.Field()
     role = scrapy.Field()
 
 
-class ShowtimeCrewMember(scrapy.Item):
+class ShowtimeCrewMember(BaseItem):
     name = scrapy.Field()
     role = scrapy.Field()
     order = scrapy.Field()
 
 
-class AmazonItem(scrapy.Item):
+class AmazonItem(BaseItem):
     type = 'AmazonItem'
     id = scrapy.Field()
     title = scrapy.Field()
@@ -178,26 +176,26 @@ class AmazonItem(scrapy.Item):
     internalId = scrapy.Field()
 
 
-class AmazonCastMember(scrapy.Item):
+class AmazonCastMember(BaseItem):
     name = scrapy.Field()
     order = scrapy.Field()
     role = scrapy.Field()
 
 
-class AmazonCrewMember(scrapy.Item):
+class AmazonCrewMember(BaseItem):
     name = scrapy.Field()
     order = scrapy.Field()
     role = scrapy.Field()
 
 
-class AmazonItemOffer(scrapy.Item):
+class AmazonItemOffer(BaseItem):
     offerType = scrapy.Field()
     price = scrapy.Field()
     currency = scrapy.Field()
     quality = scrapy.Field()
 
 
-class AppleTvItem(scrapy.Item):
+class AppleTvItem(BaseItem):
     type = 'AppleTv'
     id = scrapy.Field()
     title = scrapy.Field()
@@ -214,20 +212,20 @@ class AppleTvItem(scrapy.Item):
     offers = scrapy.Field()
 
 
-class AppleTvItemOffer(scrapy.Item):
+class AppleTvItemOffer(BaseItem):
     offerType = scrapy.Field()
     price = scrapy.Field()
     currency = scrapy.Field()
     quality = scrapy.Field()
 
 
-class AppleTvCastMember(scrapy.Item):
+class AppleTvCastMember(BaseItem):
     name = scrapy.Field()
     order = scrapy.Field()
     role = scrapy.Field()
 
 
-class AppleTvCrewMember(scrapy.Item):
+class AppleTvCrewMember(BaseItem):
     name = scrapy.Field()
     order = scrapy.Field()
     role = scrapy.Field()

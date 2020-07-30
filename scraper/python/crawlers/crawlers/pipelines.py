@@ -27,3 +27,4 @@ class ItemVersioner:
     def process_item(self, item, spider):
         if isinstance(spider, VersionedSpider):
             item['version'] = spider.version
+        return item

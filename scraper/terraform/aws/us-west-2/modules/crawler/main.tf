@@ -62,6 +62,10 @@ resource "aws_security_group" "crawler_sg" {
   }
 }
 
+output "crawler_sg_id" {
+  value = aws_security_group.crawler_sg.id
+}
+
 resource "aws_ecs_service" "crawler_ecs_service" {
   count = var.gen_service ? 1 : 0
 

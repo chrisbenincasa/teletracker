@@ -29,3 +29,4 @@ scrapy crawl "$SPIDER_NAME" \
   --set JSON_LOGGING=True \
   --set LOG_FORMATTER='crawlers.logformatter.LogFormatter' \
   "${DYNAMO_CMD[@]}"
+  $@
