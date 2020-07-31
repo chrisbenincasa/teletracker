@@ -12,17 +12,17 @@ def to_sqs_message(encoded_json):
 
 
 class SqsItemExporter(BaseItemExporter):
-    def __init__(self, spider, deck, *args, **kwargs):
+    def __init__(self, spider, writer, *args, **kwargs):
         super().__init__(**kwargs)
         self._kwargs.setdefault('ensure_ascii', not self.encoding)
         self._spider_version = spider.version
         self._spider_name = spider.name
         self.encoder = ScrapyJSONEncoder(**self._kwargs)
-        self.deck = deck
+        self.writer = writer
 
     @classmethod
-    def from_crawler(cls, crawler, deck, *args, **kwargs):
-        return cls(spider=crawler.spider, deck=deck, *args, **kwargs)
+    def from_crawler(cls, crawler, writer, *args, **kwargs):
+        return cls(spider=crawler.spider, writer=writer, *args, **kwargs)
 
     def export_item(self, item):
         itemdict = dict(self._get_serialized_fields(item))
@@ -32,4 +32,4 @@ class SqsItemExporter(BaseItemExporter):
             'item': itemdict
         }
         data = self.encoder.encode(whole_dict) + '\n'
-        self.deck.append(to_sqs_message(data))
+        self.writer.add(to_sqs_message(data))

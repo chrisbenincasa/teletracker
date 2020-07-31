@@ -15,29 +15,39 @@ def _chunk(l, n):
 
 
 class SqsFeedStorage(BlockingFeedStorage):
-    def __init__(self, uri, access_key=None, secret_key=None, region=None):
+    def __init__(self, uri):
         # Parse the form sqs://sqs.us-west-2.amazonaws.com/302782651551/teletracker-es-ingest-qa.fifo
         u = urlparse(uri)._replace(scheme='https')
         self.queue_url = u.geturl()
         self.queue_name = u.path[1:].split('/')[-1]
-        self.deck = deque()
-        self.sqs_client = boto3.client('sqs', region_name=region, aws_access_key_id=access_key,
-                                       aws_secret_access_key=secret_key, endpoint_url=get_boto3_endpoint_url())
+        self.writer = SqsFeedStorageWriter(queue_url=self.queue_url)
 
     @classmethod
     def from_crawler(cls, crawler, uri):
-        return cls(
-            uri=uri,
-            access_key=crawler.settings['AWS_ACCESS_KEY_ID'],
-            secret_key=crawler.settings['AWS_SECRET_ACCESS_KEY'],
-            region=crawler.settings['AWS_REGION'],
-        )
+        return cls(uri=uri)
 
     def open(self, spider):
-        return self.deck
+        return self.writer
 
     def _store_in_thread(self, file):
-        for group in _chunk(self.deck, 10):
+        self.writer.flush()
+
+
+class SqsFeedStorageWriter:
+    def __init__(self, queue_url, buffer_size=10, chunk_size=10):
+        self.deck = deque()
+        self.queue_url = queue_url
+        self.buffer_size = buffer_size
+        self.chunk_size = chunk_size
+        self.sqs_client = boto3.client('sqs', endpoint_url=get_boto3_endpoint_url())
+
+    def add(self, item):
+        self.deck.append(item)
+        if len(self.deck) >= self.buffer_size:
+            self.flush()
+
+    def flush(self):
+        for group in _chunk(self.deck, self.chunk_size):
             self.sqs_client.send_message_batch(
                 QueueUrl=self.queue_url,
                 Entries=group
