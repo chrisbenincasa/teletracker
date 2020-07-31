@@ -62,7 +62,7 @@ resource "aws_cloudwatch_event_target" "cw_scheduled_task" {
   role_arn  = aws_iam_role.ecs_events[0].arn
 
   ecs_target {
-    task_count          = 1
+    task_count          = var.scheduled_task_count
     task_definition_arn = aws_ecs_task_definition.crawler_task_def.arn
     launch_type = "FARGATE"
     platform_version = "1.3.0"

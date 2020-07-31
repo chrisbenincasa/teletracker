@@ -25,4 +25,6 @@ module "amazon_crawler" {
   redis_host            = length(aws_elasticache_cluster.crawl_store) == 1 ? aws_route53_record.crawl_store_dns_record.name : ""
 
   schedule = []
+
+  scheduled_task_count = 3
 }

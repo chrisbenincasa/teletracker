@@ -41,3 +41,8 @@ variable "extra_args" {
   type = list(string)
   default = []
 }
+
+variable "scheduled_task_count" {
+  type = number
+  default = 1
+}
