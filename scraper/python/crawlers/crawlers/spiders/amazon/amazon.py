@@ -20,6 +20,7 @@ from crawlers.items import AmazonItem
 from crawlers.items import AmazonItemOffer
 from crawlers.redis_helpers import CustomRedisMixin
 from crawlers.settings import EXTENSIONS
+from crawlers.settings import ITEM_PIPELINES
 from crawlers.spiders.common_settings import DISTRIBUTED_SETTINGS
 from crawlers.spiders.common_settings import get_data_bucket
 
@@ -236,7 +237,9 @@ class AmazonDistributedSpider(AmazonSpider, CustomRedisMixin):
         **DISTRIBUTED_SETTINGS,
         'AUTOTHROTTLE_TARGET_CONCURRENCY': 1.0,
         'EXTENSIONS': {**EXTENSIONS, 'crawlers.extensions.empty_response_recorder.EmptyResponseRecorder': 500,
-                       'scrapy.extensions.closespider.CloseSpider': 100}
+                       'scrapy.extensions.closespider.CloseSpider': 100},
+        'ITEM_PIPELINES': ITEM_PIPELINES,
+        'ROBOTSTXT_OBEY': True
     }
     is_distributed = True
 
