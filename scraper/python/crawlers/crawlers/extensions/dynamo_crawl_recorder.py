@@ -118,7 +118,9 @@ class DynamoCrawlRecorder:
                 Item=item
             )
 
-    def spider_closed(self, spider):
+    def spider_closed(self, spider, reason):
+        logger.info(f'Dynamo crawl recorder closing spider with reason: {reason}')
+
         if spider.name not in self.spider_info:
             self.spider_info[spider.name] = self._build_spider_info(spider)
 
@@ -149,7 +151,9 @@ class DynamoCrawlRecorder:
                 ReturnValues='UPDATED_NEW'
             )
 
-            if response['Attributes']['num_open_spiders'] == 0:
+            if response['Attributes']['num_open_spiders'] == 0 and reason == 'finished':
+                logger.info(f'Attempting to finalize crawl for key {key}')
+
                 try:
                     self.dynamo_table.update_item(
                         Key=key,

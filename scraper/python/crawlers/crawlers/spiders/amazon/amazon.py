@@ -7,6 +7,7 @@ from json import JSONDecodeError
 import boto3
 from jsonpath_ng.ext import parse
 from scrapy import Request
+from scrapy.exceptions import CloseSpider
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Rule
 from scrapy_redis.spiders import RedisMixin
@@ -17,6 +18,7 @@ from crawlers.items import AmazonCastMember
 from crawlers.items import AmazonCrewMember
 from crawlers.items import AmazonItem
 from crawlers.items import AmazonItemOffer
+from crawlers.redis_helpers import CustomRedisMixin
 from crawlers.settings import EXTENSIONS
 from crawlers.spiders.common_settings import DISTRIBUTED_SETTINGS
 from crawlers.spiders.common_settings import get_data_bucket
@@ -35,12 +37,6 @@ class AmazonSpider(BaseCrawlSpider):
     name = 'amazon'
     store_name = 'amazon'
     allowed_domains = ['amazon.com', 'imdb.com']
-
-    # custom_settings = {
-    #     **DISTRIBUTED_SETTINGS,
-    #     'AUTOTHROTTLE_TARGET_CONCURRENCY': 1.0,
-    #     'EXTENSIONS': {**EXTENSIONS, 'crawlers.extensions.empty_response_recorder.EmptyResponseRecorder': 500}
-    # }
 
     start_urls = [
         'https://www.amazon.com/gp/video/storefront'
@@ -234,7 +230,7 @@ class AmazonSpider(BaseCrawlSpider):
             self.crawler.signals.send_catch_log(empty_item_signal, response=response)
 
 
-class AmazonDistributedSpider(AmazonSpider, RedisMixin):
+class AmazonDistributedSpider(AmazonSpider, CustomRedisMixin):
     name = 'amazon_distributed'
     custom_settings = {
         **DISTRIBUTED_SETTINGS,
@@ -249,3 +245,12 @@ class AmazonDistributedSpider(AmazonSpider, RedisMixin):
             yield req
         for req in RedisMixin.start_requests(self):
             yield req
+
+    def parse(self, response):
+        if self.should_close:
+            raise CloseSpider(reason=self.close_reason or 'cancelled')
+        else:
+            # If we got a response, cancel any existing close timeouts
+            if self.idle_df:
+                self.idle_df.cancel()
+            return super().parse(response)
