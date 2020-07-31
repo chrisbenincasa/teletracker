@@ -29,7 +29,7 @@ if [[ -n "${DYNAMO_DB_OUTPUT_TABLE}" ]]; then
   DYNAMO_CMD+=(--set 'DYNAMO_CRAWL_TRACK_ENABLED=True' --set "DYNAMO_CRAWL_TRACK_TABLE=$DYNAMO_DB_OUTPUT_TABLE")
 fi
 
-scrapy crawl "$SPIDER_NAME" \
+exec scrapy crawl "$SPIDER_NAME" \
   "${OUTPUTS_STR[@]}" \
   --set LOG_ENABLED=False \
   --set JSON_LOGGING=True \
