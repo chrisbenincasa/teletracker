@@ -34,3 +34,7 @@ data "aws_ecs_cluster" "main_cluster" {
 data "aws_s3_bucket" "data_bucket" {
   bucket = "teletracker-data-us-west-2"
 }
+
+data "aws_security_group" "public_services_sg" {
+  id = "sg-0590028b2b63d2325"
+}

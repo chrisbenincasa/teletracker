@@ -42,7 +42,8 @@ resource "aws_security_group" "crawl_store_sg" {
     to_port = 6379
     protocol = "TCP"
     security_groups = [
-      module.amazon_crawler.crawler_sg_id
+      module.amazon_crawler.crawler_sg_id,
+      data.aws_security_group.public_services_sg.id
     ]
     cidr_blocks = [
       # Christian's computer
