@@ -10,7 +10,7 @@ import com.teletracker.common.model.scraping.hulu.HuluScrapeCatalogItem
 import com.teletracker.common.model.scraping.netflix.NetflixScrapedCatalogItem
 import com.teletracker.common.model.scraping.showtime.ShowtimeScrapeCatalogItem
 import io.circe.generic.JsonCodec
-import io.circe.{Decoder, Json}
+import io.circe.{Codec, Decoder, Encoder, Json}
 import scala.util.{Failure, Try}
 
 object ScrapeItemIngestMessage {
@@ -53,4 +53,17 @@ case class ScrapeItemIngestMessage(
   def deserItem[T: Decoder]: Try[T] = {
     item.as[T].toTry
   }
+}
+
+case class SpecificScrapeItemIngestMessage[T <: ScrapedItem](
+  `type`: String,
+  version: java.lang.Long,
+  item: T)
+    extends EventBase
+
+object SpecificScrapeItemIngestMessage {
+  implicit def codec[
+    T <: ScrapedItem: Codec
+  ]: Codec[SpecificScrapeItemIngestMessage[T]] =
+    io.circe.generic.semiauto.deriveCodec
 }

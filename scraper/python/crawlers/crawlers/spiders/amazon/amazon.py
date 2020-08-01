@@ -214,10 +214,10 @@ class AmazonSpider(BaseCrawlSpider):
                             availableOnPrime=header_detail['isPrime'],
                             url=response.url,
                             releaseDate=release_date,
-                            releaseYear=header_detail['releaseYear'],
+                            releaseYear=header_detail['releaseYear'] if 'releaseYear' in header_detail else None,
                             cast=cast,
                             crew=crew,
-                            runtime=header_detail['runtime'],
+                            runtime=header_detail['runtime'] if 'runtime' in header_detail else None,
                             internalId=response.meta['id'] if 'id' in response.meta else None,
                             offers=all_offers
                         )

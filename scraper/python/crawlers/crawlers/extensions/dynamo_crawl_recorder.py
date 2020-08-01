@@ -59,6 +59,9 @@ class DynamoCrawlRecorder:
 
         info = self.spider_info[spider.name]
 
+        if not hasattr(spider, 'version'):
+            setattr(spider, 'version', self.spider_info, info['version'])
+
         item = {
             'spider': info['name'],
             'version': info['version'],
@@ -97,6 +100,10 @@ class DynamoCrawlRecorder:
 
                 # Update the version of the spider to the pre-existing one
                 info['version'] = version
+                if not hasattr(spider, 'version') or getattr(spider, 'version') != version:
+                    setattr(spider, 'version', version)
+
+                logger.info(f'Joined active crawl at version {version}')
 
                 self.dynamo_table.update_item(
                     Key=key,

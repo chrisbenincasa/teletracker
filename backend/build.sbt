@@ -152,7 +152,7 @@ lazy val consumer = project
       "-Dregular_logging=true",
       "-Dlog.level=DEBUG"
     ),
-//    Revolver.enableDebugging(port = 5005, suspend = false),
+    Revolver.enableDebugging(port = 5005, suspend = false),
     dockerfile in docker := {
       // The assembly task generates a fat JAR file
       val artifact: File = assembly.value

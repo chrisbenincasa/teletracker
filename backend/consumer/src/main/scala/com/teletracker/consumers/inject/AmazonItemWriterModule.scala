@@ -6,7 +6,11 @@ import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.config.core.api.ReloadableConfig
 import com.teletracker.common.inject.QueueConfigAnnotations
 import com.teletracker.common.model.scraping.amazon.AmazonItem
-import com.teletracker.common.pubsub.{QueueReader, TransparentEventBase}
+import com.teletracker.common.pubsub.{
+  QueueReader,
+  SpecificScrapeItemIngestMessage,
+  TransparentEventBase
+}
 import com.teletracker.consumers.config.ConsumerConfig
 import com.teletracker.consumers.impl.ScrapedItemWriterWorkerConfig
 import com.twitter.inject.TwitterModule
@@ -32,7 +36,7 @@ class AmazonItemWriterModule extends TwitterModule {
     config: ReloadableConfig[TeletrackerConfig],
     sqsAsyncClient: SqsAsyncClient
   )(implicit executionContext: ExecutionContext
-  ): QueueReader[TransparentEventBase[AmazonItem]] = {
+  ): QueueReader[SpecificScrapeItemIngestMessage[AmazonItem]] = {
     new SqsQueue(
       sqsAsyncClient,
       config.currentValue().async.amazonItemQueue.url,
@@ -43,7 +47,7 @@ class AmazonItemWriterModule extends TwitterModule {
         .dlq
         .map(
           dlq =>
-            new SqsQueue[TransparentEventBase[AmazonItem]](
+            new SqsQueue[SpecificScrapeItemIngestMessage[AmazonItem]](
               sqsAsyncClient,
               dlq.url,
               None

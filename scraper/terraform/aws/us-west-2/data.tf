@@ -1,3 +1,5 @@
+data "aws_region" "current" {}
+
 data "aws_ecs_cluster" "ecs-cluster" {
   cluster_name = "teletracker-qa"
 }
@@ -33,6 +35,10 @@ data "aws_ecs_cluster" "main_cluster" {
 
 data "aws_s3_bucket" "data_bucket" {
   bucket = "teletracker-data-us-west-2"
+}
+
+data "aws_s3_bucket" "artifact_bucket" {
+  bucket = "teletrack-artifacts-us-west-2"
 }
 
 data "aws_security_group" "public_services_sg" {

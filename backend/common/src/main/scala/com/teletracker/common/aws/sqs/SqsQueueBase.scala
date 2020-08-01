@@ -28,6 +28,7 @@ import scala.util.control.NonFatal
 import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.duration._
+import scala.util.{Failure, Success, Try}
 
 abstract class SqsQueueBase(
   sqs: SqsAsyncClient,
@@ -89,7 +90,8 @@ abstract class SqsQueueBase(
               throwable
             )
 
-            val failedMessages = group.map(_.messageBody()).map(deserialize[T])
+            val failedMessages =
+              group.map(_.messageBody()).flatMap(deserialize[T](_).toOption)
 
             batchQueueAsyncInner(groups.tail, failed ++ failedMessages)
           }
@@ -120,21 +122,18 @@ abstract class SqsQueueBase(
         .map(_.messages().asScala.toList)
         .map(
           _.flatMap(m => {
-            try {
-              val message = deserialize(m.body())
+            deserialize(m.body()) match {
+              case Success(message) =>
+                messageUpdater(message, m)
+                Some(message)
 
-              messageUpdater(message, m)
-              Some(message)
-            } catch {
-              case ex: Exception =>
+              case Failure(exception) =>
                 logger.error(
                   s"Unable to deserialize message from queue [$queueName], JSON was: ${m.body()}",
-                  ex
+                  exception
                 )
-                // Reset message visibillity, it will be processed a few more times before
-                // hitting the DLQ.
-                clearVisibilityImpl(List(m.receiptHandle()))
 
+                clearVisibilityImpl(List(m.receiptHandle()))
                 None
             }
           })
@@ -319,8 +318,8 @@ abstract class SqsQueueBase(
       .build()
   }
 
-  protected def deserialize[T: Decoder](s: String): T =
-    decode[T](s).right.get // TODO: Handle better
+  protected def deserialize[T: Decoder](s: String): Try[T] =
+    decode[T](s).toTry
 
   protected def serializer[T: Encoder](t: T): String = t.asJson.noSpaces
 }
