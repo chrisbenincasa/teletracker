@@ -95,87 +95,87 @@ resource "aws_iam_role_policy_attachment" "crawlers_pipeline_policy_attachment" 
   role       = aws_iam_role.crawlers_pipeline_role.name
 }
 
-resource "aws_codepipeline" "crawlers_pipeline" {
-  name     = "Crawlers-Pipeline"
-  role_arn = aws_iam_role.crawlers_pipeline_role.arn
-
-  artifact_store {
-    location = data.aws_s3_bucket.artifact_bucket.bucket
-    type     = "S3"
-  }
-
-  stage {
-    name = "Source"
-
-    action {
-      category = "Source"
-      name     = "Source"
-      owner    = "ThirdParty"
-      provider = "GitHub"
-      version  = "1"
-
-      output_artifacts = [
-      "source_output"]
-
-      configuration = {
-        Owner      = "chrisbenincasa"
-        Repo       = "teletracker"
-        Branch     = "master"
-        OAuthToken = data.aws_ssm_parameter.github_oauth_token.value
-      }
-    }
-  }
-
-  stage {
-    name = "Build"
-    action {
-      category = "Build"
-      name     = "Build"
-      owner    = "AWS"
-      provider = "CodeBuild"
-      version  = "1"
-
-      configuration = {
-        ProjectName = aws_codebuild_project.crawlers_codebuild.name
-      }
-
-      input_artifacts = [
-      "source_output"]
-
-      output_artifacts = [
-      "build_output"]
-    }
-  }
-
-  stage {
-    name = "Approval"
-    action {
-      category = "Approval"
-      name     = "Approval"
-      owner    = "AWS"
-      provider = "Manual"
-      version  = "1"
-    }
-  }
-
-  stage {
-    name = "Deploy"
-    action {
-      category = "Build"
-      name     = "Deploy"
-      owner    = "AWS"
-      provider = "CodeBuild"
-      version  = "1"
-
-      configuration = {
-        ProjectName = aws_codebuild_project.deploy_crawlers_codebuild.name
-      }
-
-      input_artifacts = [
-      "build_output"]
-    }
-  }
-}
+//resource "aws_codepipeline" "crawlers_pipeline" {
+//  name     = "Crawlers-Pipeline"
+//  role_arn = aws_iam_role.crawlers_pipeline_role.arn
+//
+//  artifact_store {
+//    location = data.aws_s3_bucket.artifact_bucket.bucket
+//    type     = "S3"
+//  }
+//
+//  stage {
+//    name = "Source"
+//
+//    action {
+//      category = "Source"
+//      name     = "Source"
+//      owner    = "ThirdParty"
+//      provider = "GitHub"
+//      version  = "1"
+//
+//      output_artifacts = [
+//      "source_output"]
+//
+//      configuration = {
+//        Owner      = "chrisbenincasa"
+//        Repo       = "teletracker"
+//        Branch     = "master"
+//        OAuthToken = data.aws_ssm_parameter.github_oauth_token.value
+//      }
+//    }
+//  }
+//
+//  stage {
+//    name = "Build"
+//    action {
+//      category = "Build"
+//      name     = "Build"
+//      owner    = "AWS"
+//      provider = "CodeBuild"
+//      version  = "1"
+//
+//      configuration = {
+//        ProjectName = aws_codebuild_project.crawlers_codebuild.name
+//      }
+//
+//      input_artifacts = [
+//      "source_output"]
+//
+//      output_artifacts = [
+//      "build_output"]
+//    }
+//  }
+//
+//  stage {
+//    name = "Approval"
+//    action {
+//      category = "Approval"
+//      name     = "Approval"
+//      owner    = "AWS"
+//      provider = "Manual"
+//      version  = "1"
+//    }
+//  }
+//
+//  stage {
+//    name = "Deploy"
+//    action {
+//      category = "Build"
+//      name     = "Deploy"
+//      owner    = "AWS"
+//      provider = "CodeBuild"
+//      version  = "1"
+//
+//      configuration = {
+//        ProjectName = aws_codebuild_project.deploy_crawlers_codebuild.name
+//      }
+//
+//      input_artifacts = [
+//      "build_output"]
+//    }
+//  }
+//}
 
 data "aws_iam_policy_document" "crawls_service_role_policy_doc" {
   statement {
