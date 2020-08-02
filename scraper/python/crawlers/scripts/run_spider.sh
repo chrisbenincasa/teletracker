@@ -34,5 +34,6 @@ exec scrapy crawl "$SPIDER_NAME" \
   --set LOG_ENABLED=False \
   --set JSON_LOGGING=True \
   --set LOG_FORMATTER='crawlers.logformatter.LogFormatter' \
+  --set LOG_LEVEL=INFO \
   "${DYNAMO_CMD[@]}" \
   "${REST[@]}"

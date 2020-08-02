@@ -1,3 +1,5 @@
+import logging
+
 import itertools
 from collections import deque
 from urllib.parse import urlparse
@@ -6,6 +8,8 @@ import boto3
 from scrapy.extensions.feedexport import BlockingFeedStorage
 
 from crawlers.util.aws import get_boto3_endpoint_url
+
+logger = logging.getLogger(__name__)
 
 
 def _chunk(l, n):
@@ -44,10 +48,21 @@ class SqsFeedStorageWriter:
     def add(self, item):
         self.deck.append(item)
         if len(self.deck) >= self.buffer_size:
-            self.flush()
+            self.flush(self.buffer_size)
 
-    def flush(self):
-        for group in _chunk(self.deck, self.chunk_size):
+    def flush(self, num=None):
+        buf = []
+        if not num:
+            # Flush all
+            buf = self.deck
+        else:
+            # Flush certain amount, thread-safe (happens mid run)
+            for _ in range(0, self.buffer_size):
+                buf.append(self.deck.popleft())
+
+        logger.info(f'Enqueuing {len(buf)} items in chunks of {self.chunk_size}')
+
+        for group in _chunk(buf, self.chunk_size):
             self.sqs_client.send_message_batch(
                 QueueUrl=self.queue_url,
                 Entries=group
