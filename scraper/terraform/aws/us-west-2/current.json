@@ -1,11 +1,11 @@
 {
   "crawler_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/crawlers",
-  "hbo_catalog_crawler_version": "1.0-1596378782.31c3aa36",
-  "hbo_max_crawler_version": "1.0-1596378782.31c3aa36",
-  "hulu_catalog_crawler_version": "1.0-1596378782.31c3aa36",
-  "netflix_catalog_crawler_version": "1.0-1596378782.31c3aa36",
-  "disneyplus_catalog_crawler_version": "1.0-1596378782.31c3aa36",
-  "showtime_catalog_crawler_version": "1.0-1596378782.31c3aa36",
-  "amazon_catalog_crawler_version": "1.0-1596378782.31c3aa36",
-  "google_play_store_catalog_crawler_version": "1.0-1596378782.31c3aa36"
+  "hbo_catalog_crawler_version": "1.0-1596383676.e4fe7d2d",
+  "hbo_max_crawler_version": "1.0-1596383676.e4fe7d2d",
+  "hulu_catalog_crawler_version": "1.0-1596383676.e4fe7d2d",
+  "netflix_catalog_crawler_version": "1.0-1596383676.e4fe7d2d",
+  "disneyplus_catalog_crawler_version": "1.0-1596383676.e4fe7d2d",
+  "showtime_catalog_crawler_version": "1.0-1596383676.e4fe7d2d",
+  "amazon_catalog_crawler_version": "1.0-1596383676.e4fe7d2d",
+  "google_play_store_catalog_crawler_version": "1.0-1596383676.e4fe7d2d"
 }

@@ -37,11 +37,12 @@ class VersionedSpider:
 
 
 class BaseSitemapSpider(scrapy.spiders.SitemapSpider, VersionedSpider):
-    def __init__(self, json_logging=True, name=None, **kwargs):
+    def __init__(self, json_logging=True, name=None, level=logging.DEBUG, **kwargs):
         super().__init__(name, **kwargs)
         if json_logging is None or json_logging:
             logger = logging.getLogger()
             log_handler = logging.StreamHandler()
+            log_handler.setLevel(level)
             formatter = CustomJsonFormatter(json_default=json_translate, json_encoder=json.JSONEncoder)
             log_handler.setFormatter(formatter)
             logger.addHandler(log_handler)
@@ -49,17 +50,18 @@ class BaseSitemapSpider(scrapy.spiders.SitemapSpider, VersionedSpider):
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
         settings = crawler.settings
-        spider = cls(settings.getbool('JSON_LOGGING'), *args, **kwargs)
+        spider = cls(settings.getbool('JSON_LOGGING'), level=settings.get('LOG_LEVEL'), *args, **kwargs)
         spider._set_crawler(crawler)
         return spider
 
 
 class BaseCrawlSpider(scrapy.spiders.CrawlSpider, VersionedSpider):
-    def __init__(self, json_logging=True, *a, **kw):
+    def __init__(self, json_logging=True, level=logging.DEBUG, *a, **kw):
         super().__init__(*a, **kw)
         if json_logging is None or json_logging:
             logger = logging.getLogger()
             log_handler = logging.StreamHandler()
+            log_handler.setLevel(level)
             formatter = CustomJsonFormatter(json_default=json_translate, json_encoder=json.JSONEncoder)
             log_handler.setFormatter(formatter)
             logger.addHandler(log_handler)
@@ -67,7 +69,7 @@ class BaseCrawlSpider(scrapy.spiders.CrawlSpider, VersionedSpider):
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
         settings = crawler.settings
-        spider = cls(settings.getbool('JSON_LOGGING'), *args, **kwargs)
+        spider = cls(settings.getbool('JSON_LOGGING'), level=settings.get('LOG_LEVEL'), *args, **kwargs)
         spider._set_crawler(crawler)
         spider._follow_links = crawler.settings.getbool('CRAWLSPIDER_FOLLOW_LINKS', True)
         if isinstance(spider, RedisMixin):
@@ -76,11 +78,12 @@ class BaseCrawlSpider(scrapy.spiders.CrawlSpider, VersionedSpider):
 
 
 class BaseSpider(scrapy.spiders.Spider, VersionedSpider):
-    def __init__(self, json_logging=True, *a, **kw):
+    def __init__(self, json_logging=True, level=logging.DEBUG, *a, **kw):
         super().__init__(*a, **kw)
         if json_logging is None or json_logging:
             logger = logging.getLogger()
             log_handler = logging.StreamHandler()
+            log_handler.setLevel(level)
             formatter = CustomJsonFormatter(json_default=json_translate, json_encoder=json.JSONEncoder)
             log_handler.setFormatter(formatter)
             logger.addHandler(log_handler)
@@ -88,6 +91,6 @@ class BaseSpider(scrapy.spiders.Spider, VersionedSpider):
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
         settings = crawler.settings
-        spider = cls(settings.getbool('JSON_LOGGING'), *args, **kwargs)
+        spider = cls(settings.getbool('JSON_LOGGING'), level=settings.get('LOG_LEVEL'), *args, **kwargs)
         spider._set_crawler(crawler)
         return spider
