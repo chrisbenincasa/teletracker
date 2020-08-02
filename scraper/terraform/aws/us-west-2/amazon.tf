@@ -12,9 +12,9 @@ module "amazon_crawler" {
   spider_name = "amazon_distributed"
 
   outputs = [
-    //    "s3://${data.aws_s3_bucket.data_bucket.id}/scrape-results/amazon/catalog/{date}/items_{time}.jl:jl",
+    "s3://${data.aws_s3_bucket.data_bucket.id}/scrape-results/%(canonical_name)s/catalog/%(today)s/%(version)s/items_%(now)s.jl:jl",
     "sqs://${replace(data.aws_sqs_queue.scrape_item_output_queue.id, "https://", "")}:sqs",
-    "sqs://${replace(data.aws_sqs_queue.amazon_item_output_queue.id, "https://", "")}:sqs"
+    //    "sqs://${replace(data.aws_sqs_queue.amazon_item_output_queue.id, "https://", "")}:sqs"
   ]
 
   extra_args = [
