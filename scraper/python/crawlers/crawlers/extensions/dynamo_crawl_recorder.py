@@ -1,6 +1,8 @@
 import json
 import logging
 import pathlib
+from datetime import datetime
+
 import time
 from urllib import parse as urlparse
 
@@ -10,6 +12,8 @@ from boto3.dynamodb.conditions import Attr
 from botocore.exceptions import ClientError
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
+from scrapy.utils.conf import feed_complete_default_values_from_settings
+from scrapy.utils.misc import load_object
 
 from crawlers.util.aws import get_boto3_endpoint_url
 
@@ -18,6 +22,20 @@ logger = logging.getLogger(__name__)
 ENABLED_SETTING = 'DYNAMO_CRAWL_TRACK_ENABLED'
 DRY_MODE_SETTING = 'DYNAMO_CRAWL_TRACK_DRY_MODE'
 TABLE_NAME_SETTING = 'DYNAMO_CRAWL_TRACK_TABLE'
+JOIN_SPECIFIC_CRAWL_SETTING = 'DYNAMO_JOIN_SPECIFIC_CRAWL_SETTING'
+JOIN_CURRENT_CRAWL_SETTING = 'DYNAMO_JOIN_CURRENT_CRAWL_SETTING'
+
+
+# HACK: Copy feedexport's impl here. We need to render the feed URIs before saving their metadata
+def _get_uri_params(spider, uri_params):
+    params = {}
+    for k in dir(spider):
+        params[k] = getattr(spider, k)
+    ts = datetime.utcnow().replace(microsecond=0).isoformat().replace(':', '-')
+    params['time'] = ts
+    uripar_function = load_object(uri_params) if uri_params else lambda x, y: None
+    uripar_function(params, spider)
+    return params
 
 
 class DynamoCrawlRecorder:
@@ -60,21 +78,14 @@ class DynamoCrawlRecorder:
         info = self.spider_info[spider.name]
 
         if not hasattr(spider, 'version'):
-            setattr(spider, 'version', self.spider_info, info['version'])
-
-        item = {
-            'spider': info['name'],
-            'version': info['version'],
-            'time_opened': info['time_opened'],
-            'metadata': self._build_metadata_blob(spider),
-            'num_open_spiders': 1,
-            'is_distributed': info['is_distributed']
-        }
+            setattr(spider, 'version', info['version'])
+            logger.info(f'Set spider version: {spider.version}')
 
         if self.dry_mode:
             logger.info(
-                'Dynamo DRY MODE (open): Would\'ve written item: {} to table {}'.format(item, self.dynamo_table.name))
-        elif info['is_distributed']:
+                'Dynamo DRY MODE (open): Would\'ve written item: {} to table {}'.format(self._build_item(spider, info),
+                                                                                        self.dynamo_table.name))
+        elif info['is_distributed'] and spider.settings.getbool(JOIN_CURRENT_CRAWL_SETTING, default=True):
             # Look for an open crawl for the same spider
             response = self.dynamo_table.query(
                 KeyConditionExpression='spider = :n',
@@ -91,8 +102,6 @@ class DynamoCrawlRecorder:
                 item = response['Items'][0]
                 version = int(item['version'])
 
-                logger.info(f'Found existing crawl at version {version}')
-
                 key = {
                     'spider': info['name'],
                     'version': version
@@ -102,28 +111,50 @@ class DynamoCrawlRecorder:
                 info['version'] = version
                 if not hasattr(spider, 'version') or getattr(spider, 'version') != version:
                     setattr(spider, 'version', version)
+                    logger.info(f'Set spider version: {spider.version}')
 
                 logger.info(f'Joined active crawl at version {version}')
 
+                parsed_metadata = json.loads(item['metadata'])
+                metadata = self._build_metadata_blob(spider)
+
+                merged_metadata = {
+                    **parsed_metadata,
+                    **metadata,
+                    # Filter out duplicate canonical inputs
+                    'outputs': self._unique_dict_list_by_key(metadata['outputs'] + parsed_metadata['outputs'])
+                }
+
                 self.dynamo_table.update_item(
                     Key=key,
-                    UpdateExpression='SET num_open_spiders = num_open_spiders + :inc',
+                    UpdateExpression='SET num_open_spiders = num_open_spiders + :inc, metadata = :metadata',
                     ExpressionAttributeValues={
-                        ':inc': 1
+                        ':inc': 1,
+                        ':metadata': json.dumps(merged_metadata)
                     },
                     ConditionExpression=Attr('time_closed').not_exists(),
                 )
             else:
                 # Start a fresh crawl
                 self.dynamo_table.put_item(
-                    Item=item
+                    Item=self._build_item(spider, info)
                 )
 
         else:
             # Insert the new crawl
             self.dynamo_table.put_item(
-                Item=item
+                Item=self._build_item(spider, info)
             )
+
+    def _build_item(self, spider, info):
+        return {
+            'spider': info['name'],
+            'version': info['version'],
+            'time_opened': info['time_opened'],
+            'metadata': json.dumps(self._build_metadata_blob(spider)),
+            'num_open_spiders': 1,
+            'is_distributed': info['is_distributed']
+        }
 
     def spider_closed(self, spider, reason):
         logger.info(f'Dynamo crawl recorder closing spider with reason: {reason}')
@@ -204,26 +235,49 @@ class DynamoCrawlRecorder:
 
         self.item_count_by_spider[spider.name] += 1
 
+    def _unique_dict_list_by_key(self, ls):
+        seen_keys = set()
+        combined_outputs = []
+
+        # Filter out duplicate canonical inputs
+        for d in ls:
+            for k, v in d.items():
+                if k not in seen_keys:
+                    seen_keys.add(k)
+                    combined_outputs.append({k: v})
+
+        return combined_outputs
+
     def _build_metadata_blob(self, spider):
         metadata = {}
         outputs = []
         feeds = spider.settings.getdict('FEEDS')
         if feeds:
+            new_feeds = {}
             for key, value in feeds.items():
-                if isinstance(key, pathlib.Path):
-                    full_path = 'file://{}'.format(str(key.absolute()))
+                uri = str(key)  # handle pathlib.Path objects
+                new_feeds[uri] = feed_complete_default_values_from_settings(value, spider.settings)
+
+            for uri, feed in new_feeds.items():
+                uri = uri % _get_uri_params(spider, feed['uri_params'])
+                if isinstance(uri, pathlib.Path):
+                    full_path = 'file://{}'.format(str(uri.absolute()))
                 else:
-                    parsed = urlparse.urlparse(key)
+                    parsed = urlparse.urlparse(uri)
                     # Have something in the form xyz://123
                     if parsed.scheme:
-                        full_path = key
+                        # Special case for distributed spiders, which could
+                        if spider.is_distributed and parsed.scheme == 's3':
+                            parsed = parsed._replace(path='/'.join(parsed.path.split('/')[:-1]))
+
+                        full_path = parsed.geturl()
                     else:
-                        full_path = 'file://{}'.format(str(pathlib.Path(key).absolute()))
+                        full_path = 'file://{}'.format(str(pathlib.Path(uri).absolute()))
 
                 outputs.append({
-                    full_path: value
+                    full_path: feed
                 })
 
         metadata['outputs'] = outputs
 
-        return json.dumps(metadata)
+        return metadata

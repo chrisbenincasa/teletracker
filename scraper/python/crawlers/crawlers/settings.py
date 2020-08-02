@@ -65,10 +65,10 @@ USER_AGENTS = [
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:75.0) Gecko/20100101 Firefox/75.0'
 ]
 
-# Enable or disable extensions
-# See https://docs.scrapy.org/en/latest/topics/extensions.html
 EXTENSIONS = {
-    'crawlers.extensions.dynamo_crawl_recorder.DynamoCrawlRecorder': 500,
+    'crawlers.extensions.dynamo_crawl_recorder.DynamoCrawlRecorder': 0,
+    # Must run after DynamoCrawlRecorder to ensure we pick up the right canonical version
+    'scrapy.extensions.feedexport.FeedExporter': 100
 }
 
 # Configure item pipelines
@@ -88,6 +88,7 @@ FEED_STORAGES = {
 }
 
 FEED_FORMAT = 'jl.gz'
+FEED_URI_PARAMS = 'crawlers.util.misc.uri_params'
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html

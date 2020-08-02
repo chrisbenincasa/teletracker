@@ -28,9 +28,12 @@ class CustomJsonFormatter(jsonlogger.JsonFormatter):
         else:
             log_record['level'] = log_record.get('level').upper()
 
+
 class VersionedSpider:
     import time
-    version = int(time.time())
+    now = int(time.time())
+    version = now
+    start_time = now
 
 
 class BaseSitemapSpider(scrapy.spiders.SitemapSpider, VersionedSpider):
