@@ -18,7 +18,8 @@ module "amazon_crawler" {
   ]
 
   extra_args = [
-    "-sEMPTY_RESPONSE_RECORDER_ENABLED=True"
+    "-sEMPTY_RESPONSE_RECORDER_ENABLED=True",
+    "-sAUTOTHROTTLE_TARGET_CONCURRENCY=8"
   ]
 
   dynamodb_output_table = aws_dynamodb_table.crawls.name

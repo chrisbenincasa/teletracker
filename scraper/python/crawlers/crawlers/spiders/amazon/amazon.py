@@ -235,7 +235,7 @@ class AmazonDistributedSpider(AmazonSpider, CustomRedisMixin):
     name = 'amazon_distributed'
     custom_settings = {
         **DISTRIBUTED_SETTINGS,
-        'AUTOTHROTTLE_TARGET_CONCURRENCY': 1.0,
+        'AUTOTHROTTLE_TARGET_CONCURRENCY': 8.0,
         'EXTENSIONS': {**EXTENSIONS, 'crawlers.extensions.empty_response_recorder.EmptyResponseRecorder': 500,
                        'scrapy.extensions.closespider.CloseSpider': 100},
         'ITEM_PIPELINES': ITEM_PIPELINES,

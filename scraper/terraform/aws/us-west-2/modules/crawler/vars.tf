@@ -19,7 +19,7 @@ variable "outputs" {
 }
 
 variable "schedule" {
-  type = list(string)
+  type    = list(string)
   default = []
 }
 
@@ -29,20 +29,20 @@ variable "dynamodb_output_table" {
 
 variable "gen_service" {
   type    = bool
-  default = true
+  default = false
 }
 
 variable "redis_host" {
-  type = string
+  type    = string
   default = ""
 }
 
 variable "extra_args" {
-  type = list(string)
+  type    = list(string)
   default = []
 }
 
 variable "scheduled_task_count" {
-  type = number
+  type    = number
   default = 1
 }
