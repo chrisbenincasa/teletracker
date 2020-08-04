@@ -15,6 +15,7 @@ import com.teletracker.common.model.scraping.{
 }
 import com.teletracker.common.util.json.circe._
 import io.circe.generic.JsonCodec
+import io.circe.generic.extras.ConfiguredJsonCodec
 import java.util.UUID
 
 object AmazonItem {
@@ -29,7 +30,7 @@ object AmazonItem {
     }
 }
 
-@JsonCodec
+@ConfiguredJsonCodec
 case class AmazonItem(
   id: Option[String],
   title: String,
@@ -46,7 +47,7 @@ case class AmazonItem(
   availableOnPrime: Boolean,
   override val offers: Option[List[AmazonItemOffer]],
   override val internalId: Option[UUID],
-  override val version: Long)
+  override val version: Long = -1)
     extends ScrapedItem {
   override def availableDate: Option[String] = None
 
@@ -55,21 +56,21 @@ case class AmazonItem(
   override def status: String = ""
 }
 
-@JsonCodec
+@ConfiguredJsonCodec
 case class AmazonItemCastMember(
   name: String,
   order: Option[Int],
   role: Option[String])
     extends ScrapedCastMember
 
-@JsonCodec
+@ConfiguredJsonCodec
 case class AmazonItemCrewMember(
   name: String,
   order: Option[Int],
   role: Option[String])
     extends ScrapedCrewMember
 
-@JsonCodec
+@ConfiguredJsonCodec
 case class AmazonItemOffer(
   offerType: OfferType,
   price: Option[Double],

@@ -22,7 +22,8 @@ case class IngestJobArgs(
   sourceLimit: Int = -1,
   enableExternalIdMatching: Boolean = true,
   reimport: Boolean = false,
-  externalIdFilter: Option[String])
+  externalIdFilter: Option[String],
+  updateAsync: Boolean = true)
     extends IngestJobArgsLike
 
 object IngestJobArgs

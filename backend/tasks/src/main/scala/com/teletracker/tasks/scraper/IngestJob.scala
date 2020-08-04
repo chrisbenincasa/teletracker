@@ -289,22 +289,32 @@ abstract class IngestJob[T <: ScrapedItem: ScrapedItemAvailabilityDetails](
       }
 
       if (!args.dryRun) {
-        val requests = itemsWithNewAvailability.map(item => {
-          AsyncItemUpdateRequest(
-            id = item.id,
-            itemType = item.`type`,
-            doc = item.asJson,
-            denorm = Some(
-              EsIngestItemDenormArgs(
-                needsDenorm = true,
-                cast = false,
-                crew = false
+        if (args.updateAsync) {
+          val requests = itemsWithNewAvailability.map(item => {
+            AsyncItemUpdateRequest(
+              id = item.id,
+              itemType = item.`type`,
+              doc = item.asJson,
+              denorm = Some(
+                EsIngestItemDenormArgs(
+                  needsDenorm = true,
+                  cast = false,
+                  crew = false
+                )
               )
             )
-          )
-        })
+          })
 
-        itemUpdateQueue.queueItemUpdates(requests).map(_ => {})
+          itemUpdateQueue.queueItemUpdates(requests).map(_ => {})
+        } else {
+          AsyncStream
+            .fromIterable(itemsWithNewAvailability)
+            .grouped(10)
+            .mapF(batch => {
+              Future.sequence(batch.map(itemUpdater.update)).map(_ => {})
+            })
+            .force
+        }
       } else {
         Future.successful {
           logger.info(
