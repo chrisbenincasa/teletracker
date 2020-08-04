@@ -18,10 +18,11 @@ import {
   CssBaseline,
   Typography,
 } from '@material-ui/core';
-import { LiveTv, Menu } from '@material-ui/icons';
+import { LiveTv, Menu, Storage } from '@material-ui/icons';
 import { Link, Redirect, Router } from '@reach/router';
 import Matching from './features/matching/Matching';
 import MatchInspector from './features/match_inspector/MatchInspector';
+import Tasks from './features/tasks/Tasks';
 
 const drawerWidth = 240;
 
@@ -89,6 +90,14 @@ function App() {
               <LiveTv />
             </ListItemIcon>
             <ListItemText primary="Matching" className={classes.drawerItem} />
+          </ListItem>
+        </Link>
+        <Link to="/tasks/">
+          <ListItem button>
+            <ListItemIcon>
+              <Storage />
+            </ListItemIcon>
+            <ListItemText primary="Tasks" className={classes.drawerItem} />
           </ListItem>
         </Link>
       </List>
@@ -159,6 +168,7 @@ function App() {
           <Redirect noThrow from="/matching" to={'/matching/unmatched/all'} />
           <Matching path="/matching/:filterType/:networkScraper" />
           <MatchInspector path="/match_inspector/" />
+          <Tasks path="/tasks/" />
         </Router>
       </main>
     </div>

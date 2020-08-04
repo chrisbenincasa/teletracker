@@ -4,33 +4,13 @@ import com.teletracker.common.db.dynamo.model.StoredUserList
 import com.teletracker.common.monitoring.Timing
 import com.teletracker.common.util.UuidOrT
 import com.teletracker.service.api.ListsApi
-import com.twitter.finagle.http.Request
-import com.twitter.finatra.http.Controller
 import com.twitter.finatra.http.response.ResponseBuilder
 import scala.concurrent.{ExecutionContext, Future}
-
-object TeletrackerController {
-  implicit def toRichInjectedRequest(re: InjectedRequest): RichInjectedRequest =
-    new RichInjectedRequest(re)
-
-  implicit def toRichRegularRequest(re: Request): RichInjectedRequest =
-    toRichInjectedRequest(new InjectedRequest {
-      override def request: Request = re
-    })
-}
 
 abstract class TeletrackerController(
   listsApi: ListsApi
 )(implicit executionContext: ExecutionContext)
-    extends Controller {
-
-  implicit def toRichInjectedRequest(re: InjectedRequest): RichInjectedRequest =
-    new RichInjectedRequest(re)
-
-  implicit def toRichRegularRequest(re: Request): RichInjectedRequest =
-    toRichInjectedRequest(new InjectedRequest {
-      override def request: Request = re
-    })
+    extends BaseController {
 
   def withList(
     userId: String,
@@ -58,10 +38,4 @@ abstract class TeletrackerController(
         listsApi.findListForUserLegacy(value, userId)
     }
   }
-}
-
-final class RichInjectedRequest(val r: InjectedRequest) extends AnyVal {
-  import com.teletracker.service.auth.RequestContext._
-
-  def authenticatedUserId: Option[String] = r.request.authContext.map(_.userId)
 }

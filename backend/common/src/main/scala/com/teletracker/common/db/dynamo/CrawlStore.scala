@@ -7,15 +7,21 @@ import com.teletracker.common.inject.SingleThreaded
 import com.teletracker.common.util.{AsyncToken, Cancellable, FutureToken}
 import io.circe.generic.JsonCodec
 import javax.inject.Inject
+import com.teletracker.common.util.Functions._
 import shapeless.tag.@@
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
 import software.amazon.awssdk.services.dynamodb.model.{
+  AttributeAction,
   AttributeValue,
+  AttributeValueUpdate,
   ComparisonOperator,
   Condition,
+  ConditionalOperator,
+  ExpectedAttributeValue,
   GetItemRequest,
   PutItemRequest,
-  QueryRequest
+  QueryRequest,
+  UpdateItemRequest
 }
 import java.net.URI
 import java.time.Instant
@@ -52,6 +58,55 @@ class CrawlStore @Inject()(
   dynamo: DynamoDbAsyncClient,
   @SingleThreaded scheduledExecutorService: ScheduledExecutorService
 )(implicit executionContext: ExecutionContext) {
+  def closeCrawl(
+    crawlerName: CrawlerName,
+    version: Long,
+    totalItemsCrawled: Option[Int]
+  ): Future[Unit] = {
+    dynamo
+      .updateItem(
+        UpdateItemRequest
+          .builder()
+          .tableName(teletrackerConfig.currentValue().dynamo.crawls.table_name)
+          .key(
+            Map(
+              "spider" -> crawlerName.name.toAttributeValue,
+              "version" -> version.toAttributeValue
+            ).asJava
+          )
+          .attributeUpdates(
+            Map(
+              "time_closed" -> AttributeValueUpdate
+                .builder()
+                .action(AttributeAction.PUT)
+                .value(Instant.now().getEpochSecond.toAttributeValue)
+                .build()
+            ).applyOptional(totalItemsCrawled)(
+                (m, total) =>
+                  m ++ Map(
+                    "total_items_crawled" -> AttributeValueUpdate
+                      .builder()
+                      .action(AttributeAction.PUT)
+                      .value(total.toAttributeValue)
+                      .build()
+                  )
+              )
+              .asJava
+          )
+          .expected(
+            Map(
+              "time_closed" -> ExpectedAttributeValue
+                .builder()
+                .exists(false)
+                .build()
+            ).asJava
+          )
+          .build()
+      )
+      .toScala
+      .map(_ => {})
+  }
+
   def saveCrawl(crawl: HistoricalCrawl): Future[Unit] = {
     dynamo
       .putItem(

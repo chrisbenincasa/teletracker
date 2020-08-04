@@ -53,9 +53,7 @@ class ListController @Inject()(
         )
         .map {
           case Some(value) =>
-            response.ok
-              .contentTypeJson()
-              .body(DataResponse.forDataResponse(DataResponse(value)))
+            response.okCirceJsonResponse(DataResponse(value))
           case None => response.notFound
         }
     }
@@ -87,17 +85,13 @@ class ListController @Inject()(
           case None => response.notFound
 
           case Some((items, total, bookmark)) =>
-            response.ok
-              .contentTypeJson()
-              .body(
-                DataResponse.forDataResponse(
-                  DataResponse(
-                    items
-                  ).withPaging(
-                    Paging(bookmark.map(_.encode), total = Some(total))
-                  )
-                )
+            response.okCirceJsonResponse(
+              DataResponse(
+                items
+              ).withPaging(
+                Paging(bookmark.map(_.encode), total = Some(total))
               )
+            )
         }
     }
   }

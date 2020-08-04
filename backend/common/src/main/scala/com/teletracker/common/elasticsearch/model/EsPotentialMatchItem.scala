@@ -10,8 +10,13 @@ import com.teletracker.common.model.scraping.{
 }
 import com.teletracker.common.util.HasId
 import com.teletracker.common.util.json.circe._
-import io.circe.{Codec, Json}
+import io.circe.{Codec, Decoder, Encoder, Json}
 import io.circe.generic.JsonCodec
+import io.circe.generic.extras._
+import io.circe.generic.extras.semiauto.{
+  deriveConfiguredDecoder,
+  deriveConfiguredEncoder
+}
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -115,7 +120,7 @@ object EsScrapedItem {
   }
 }
 
-@JsonCodec
+@ConfiguredJsonCodec
 case class EsScrapedItem(
   override val availableDate: Option[String],
   override val title: String,
@@ -129,7 +134,7 @@ case class EsScrapedItem(
   override val posterImageUrl: Option[String],
   override val cast: Option[Seq[EsScrapedCastMember]],
   override val crew: Option[Seq[EsScrapedCrewMember]],
-  override val version: Long)
+  override val version: Long = -1)
     extends ScrapedItem {
   override def isMovie: Boolean = itemType == ItemType.Movie
   override def isTvShow: Boolean = itemType == ItemType.Show

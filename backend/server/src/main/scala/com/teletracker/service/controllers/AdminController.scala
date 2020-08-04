@@ -31,7 +31,7 @@ class AdminController @Inject()(
   itemUpdater: ItemUpdater,
   itemDenormQueue: SqsFifoQueue[EsDenormalizeItemMessage]
 )(implicit executionContext: ExecutionContext)
-    extends Controller {
+    extends BaseController {
 
   // TODO put on admin server and open up admin server port on GCP
   filter[AdminFilter].get("/version") { _: Request =>
@@ -84,14 +84,12 @@ class AdminController @Inject()(
           .map(resp => {
             response
               .ok(
-                DataResponse.forDataResponse(
-                  DataResponse(
-                    resp.items,
-                    Some(
-                      Paging(
-                        resp.bookmark.map(_.encode),
-                        total = Some(resp.totalHits)
-                      )
+                DataResponse(
+                  resp.items,
+                  Some(
+                    Paging(
+                      resp.bookmark.map(_.encode),
+                      total = Some(resp.totalHits)
                     )
                   )
                 )
@@ -103,7 +101,7 @@ class AdminController @Inject()(
       get("/:id") { req: SpecificPotentialMatchRequest =>
         esPotentialMatchItemStore.lookup(req.id).map {
           case Some(value) =>
-            response.ok(DataResponse.complex(value)).contentTypeJson()
+            response.ok(DataResponse(value)).contentTypeJson()
           case None => response.notFound
         }
       }
@@ -176,7 +174,7 @@ class AdminController @Inject()(
     }).map {
       case None => response.notFound
       case Some(thing) =>
-        response.ok(DataResponse.complex(thing)).contentTypeJson()
+        response.ok(DataResponse(thing)).contentTypeJson()
     }
   }
 }

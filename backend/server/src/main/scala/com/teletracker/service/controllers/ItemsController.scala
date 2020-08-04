@@ -15,14 +15,12 @@ import com.teletracker.common.util.time.LocalDateUtils
 import com.teletracker.service.api
 import com.teletracker.service.api.{ItemApi, ItemSearchRequest}
 import com.teletracker.service.api.model.{Item, Person}
-import com.teletracker.service.controllers.TeletrackerController._
 import com.teletracker.service.controllers.annotations.{
   ItemReleaseYear,
   RatingRange
 }
 import com.teletracker.service.controllers.params.RangeParser
 import com.twitter.finagle.http.Request
-import com.twitter.finatra.http.Controller
 import com.twitter.finatra.request.{QueryParam, RouteParam}
 import com.twitter.finatra.validation.{
   Max,
@@ -42,7 +40,7 @@ class ItemsController @Inject()(
   itemApi: ItemApi,
   personLookup: PersonLookup
 )(implicit executionContext: ExecutionContext)
-    extends Controller
+    extends BaseController
     with CanParseFieldFilter {
   prefix("/api/v2") {
     get("/explore") { req: GetItemsRequest =>
@@ -70,9 +68,7 @@ class ItemsController @Inject()(
             response.notFound
 
           case Some(found) =>
-            response.ok
-              .contentTypeJson()
-              .body(DataResponse.complex(found))
+            response.okCirceJsonResponse(DataResponse(found))
         }
         .recover {
           case NonFatal(e) =>
@@ -93,9 +89,9 @@ class ItemsController @Inject()(
             response.notFound
 
           case Some(found) =>
-            response.ok
-              .contentTypeJson()
-              .body(DataResponse.complex(found.recommendations.getOrElse(Nil)))
+            response.okCirceJsonResponse(
+              DataResponse(found.recommendations.getOrElse(Nil))
+            )
         }
         .recover {
           case NonFatal(e) =>
@@ -110,8 +106,8 @@ class ItemsController @Inject()(
         .getPeopleViaSearch(req.personIds)
         .map(results => {
           response
-            .ok(
-              DataResponse.complex(
+            .okCirceJsonResponse(
+              DataResponse(
                 results.map(
                   Person.fromEsPerson(
                     _,
@@ -120,7 +116,6 @@ class ItemsController @Inject()(
                 )
               )
             )
-            .contentTypeJson()
         })
     }
 
@@ -135,15 +130,14 @@ class ItemsController @Inject()(
           case None => response.notFound
           case Some((person, credits)) =>
             response
-              .ok(
-                DataResponse.complex(
+              .okCirceJsonResponse(
+                DataResponse(
                   Person.fromEsPerson(
                     person,
                     Some(credits)
                   )
                 )
               )
-              .contentTypeJson()
         }
     }
 
@@ -174,14 +168,12 @@ class ItemsController @Inject()(
           val items =
             result.items.map(_.scopeToUser(req.authenticatedUserId))
 
-          DataResponse.forDataResponse(
-            DataResponse(items).withPaging(
-              Paging(result.bookmark.map(_.encode))
-            )
+          DataResponse(items).withPaging(
+            Paging(result.bookmark.map(_.encode))
           )
         })
         .map(jsonResponse => {
-          response.ok(jsonResponse).contentTypeJson()
+          response.okCirceJsonResponse(jsonResponse)
         })
     }
   }
@@ -200,13 +192,11 @@ class ItemsController @Inject()(
             .map(_.scopeToUser(userId))
             .map(Item.fromEsItem(_, Nil))
 
-        DataResponse.forDataResponse(
-          DataResponse(items).withPaging(
-            Paging(popularItems.bookmark.map(_.encode))
-          )
+        DataResponse(items).withPaging(
+          Paging(popularItems.bookmark.map(_.encode))
         )
       })
-      .map(response.ok(_).contentTypeJson())
+      .map(response.okCirceJsonResponse(_))
   }
 
   private def makeSearchRequest(req: GetItemsRequest) = {

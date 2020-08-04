@@ -4,6 +4,10 @@ import com.google.inject.Module
 import com.teletracker.common.util.{GenreCache, NetworkCache}
 import com.teletracker.service.auth.JwtAuthFilter
 import com.teletracker.service.controllers._
+import com.teletracker.service.controllers.admin.{
+  CrawlerController,
+  TaskController
+}
 import com.teletracker.service.exception_mappers.PassThroughExceptionMapper
 import com.teletracker.service.filters.CorsFilter
 import com.teletracker.service.inject.ServerModules
@@ -62,6 +66,8 @@ class TeletrackerServer(
       .add[HealthController]
       .add[InternalController]
       .add[ListController]
+      .add[TaskController]
+      .add[CrawlerController]
   }
 
   override protected def configureHttpsServer(
@@ -69,26 +75,31 @@ class TeletrackerServer(
   ): Http.Server = {
     val allocator = io.netty.buffer.UnpooledByteBufAllocator.DEFAULT
 
-    server.withTransport.tls(
-      SslServerConfiguration(clientAuth = ClientAuth.Wanted),
-      (_: SslServerConfiguration) => {
-        val context = SslContextBuilder
-          .forServer(
-            new File(
-              s"${System.getenv("LOCALCERTS_PATH")}/fullchain.pem"
-            ),
-            new File(
-              s"${System.getenv("LOCALCERTS_PATH")}/privkey.pem"
-            ),
-            null
-          )
-          .trustManager(InsecureTrustManagerFactory.INSTANCE)
-          .clientAuth(io.netty.handler.ssl.ClientAuth.OPTIONAL)
-          .build()
-        val engine = context.newEngine(allocator)
-        engine.setNeedClientAuth(false)
-        Engine(engine)
-      }
-    )
+    Option(System.getenv("LOCALCERTS_PATH")) match {
+      case Some(certPath) =>
+        server.withTransport.tls(
+          SslServerConfiguration(clientAuth = ClientAuth.Wanted),
+          (_: SslServerConfiguration) => {
+            val context = SslContextBuilder
+              .forServer(
+                new File(
+                  s"${certPath}/fullchain.pem"
+                ),
+                new File(
+                  s"${certPath}/privkey.pem"
+                ),
+                null
+              )
+              .trustManager(InsecureTrustManagerFactory.INSTANCE)
+              .clientAuth(io.netty.handler.ssl.ClientAuth.OPTIONAL)
+              .build()
+            val engine = context.newEngine(allocator)
+            engine.setNeedClientAuth(false)
+            Engine(engine)
+          }
+        )
+      case None =>
+        server
+    }
   }
 }

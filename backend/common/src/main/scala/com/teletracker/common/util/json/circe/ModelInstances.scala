@@ -16,7 +16,7 @@ trait ConfiguredModelInstances {
   import io.circe.generic.extras.Configuration
 
   implicit val customConfig: Configuration =
-    Configuration.default.withDiscriminator("type")
+    Configuration.default.withDiscriminator("type").withDefaults
 
   implicit val trackedListRulesEncoder: Codec[TrackedListRules] =
     deriveConfiguredCodec

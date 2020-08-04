@@ -1,13 +1,19 @@
 package com.teletracker.common.tasks.storage
 
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.elasticsearch.ElasticsearchExecutor
+import com.teletracker.common.elasticsearch.{
+  ElasticsearchAccess,
+  ElasticsearchExecutor
+}
 import io.circe.syntax._
 import javax.inject.Inject
 import org.elasticsearch.action.bulk.{BulkRequest, BulkResponse}
 import org.elasticsearch.action.index.{IndexRequest, IndexResponse}
+import org.elasticsearch.action.search.SearchRequest
 import org.elasticsearch.action.update.{UpdateRequest, UpdateResponse}
 import org.elasticsearch.common.xcontent.XContentType
+import org.elasticsearch.index.query.QueryBuilders
+import org.elasticsearch.search.builder.SearchSourceBuilder
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -15,10 +21,26 @@ object TaskRecordStore {
   final private val TableName = "teletracker.qa.tasks"
 }
 
+case class TaskRecordQueryRequest(limit: Int = 10)
+object TaskRecordQueryRequest {
+  val default = TaskRecordQueryRequest()
+}
+
 class TaskRecordStore @Inject()(
   teletrackerConfig: TeletrackerConfig,
   elasticsearchExecutor: ElasticsearchExecutor
-)(implicit executionContext: ExecutionContext) {
+)(implicit executionContext: ExecutionContext)
+    extends ElasticsearchAccess {
+  def query(request: TaskRecordQueryRequest): Future[List[TaskRecord]] = {
+    val query = QueryBuilders.boolQuery()
+    val source = new SearchSourceBuilder().query(query).size(request.limit)
+    val searchRequest = new SearchRequest(
+      teletrackerConfig.elasticsearch.tasks_index_name
+    ).source(source)
+    elasticsearchExecutor
+      .search(searchRequest)
+      .map(decodeSearchResponse[TaskRecord])
+  }
 
   def recordNewTask(taskRecord: TaskRecord): Future[IndexResponse] = {
     elasticsearchExecutor.index(makeIndexRequestForRecord(taskRecord))

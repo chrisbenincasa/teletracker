@@ -13,7 +13,7 @@ class AvailabilityController @Inject()(
   networkCache: NetworkCache,
   itemAvailabilitySearch: ItemAvailabilitySearch
 )(implicit executionContext: ExecutionContext)
-    extends Controller
+    extends BaseController
     with CanParseFieldFilter {
 
   prefix("/api/v2/availability") {
@@ -26,9 +26,9 @@ class AvailabilityController @Inject()(
           Some(req.networkIds.toSet)
         )
         .map(avs => {
-          response.ok
-            .contentTypeJson()
-            .body(DataResponse.complex(avs.items.map(Item.fromEsItem(_))))
+          response.okCirceJsonResponse(
+            DataResponse(avs.items.map(Item.fromEsItem(_)))
+          )
         })
     }
 
@@ -41,9 +41,9 @@ class AvailabilityController @Inject()(
           Some(req.networkIds.toSet)
         )
         .map(avs => {
-          response.ok
-            .contentTypeJson()
-            .body(DataResponse.complex(avs.items.map(Item.fromEsItem(_))))
+          response.okCirceJsonResponse(
+            DataResponse(avs.items.map(Item.fromEsItem(_)))
+          )
         })
     }
 
@@ -56,9 +56,9 @@ class AvailabilityController @Inject()(
           Some(req.networkIds.toSet)
         )
         .map(avs => {
-          response.ok
-            .contentTypeJson()
-            .body(DataResponse.complex(avs.items.map(Item.fromEsItem(_))))
+          response.okCirceJsonResponse(
+            DataResponse(avs.items.map(Item.fromEsItem(_)))
+          )
         })
     }
   }

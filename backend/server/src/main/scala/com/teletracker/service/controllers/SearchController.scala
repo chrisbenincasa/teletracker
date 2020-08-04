@@ -1,30 +1,20 @@
 package com.teletracker.service.controllers
 
-import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.db.{Bookmark, SearchScore}
-import com.teletracker.common.elasticsearch.model.{
-  ItemSearchParams,
-  PeopleCreditsFilter
-}
-import com.teletracker.common.elasticsearch.{
-  BinaryOperator,
-  ItemSearch,
-  PersonLookup
-}
+import com.teletracker.common.elasticsearch.BinaryOperator
+import com.teletracker.common.elasticsearch.model.PeopleCreditsFilter
 import com.teletracker.common.model.{DataResponse, Paging}
 import com.teletracker.common.util.time.LocalDateUtils
 import com.teletracker.common.util.{CanParseFieldFilter, OpenDateRange}
-import com.teletracker.service.api
-import com.teletracker.service.api.{ItemApi, ItemSearchRequest}
 import com.teletracker.service.api.model.Person
+import com.teletracker.service.api.{ItemApi, ItemSearchRequest}
 import com.teletracker.service.controllers.annotations.{
   ItemReleaseYear,
   RatingRange
 }
 import com.teletracker.service.controllers.params.RangeParser
 import com.twitter.finagle.http.Request
-import com.twitter.finatra.http.Controller
 import com.twitter.finatra.request.QueryParam
 import com.twitter.finatra.validation.{Max, Min}
 import javax.inject.Inject
@@ -34,9 +24,8 @@ import scala.util.Try
 class SearchController @Inject()(
   itemApi: ItemApi
 )(implicit executionContext: ExecutionContext)
-    extends Controller
+    extends BaseController
     with CanParseFieldFilter {
-  import TeletrackerController._
 
   prefix("/api/v3") {
     get("/search") { req: SearchRequest =>
@@ -51,16 +40,12 @@ class SearchController @Inject()(
         val allThings =
           result.items.map(_.scopeToUser(req.request.authenticatedUserId))
 
-        response.ok
-          .contentTypeJson()
-          .body(
-            DataResponse.forDataResponse(
-              DataResponse(
-                allThings,
-                Some(Paging(result.bookmark.map(_.encode)))
-              )
-            )
+        response.okCirceJsonResponse(
+          DataResponse(
+            allThings,
+            Some(Paging(result.bookmark.map(_.encode)))
           )
+        )
       }
     }
   }
@@ -75,16 +60,12 @@ class SearchController @Inject()(
           makeSearchRequest(req)
         )
       } yield {
-        response.ok
-          .contentTypeJson()
-          .body(
-            DataResponse.forDataResponse(
-              DataResponse(
-                result.items.map(Person.fromEsPerson(_, None)),
-                Some(Paging(result.bookmark.map(_.encode)))
-              )
-            )
+        response.okCirceJsonResponse(
+          DataResponse(
+            result.items.map(Person.fromEsPerson(_, None)),
+            Some(Paging(result.bookmark.map(_.encode)))
           )
+        )
       }
     }
   }

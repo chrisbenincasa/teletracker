@@ -15,10 +15,11 @@ import com.teletracker.common.util.{
   IdOrSlug,
   ListFilterParser
 }
-import com.teletracker.service.api.model.{UserList, UserListRules}
+import com.teletracker.service.api.model.{UserDetails, UserList, UserListRules}
 import com.teletracker.service.api.{ItemApi, ListsApi, UsersApi}
 import com.teletracker.service.auth.{AuthRequiredFilter, UserSelfOnlyFilter}
 import com.twitter.finagle.http.Request
+import com.twitter.finatra.http.response.ResponseBuilder
 import com.twitter.finatra.request.{QueryParam, RouteParam}
 import io.circe.generic.JsonCodec
 import io.circe.parser._
@@ -61,13 +62,11 @@ class UserController @Inject()(
 
       get("/:userId/lists") { req: GetUserListsRequest =>
         def returnLists(lists: Seq[UserList]) =
-          response.ok
-            .contentTypeJson()
-            .body(
-              DataResponse.complex(
-                lists.sortBy(list => (list.createdAt, list.legacyId))
-              )
+          response.okCirceJsonResponse(
+            DataResponse(
+              lists.sortBy(list => (list.createdAt, list.legacyId))
             )
+          )
 
         usersApi
           .getUserLists(req.authenticatedUserId.get)
@@ -133,8 +132,8 @@ class UserController @Inject()(
                     updateResult
                   )
                   .map(_ => {
-                    response.ok(
-                      DataResponse.complex(
+                    response.okCirceJsonResponse(
+                      DataResponse(
                         UpdateListResponse(
                           updateResult.optionsChanged || updateResult.rulesChanged
                         )
@@ -322,8 +321,13 @@ class UserController @Inject()(
     }
   }
 
-  private def getUserOrNotFound(userId: String): Future[String] = {
-    usersApi.getUser(userId).map(DataResponse.complex(_))
+  private def getUserOrNotFound(
+    userId: String
+  ): Future[ResponseBuilder#EnrichedResponse] = {
+    usersApi
+      .getUser(userId)
+      .map(DataResponse(_))
+      .map(response.okCirceJsonResponse(_))
   }
 }
 

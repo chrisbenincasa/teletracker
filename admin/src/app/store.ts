@@ -1,11 +1,13 @@
 import { configureStore, ThunkAction, Action } from '@reduxjs/toolkit';
 import counterReducer from '../features/counter/counterSlice';
 import matchingReducer from '../features/matching/matchingSlice';
+import tasksReducer from '../features/tasks/tasksSlice';
 
 export const store = configureStore({
   reducer: {
     counter: counterReducer,
-    matching: matchingReducer
+    matching: matchingReducer,
+    tasks: tasksReducer,
   },
 });
 

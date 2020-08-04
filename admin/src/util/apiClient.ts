@@ -1,5 +1,6 @@
 import axios from 'axios';
 import {
+  DeepReadonly,
   DeepReadonlyObject,
   PotentialMatch,
   PotentialMatchState,
@@ -7,7 +8,7 @@ import {
 } from '../types';
 
 const instance = axios.create({
-  baseURL: `https://${process.env.REACT_APP_API_HOST}/api/v1/internal`,
+  baseURL: `${process.env.REACT_APP_API_SCHEME}://${process.env.REACT_APP_API_HOST}/api/v1/internal`,
 });
 
 export enum SearchMatchSort {
@@ -47,6 +48,18 @@ export type SearchMatchResponse = DeepReadonlyObject<{
   }>;
 }>;
 
+export type SearchTasksRequest = DeepReadonly<{
+  limit?: number;
+}>;
+
+export type SearchTaskResponse = DeepReadonly<{
+  data: Task[];
+}>;
+
+export type Task = {
+  taskName: string;
+};
+
 export const getPotentialMatches = async (request: SearchMatchRequest) => {
   return instance.get<SearchMatchResponse>(`/potential_matches/search`, {
     params: {
@@ -69,4 +82,13 @@ export const updatePotentialMatch = async (request: UpdateMatchRequest) => {
       },
     },
   );
+};
+
+export const getTasks = async (request: SearchTasksRequest) => {
+  return instance.get<SearchTaskResponse>('/tasks', {
+    params: {
+      admin_key: process.env.REACT_APP_ADMIN_KEY,
+      ...request,
+    },
+  });
 };
