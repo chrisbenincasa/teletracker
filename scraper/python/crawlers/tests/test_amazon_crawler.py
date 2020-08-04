@@ -1,5 +1,6 @@
 from crawlers.spiders.amazon.amazon import _process_detail_link
-
+from scrapy.utils.request import request_fingerprint
+from scrapy import Request
 
 def test_process_detail_link_equal():
     link1 = 'https://www.amazon.com/gp/video/detail/B07SPFX1LK/ref=atv_dp_b00_det_c_UTPsmN_1_11'
@@ -20,3 +21,16 @@ def test_process_detail_link_preserve_query():
     link2 = 'https://www.amazon.com/gp/video/detail/B07SPFX1LK?q=1&t=1'
 
     assert _process_detail_link(link1) == _process_detail_link(link2)
+
+
+def test_same_request_fingerprint():
+    link1 = 'https://www.amazon.com/gp/video/detail/B07SPFX1LK/ref=atv_dp_b00_det_c_UTPsmN_1_11'
+    link2 = 'https://www.amazon.com/gp/video/detail/B07SPFX1LK/ref=atv_dp_b00_det_c_UTPsmN_1_12'
+
+    processed1 = _process_detail_link(link1)
+    processed2 = _process_detail_link(link2)
+
+    request1 = Request(url=processed1)
+    request2 = Request(url=processed2)
+
+    assert request_fingerprint(request1) == request_fingerprint(request2)
