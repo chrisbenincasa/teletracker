@@ -34,6 +34,18 @@ AMAZON_TV_SHOW_ENTITY_TYPE = 'TV Show'
 AMAZON_MOVIE_ENTITY_TYPE = 'Movie'
 
 
+def _process_detail_link(url):
+    from urllib.parse import urlparse, urlunparse
+    parsed = urlparse(url)
+    path = parsed.path.split('/')
+    if len(path) == 0:
+        return url
+    elif 'ref=' in path[-1]:
+        path = path[:-1]  # Drop ref component
+
+    return urlunparse(parsed._replace(path='/'.join(path)))
+
+
 class AmazonSpider(BaseCrawlSpider):
     name = 'amazon'
     store_name = 'amazon'
@@ -45,7 +57,7 @@ class AmazonSpider(BaseCrawlSpider):
 
     rules = (
         Rule(LinkExtractor(allow=(r'(https://www.amazon.com)?/gp/video/detail/.*',)),
-             callback='_handle_amazon_page', follow=True),
+             callback='_handle_amazon_page', follow=True, process_links=_process_detail_link),
         Rule(LinkExtractor(
             allow=r'(https://www\.amazon\.com)?/gp/video/search/ref=[A-z_]+\?phrase=[A-z0-9%]+&'), follow=True),
         Rule(LinkExtractor(
