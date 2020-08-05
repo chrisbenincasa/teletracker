@@ -56,8 +56,9 @@ class AmazonSpider(BaseCrawlSpider):
     ]
 
     rules = (
-        Rule(LinkExtractor(allow=(r'(https://www.amazon.com)?/gp/video/detail/.*',)),
-             callback='_handle_amazon_page', follow=True, process_links=_process_detail_link),
+        Rule(
+            LinkExtractor(allow=(r'(https://www.amazon.com)?/gp/video/detail/.*',), process_value=_process_detail_link),
+            callback='_handle_amazon_page', follow=True),
         Rule(LinkExtractor(
             allow=r'(https://www\.amazon\.com)?/gp/video/search/ref=[A-z_]+\?phrase=[A-z0-9%]+&'), follow=True),
         Rule(LinkExtractor(
