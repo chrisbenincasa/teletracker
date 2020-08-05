@@ -9,7 +9,7 @@ import com.teletracker.common.tasks.args.GenArgParser
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.model.{BaseTaskArgs, GenericTmdbDumpFileRow}
-import com.teletracker.tasks.util.{FileUtils, SourceRetriever}
+import com.teletracker.tasks.util.{SourceRetriever, SourceUtils}
 import io.circe.generic.JsonCodec
 import javax.inject.Inject
 import java.net.URI
@@ -28,7 +28,7 @@ case class DeleteItemsFromAllIdsDumpsArgs(
 object DeleteItemsFromAllIdsDumpsArgs
 
 class DeleteItemsFromAllIdsDumps @Inject()(
-  fileUtils: FileUtils,
+  fileUtils: SourceUtils,
   externalIdMappingStore: ElasticsearchExternalIdMappingStore
 )(implicit executionContext: ExecutionContext)
     extends TypedTeletrackerTask[DeleteItemsFromAllIdsDumpsArgs] {

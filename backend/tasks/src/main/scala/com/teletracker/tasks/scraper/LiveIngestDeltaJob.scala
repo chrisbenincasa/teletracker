@@ -29,8 +29,10 @@ import io.circe.Codec
 import io.circe.generic.JsonCodec
 import io.circe.syntax._
 import org.elasticsearch.index.query.QueryBuilders
+import shapeless.tag
 import shapeless.tag.@@
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
+import java.net.URI
 import java.time.LocalDate
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
@@ -40,15 +42,17 @@ import scala.concurrent.duration._
 @GenArgParser
 case class LiveIngestDeltaJobArgs(
   version: Option[Long],
-  override val offset: Int,
-  override val limit: Int,
+  inputOverride: Option[URI],
+  override val offset: Int = 0,
+  override val limit: Int = -1,
   override val itemIdFilter: Option[UUID],
   override val externalIdFilter: Option[String],
-  override val deltaSizeThreshold: Double,
-  override val disableDeltaSizeCheck: Boolean,
+  override val deltaSizeThreshold: Double = 5.0,
+  override val disableDeltaSizeCheck: Boolean = false,
   override val dryRun: Boolean = true,
   override val sleepBetweenWriteMs: Option[Long],
-  override val processBatchSleep: Option[FiniteDuration @@ Millis],
+  override val processBatchSleep: Option[FiniteDuration @@ Millis] =
+    Some(tag[Millis](250 millis)),
   override val parallelism: Option[Int],
   additionsOnly: Boolean = false)
     extends IngestDeltaJobArgsLike
@@ -227,17 +231,22 @@ abstract class LiveIngestDeltaJob[
   }
 
   override protected def getAllAfterItems(): List[T] = {
-    crawlAvailabilityItemLoader
-      .load(
-        CrawlAvailabilityItemLoaderArgs(
-          supportedNetworks,
-          crawlerName,
-          crawlAvailabilityItemLoader.getLoadedVersion.orElse(args.version)
-        )
-      )
-      .await()
-      .filter(shouldIncludeAfterItem)
-      .safeTake(args.limit)
+    args.inputOverride match {
+      case Some(value) =>
+        deps.sourceUtils.readAllToList[T](value, consultSourceCache = true)
+      case None =>
+        crawlAvailabilityItemLoader
+          .load(
+            CrawlAvailabilityItemLoaderArgs(
+              supportedNetworks,
+              crawlerName,
+              crawlAvailabilityItemLoader.getLoadedVersion.orElse(args.version)
+            )
+          )
+          .await()
+          .filter(shouldIncludeAfterItem)
+          .safeTake(args.limit)
+    }
   }
 
   private[this] val getAllBeforeItemsOnce = OnceT {

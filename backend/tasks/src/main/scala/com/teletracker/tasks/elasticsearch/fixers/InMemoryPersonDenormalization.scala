@@ -21,7 +21,7 @@ import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.util.AsyncStream
 import com.teletracker.common.util.Futures._
 import com.teletracker.tasks.scraper.IngestJobParser
-import com.teletracker.tasks.util.{FileRotator, FileUtils, SourceRetriever}
+import com.teletracker.tasks.util.{FileRotator, SourceRetriever, SourceUtils}
 import io.circe._
 import io.circe.syntax._
 import javax.inject.Inject
@@ -459,7 +459,7 @@ class InMemoryPersonDenormalization @Inject()(
 
 class CombineMovieUpdates @Inject()(
   sourceRetriever: SourceRetriever,
-  fileUtils: FileUtils,
+  fileUtils: SourceUtils,
   teletrackerConfig: TeletrackerConfig)
     extends UntypedTeletrackerTask {
   import cats.implicits._

@@ -7,7 +7,7 @@ import com.teletracker.common.elasticsearch.model.EsExternalId
 import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.util.AsyncStream
 import com.teletracker.common.util.Futures._
-import com.teletracker.tasks.util.FileUtils
+import com.teletracker.tasks.util.SourceUtils
 import javax.inject.Inject
 import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.index.reindex.DeleteByQueryRequest
@@ -19,7 +19,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 class DeleteMoviesByTmdbId @Inject()(
-  fileUtils: FileUtils,
+  fileUtils: SourceUtils,
   teletrackerConfig: TeletrackerConfig,
   elasticsearchExecutor: ElasticsearchExecutor
 )(implicit executionContext: ExecutionContext)

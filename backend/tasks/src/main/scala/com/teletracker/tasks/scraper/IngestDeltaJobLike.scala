@@ -45,7 +45,7 @@ import com.teletracker.common.util.json.circe._
 import com.teletracker.common.util.{AsyncStream, Folds, NetworkCache}
 import com.teletracker.tasks.scraper.IngestJobParser.{JsonPerLine, ParseMode}
 import com.teletracker.tasks.scraper.matching._
-import com.teletracker.tasks.util.{FileUtils, SourceRetriever}
+import com.teletracker.tasks.util.{SourceRetriever, SourceUtils}
 import io.circe.Codec
 import io.circe.syntax._
 import io.circe.generic.JsonCodec
@@ -74,7 +74,7 @@ trait IngestDeltaJobArgsLike extends IngestJobArgsLike {
 
 class IngestDeltaJobDependencies @Inject()(
   val externalIdLookup: ElasticsearchExternalIdLookup.Factory,
-  val fileUtils: FileUtils,
+  val sourceUtils: SourceUtils,
   val itemUpdateQueue: EsIngestQueue,
   val esExternalIdMapper: ElasticsearchExternalIdMappingStore,
   val esPotentialMatchItemStore: EsPotentialMatchItemStore,

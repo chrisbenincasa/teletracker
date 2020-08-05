@@ -5,12 +5,38 @@ import io.circe.{Codec, Decoder}
 import javax.inject.{Inject, Provider}
 import org.slf4j.LoggerFactory
 import java.net.URI
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
-class FileUtils @Inject()(
+class SourceUtils @Inject()(
   sourceRetriever: SourceRetriever,
-  ingestJobParser: Provider[IngestJobParser]) {
+  ingestJobParser: Provider[IngestJobParser]
+)(implicit executionContext: ExecutionContext) {
   private val logger = LoggerFactory.getLogger(getClass)
+
+  def readAllToList[T: Decoder](
+    input: URI,
+    consultSourceCache: Boolean
+  ): List[T] = {
+    sourceRetriever
+      .getSourceStream(input, consultCache = consultSourceCache)
+      .foldLeft(List.empty[T]) {
+        case (acc, source) =>
+          try {
+            acc ++ ingestJobParser
+              .get()
+              .stream[T](source.getLines())
+              .flatMap {
+                case Left(NonFatal(ex)) =>
+                  logger.warn(s"Error parsing line: ${ex.getMessage}")
+                  None
+                case Right(value) => Some(value)
+              }
+          } finally {
+            source.close()
+          }
+      }
+  }
 
   def readAllLinesToSet(
     loc: URI,

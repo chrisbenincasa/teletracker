@@ -319,7 +319,7 @@ abstract class IngestDeltaJob[
   private[this] val readBeforeIdsOnce = OnceT {
     args.snapshotBefore
       .map(
-        deps.fileUtils
+        deps.sourceUtils
           .readAllLinesToUniqueIdSet[ScrapeItemType, String](
             _,
             uniqueKeyForIncoming,

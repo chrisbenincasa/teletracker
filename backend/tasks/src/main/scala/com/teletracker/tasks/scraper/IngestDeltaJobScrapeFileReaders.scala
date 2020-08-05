@@ -26,7 +26,7 @@ trait IngestDeltaJobScrapeFileReaders[
   }
 
   private[this] lazy val readAfterIdsOnce = OnceT {
-    deps.fileUtils
+    deps.sourceUtils
       .readAllLinesToUniqueIdSet[ScrapeItemType, String](
         args.snapshotAfter,
         uniqueKeyForIncoming,

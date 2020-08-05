@@ -13,15 +13,15 @@ import java.time.LocalDate
 import java.util.UUID
 import scala.util.{Failure, Success, Try}
 
-trait SuperLowPriArgParsers {
+trait ArgParserBuilders {
   def anyArg[T: Manifest]: ArgParser[T] = build(cast[T])
 
-  protected def build[T](parseFunc: Any => Try[T]): ArgParser[T] =
+  protected[args] def build[T](parseFunc: Any => Try[T]): ArgParser[T] =
     new ValueArgParser[T] {
       override def parseValue(in: Any): Try[T] = parseFunc(in)
     }
 
-  protected def cast[T: Manifest](x: Any): Try[T] = x match {
+  protected[args] def cast[T: Manifest](x: Any): Try[T] = x match {
     case t: T => Success(t)
     case _ =>
       Failure(
@@ -31,7 +31,7 @@ trait SuperLowPriArgParsers {
       )
   }
 
-  protected def tryX[T: Manifest](f: (Any => T)*): Any => Try[T] = { in =>
+  protected[args] def tryX[T: Manifest](f: (Any => T)*): Any => Try[T] = { in =>
     f.toStream
       .map(func => Try(func(in)))
       .find(_.isSuccess) match {
@@ -40,6 +40,8 @@ trait SuperLowPriArgParsers {
     }
   }
 }
+
+object ArgParserBuilders extends ArgParserBuilders
 
 class OptArgParser[T](parser: ArgParser[T]) extends ValueArgParser[Option[T]] {
   override def parseOptValue(in: Option[Any]): Try[Option[T]] = in match {
@@ -51,7 +53,7 @@ class OptArgParser[T](parser: ArgParser[T]) extends ValueArgParser[Option[T]] {
     parser.parse(ArgValue(in)).map(Some(_))
 }
 
-trait LowPriArgParsers extends SuperLowPriArgParsers {
+trait LowPriArgParsers extends ArgParserBuilders {
   implicit def optArg[T](implicit parser: ArgParser[T]): ArgParser[Option[T]] =
     new OptArgParser(parser)
 }
@@ -80,46 +82,57 @@ object ArgParser extends LowPriArgParsers {
     stringArg.andThen(URI.create).or(anyArg[URI])
 
   implicit val fileArg: ArgParser[File] =
-    uriArg.andThen(new File(_)).or(build(tryX(_.asInstanceOf[File])))
+    uriArg.andThen(new File(_)).or(build(tryX(_.asInstanceOf[File]))).or(anyArg)
 
   implicit val booleanArg: ArgParser[Boolean] = anyArg[Boolean].or(
-    stringArg andThen (new java.lang.Boolean(
-      _
-    ))
+    stringArg
+      .andThen(
+        new java.lang.Boolean(
+          _
+        ).booleanValue()
+      )
+      .or(anyArg[Boolean])
   )
 
   implicit val uuidArg: ArgParser[UUID] =
-    stringArg.andThen(UUID.fromString)
+    stringArg.andThen(UUID.fromString).or(anyArg)
 
   implicit val localDateArg: ArgParser[LocalDate] =
-    stringArg.andThen(LocalDate.parse)
+    stringArg.andThen(LocalDate.parse).or(anyArg)
 
   implicit val finiteDurationMillisArg: ArgParser[FiniteDuration @@ Millis] =
-    longArg.andThen(l => tag[Millis](l millis))
+    longArg.andThen(l => tag[Millis](l millis)).or(anyArg)
 
   implicit def javaEnumArg[T <: Enum[T]: Manifest]: ArgParser[T] = {
     val enums = manifest[T].runtimeClass.asInstanceOf[Class[T]].getEnumConstants
 
-    stringArg.andThenOpt(str => enums.find(_.name().equalsIgnoreCase(str)))
+    stringArg
+      .andThenOpt(str => enums.find(_.name().equalsIgnoreCase(str)))
+      .or(anyArg)
   }
 
-  implicit def listArg[T](implicit inner: ArgParser[T]): ArgParser[List[T]] = {
-    stringArg.andThen(
-      _.split(',')
-        .map(
-          str =>
-            inner.parse(ArgValue(str)) match {
-              case Failure(exception) => throw exception
-              case Success(value)     => value
-            }
-        )
-        .toList
-    )
+  implicit def listArg[T: Manifest](
+    implicit inner: ArgParser[T]
+  ): ArgParser[List[T]] = {
+    stringArg
+      .andThen(
+        _.split(',')
+          .map(
+            str =>
+              inner.parse(ArgValue(str)) match {
+                case Failure(exception) => throw exception
+                case Success(value)     => value
+              }
+          )
+          .toList
+      )
+      .or(anyArg[List[T]])
   }
 
-  implicit def setArg[T](implicit inner: ArgParser[T]): ArgParser[Set[T]] = {
-    listArg[T].andThen(_.toSet)
-  }
+  implicit def setArg[T: Manifest](
+    implicit inner: ArgParser[T]
+  ): ArgParser[Set[T]] =
+    listArg[T].andThen(_.toSet).or(anyArg[Set[T]])
 
   final val tryInstance = cats.instances.try_.catsStdInstancesForTry
 }
