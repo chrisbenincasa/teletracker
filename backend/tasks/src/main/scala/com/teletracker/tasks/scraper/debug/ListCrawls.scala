@@ -8,6 +8,7 @@ import com.teletracker.common.util.Futures._
 import javax.inject.Inject
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
 import java.time.Instant
+import io.circe.syntax._
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 
@@ -46,6 +47,7 @@ class ListCrawls @Inject()(
     crawlStore
       .getLatestCrawl(new CrawlerName(spiderName))
       .await()
-      .foreach(println)
+      .map(_.asJson.spaces2)
+      .foreach(println(_))
   }
 }

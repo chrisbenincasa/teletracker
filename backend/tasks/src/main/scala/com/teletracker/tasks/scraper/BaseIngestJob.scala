@@ -162,6 +162,7 @@ abstract class BaseIngestJob[
     items: AsyncStream[T],
     networks: Set[StoredNetwork]
   ): AsyncStream[(List[MatchResult[T]], List[T])] = {
+    var count = 0L
     items
       .drop(args.offset)
       .safeTake(args.limit)
@@ -171,6 +172,13 @@ abstract class BaseIngestJob[
         args.processBatchSleep.getOrElse(0 millis),
         scheduledExecutor
       )(processBatch(_, networks, args))
+      .withEffect {
+        case (m, nm) =>
+          count += m.size + nm.size
+          if (count % 1000 == 0) {
+            logger.info(s"Processed $count items so far.")
+          }
+      }
   }
 
   protected def processBatch(
