@@ -267,7 +267,7 @@ class DynamoCrawlRecorder:
                     # Have something in the form xyz://123
                     if parsed.scheme:
                         # Special case for distributed spiders, which could
-                        if spider.is_distributed and parsed.scheme == 's3':
+                        if getattr(spider, 'is_distributed') and parsed.scheme == 's3':
                             parsed = parsed._replace(path='/'.join(parsed.path.split('/')[:-1]))
 
                         full_path = parsed.geturl()
