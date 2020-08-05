@@ -1,0 +1,16 @@
+version: '2.1'
+
+services:
+  crawler:
+    image: test-crawlers-build:latest
+    restart: always
+    command: ./run_spider.sh amazon_distributed -sREDIS_HOST=redis -sLOG_LEVEL=DEBUG
+    links:
+      - redis
+    mem_limit: 512m
+
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - 6379:6379

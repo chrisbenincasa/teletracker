@@ -1,0 +1,23 @@
+{
+  "name": "redis-scaling",
+  "version": "1.0.0",
+  "description": "Scale scraper services based on Redis set sizes",
+  "main": "index.ts",
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-cloudwatch-node": "^0.1.0-preview.2",
+    "redis": "^3.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^14.0.23",
+    "@types/redis": "^2.8.25",
+    "prettier": "2.0.2",
+    "ts-node": "^8.6.2",
+    "typescript": "^3.8.3",
+    "yargs": "^14.2.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "main": "ts-node src/runner.ts"
+  }
+}

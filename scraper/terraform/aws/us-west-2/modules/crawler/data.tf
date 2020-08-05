@@ -1,5 +1,5 @@
 data "aws_ssm_parameter" "datadog_api_key" {
-  name = "datadog-api-key"
+  name            = "datadog-api-key"
   with_decryption = true
 }
 
@@ -25,4 +25,12 @@ data "aws_subnet_ids" "teletracker-subnet-ids" {
 
 data "aws_ecs_cluster" "main_cluster" {
   cluster_name = "teletracker-qa"
+}
+
+data "aws_region" "current" {}
+
+data "aws_caller_identity" "current" {}
+
+data "aws_s3_bucket" "teletracker-artifacts-us-west-2" {
+  bucket = "us-west-2-teletracker-artifacts"
 }

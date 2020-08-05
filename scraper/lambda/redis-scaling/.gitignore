@@ -1,0 +1,15 @@
+node_modules/
+*.zip
+
+*.json
+!package.json
+!tsconfig.json
+!jsconfig.json
+!mappings.json
+*.tsv
+
+*.iml
+.idea
+
+build/
+out/

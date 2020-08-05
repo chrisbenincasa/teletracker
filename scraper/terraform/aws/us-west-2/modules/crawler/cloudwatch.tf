@@ -64,13 +64,13 @@ resource "aws_cloudwatch_event_target" "cw_scheduled_task" {
   ecs_target {
     task_count          = var.scheduled_task_count
     task_definition_arn = aws_ecs_task_definition.crawler_task_def.arn
-    launch_type = "FARGATE"
-    platform_version = "1.3.0"
+    launch_type         = "FARGATE"
+    platform_version    = "1.3.0"
 
     network_configuration {
-      subnets = data.aws_subnet_ids.teletracker-subnet-ids.ids
+      subnets          = data.aws_subnet_ids.teletracker-subnet-ids.ids
       assign_public_ip = true
-      security_groups = toset([aws_security_group.crawler_sg.id])
+      security_groups  = toset([aws_security_group.crawler_sg.id])
     }
   }
 }

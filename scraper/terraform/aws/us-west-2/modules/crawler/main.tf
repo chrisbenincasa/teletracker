@@ -5,8 +5,8 @@ resource "aws_ecs_task_definition" "crawler_task_def" {
     {
       name : var.name,
       image : "${var.crawler_image}:${var.image_version}",
-      cpu : 256,
-      memory : 512,
+      cpu : var.cpu,
+      memory : var.memory,
       essential : true,
       logConfiguration : {
         logDriver : "awslogs",
@@ -38,8 +38,8 @@ resource "aws_ecs_task_definition" "crawler_task_def" {
   execution_role_arn = data.aws_iam_role.ecs-task-execution-role.arn
   task_role_arn      = data.aws_iam_role.ecs-fargate-task-role.arn
 
-  cpu    = 256
-  memory = 512
+  cpu    = var.cpu
+  memory = var.memory
   //  Bring back if we go back to EC2 style
   network_mode = "awsvpc"
   requires_compatibilities = [

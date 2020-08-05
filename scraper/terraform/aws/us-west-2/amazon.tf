@@ -27,5 +27,9 @@ module "amazon_crawler" {
 
   schedule = []
 
-  scheduled_task_count = 3
+  max_spider_count = 3
+
+  gen_service = true
+  memory      = 1024
+  //  gen_scaling = true
 }
