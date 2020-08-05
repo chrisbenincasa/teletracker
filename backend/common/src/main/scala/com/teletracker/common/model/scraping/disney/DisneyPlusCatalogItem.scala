@@ -7,7 +7,9 @@ import com.teletracker.common.model.scraping.{
 }
 import com.teletracker.common.util.json.circe._
 import io.circe.generic.JsonCodec
+import java.text.Normalizer
 import java.time.LocalDate
+import java.util.regex.Pattern
 
 object DisneyPlusCatalogItem {
   implicit final val availabilityDetails
@@ -26,6 +28,27 @@ object DisneyPlusCatalogItem {
           .map(key => Map(ExternalSource.DisneyPlus -> key))
           .getOrElse(Map.empty)
     }
+
+  final private val NonLatin = Pattern.compile("[^\\w\\s-]")
+  final private val MultipleSpaces = Pattern.compile("\\s+")
+
+  def createSlug(title: String) =
+    Normalizer
+    // Replace diacritics and non-breaking spaces
+      .normalize(title, Normalizer.Form.NFD)
+      .replaceAll("[\u0300-\u036f\u00a0]", "")
+      // Replace characters that aren't included as a hyphenated split
+      .replaceAll("[\"\'’.!–]+", "")
+      // Split on characters that create hyphenated split
+      .split("[\\s()@&.?$+,/:-]+")
+      .map(_.trim)
+      .filter(_.nonEmpty)
+      // Remove non-Latin characters
+      .filterNot(NonLatin.matcher(_).matches)
+      // Replace N spaces with 1 space
+      .map(MultipleSpaces.matcher(_).replaceAll(" "))
+      .map(_.toLowerCase)
+      .mkString("-")
 }
 
 @JsonCodec
@@ -39,7 +62,8 @@ case class DisneyPlusCatalogItem(
   slug: Option[String],
   override val url: Option[String])
     extends ScrapedItem {
-  override def externalId: Option[String] = Some(id)
+  override def externalId: Option[String] =
+    Some(DisneyPlusCatalogItem.createSlug(title) + "/" + id)
 
   override def availableDate: Option[String] = None
 

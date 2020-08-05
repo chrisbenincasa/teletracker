@@ -1,6 +1,6 @@
 package com.teletracker.tasks.util
 
-import com.teletracker.common.tasks.{args, TaskArgImplicits}
+import com.teletracker.common.tasks.args
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 

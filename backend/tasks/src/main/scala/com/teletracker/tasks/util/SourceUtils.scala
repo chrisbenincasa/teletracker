@@ -14,6 +14,29 @@ class SourceUtils @Inject()(
 )(implicit executionContext: ExecutionContext) {
   private val logger = LoggerFactory.getLogger(getClass)
 
+  def readAllAsStream[T: Decoder](
+    input: URI,
+    consultSourceCache: Boolean
+  ): Stream[T] = {
+    sourceRetriever
+      .getSourceStream(input, consultCache = consultSourceCache)
+      .flatMap(source => {
+        try {
+          ingestJobParser
+            .get()
+            .stream[T](source.getLines())
+            .flatMap {
+              case Left(NonFatal(ex)) =>
+                logger.warn(s"Error parsing line: ${ex.getMessage}")
+                None
+              case Right(value) => Some(value)
+            }
+        } finally {
+          source.close()
+        }
+      })
+  }
+
   def readAllToList[T: Decoder](
     input: URI,
     consultSourceCache: Boolean

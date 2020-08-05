@@ -79,10 +79,6 @@ trait ScrapedItemAvailabilityDetails[T <: ScrapedItem] {
 
 class ScrapedItemAvailabilityDetailsOps[T <: ScrapedItem](val item: T)
     extends AnyVal {
-  def offerType(
-    implicit details: ScrapedItemAvailabilityDetails[T]
-  ): OfferType = details.offerType(item)
-
   def uniqueKey(
     implicit details: ScrapedItemAvailabilityDetails[T]
   ): Option[String] =
