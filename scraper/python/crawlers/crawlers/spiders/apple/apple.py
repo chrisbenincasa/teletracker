@@ -2,8 +2,10 @@ import scrapy
 
 from datetime import datetime
 
+from scrapy.exceptions import CloseSpider
 from scrapy.spiders import Rule
 from scrapy.linkextractors import LinkExtractor
+from scrapy_redis.spiders import RedisMixin
 
 from crawlers.base_spider import BaseCrawlSpider
 import dateutil.parser
@@ -15,12 +17,17 @@ from crawlers.items import AppleTvCastMember
 from crawlers.items import AppleTvCrewMember
 from crawlers.items import AppleTvItem
 from crawlers.items import AppleTvItemOffer
+from crawlers.redis_helpers import CustomRedisMixin
+from crawlers.settings import EXTENSIONS
+from crawlers.settings import ITEM_PIPELINES
+from crawlers.spiders.common_settings import DISTRIBUTED_SETTINGS
 
 PRICE_RE = r'\$(\d+\.\d+)'
 
 
-class ItunesSitemapSpider(BaseCrawlSpider):
+class AppleTvSpider(BaseCrawlSpider):
     name = 'itunes'
+    store_name = 'itunes'
     allowed_domains = ['apple.com']
 
     start_urls = [
@@ -131,3 +138,30 @@ class ItunesSitemapSpider(BaseCrawlSpider):
                 runtime=runtime,
                 offers=offers,
             )
+
+
+class AppleTvDistributedSpider(AppleTvSpider, CustomRedisMixin):
+    name = 'apple_distributed'
+    custom_settings = {
+        **DISTRIBUTED_SETTINGS,
+        'AUTOTHROTTLE_TARGET_CONCURRENCY': 8.0,
+        'EXTENSIONS': {**EXTENSIONS, 'crawlers.extensions.empty_response_recorder.EmptyResponseRecorder': 500,
+                       'scrapy.extensions.closespider.CloseSpider': 100},
+        'ITEM_PIPELINES': ITEM_PIPELINES,
+    }
+    is_distributed = True
+
+    def start_requests(self):
+        for req in super().start_requests():
+            yield req
+        for req in RedisMixin.start_requests(self):
+            yield req
+
+    def parse(self, response):
+        if self.should_close:
+            raise CloseSpider(reason=self.close_reason or 'cancelled')
+        else:
+            # If we got a response, cancel any existing close timeouts
+            if self.idle_df:
+                self.idle_df.cancel()
+            return super().parse(response)

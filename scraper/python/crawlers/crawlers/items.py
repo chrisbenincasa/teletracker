@@ -257,3 +257,27 @@ class DisneyPlusCatalogCrewMember(BaseItem):
     name = scrapy.Field()
     order = scrapy.Field()
     role = scrapy.Field()
+
+
+class GooglePlayStoreItem(BaseItem):
+    type = 'GooglePlayStoreItem'
+    id = scrapy.Field()
+    title = scrapy.Field()
+    releaseYear = scrapy.Field()
+    description = scrapy.Field()
+    externalId = scrapy.Field()
+    itemType = scrapy.Field()
+    network = scrapy.Field()
+    posterImageUrl = scrapy.Field()
+    offers = scrapy.Field()
+    # seasons = scrapy.Field()
+    # premiereDate = scrapy.Field()
+    # episodes = scrapy.Field()
+    # additionalServiceRequired = scrapy.Field()
+
+
+class GooglePlayStoreItemOffer(BaseItem):
+    offerType = scrapy.Field()
+    price = scrapy.Field()
+    quality = scrapy.Field()
+    currency = scrapy.Field()

@@ -3,6 +3,11 @@ import scrapy
 from crawlers.base_spider import BaseSitemapSpider
 from urllib import parse
 
+from crawlers.items import GooglePlayStoreItem
+from crawlers.items import GooglePlayStoreItemOffer
+from crawlers.redis_helpers import CustomRedisMixin
+from crawlers.settings import EXTENSIONS
+from crawlers.settings import ITEM_PIPELINES
 from crawlers.spiders.common_settings import DISTRIBUTED_SETTINGS
 
 
@@ -117,31 +122,12 @@ class GooglePlayStoreSpider(BaseSitemapSpider):
         )
 
 
-class DistributedGooglePlayStoreSpider(GooglePlayStoreSpider):
+class DistributedGooglePlayStoreSpider(GooglePlayStoreSpider, CustomRedisMixin):
     name = 'google_play_store_distributed'
     is_distributed = True
-    custom_settings = {**DISTRIBUTED_SETTINGS, 'AUTOTHROTTLE_TARGET_CONCURRENCY': 8}
-
-
-class GooglePlayStoreItem(scrapy.Item):
-    type = 'GooglePlayStoreItem'
-    id = scrapy.Field()
-    title = scrapy.Field()
-    releaseYear = scrapy.Field()
-    description = scrapy.Field()
-    externalId = scrapy.Field()
-    itemType = scrapy.Field()
-    network = scrapy.Field()
-    posterImageUrl = scrapy.Field()
-    offers = scrapy.Field()
-    # seasons = scrapy.Field()
-    # premiereDate = scrapy.Field()
-    # episodes = scrapy.Field()
-    # additionalServiceRequired = scrapy.Field()
-
-
-class GooglePlayStoreItemOffer(scrapy.Item):
-    offerType = scrapy.Field()
-    price = scrapy.Field()
-    quality = scrapy.Field()
-    currency = scrapy.Field()
+    custom_settings = {**DISTRIBUTED_SETTINGS,
+                       'AUTOTHROTTLE_TARGET_CONCURRENCY': 8,
+                       'EXTENSIONS': {**EXTENSIONS,
+                                      'crawlers.extensions.empty_response_recorder.EmptyResponseRecorder': 500,
+                                      'scrapy.extensions.closespider.CloseSpider': 100},
+                       'ITEM_PIPELINES': ITEM_PIPELINES}
