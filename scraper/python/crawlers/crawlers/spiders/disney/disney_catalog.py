@@ -1,12 +1,15 @@
+import json
+import re
 import uuid
 
 import scrapy
-import re
-import json
+from jsonpath_ng.ext import parse
+from scrapy.http.request.json_request import JsonRequest
 
 from crawlers.base_spider import BaseSitemapSpider
-from scrapy.http.request.json_request import JsonRequest
-from jsonpath_ng.ext import parse
+from crawlers.items import DisneyPlusCatalogCastMember
+from crawlers.items import DisneyPlusCatalogCrewMember
+from crawlers.items import DisneyPlusCatalogItem
 
 preloaded_state_re = r'.*__PRELOADED_STATE__\s*=\s*(.*);.*'
 
@@ -185,31 +188,3 @@ subject_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9." \
                 "5My0zMTdhMzRmZWE2NGMifQ.MB7kqTec5DhFF" \
                 "2B4QdkU_EVaUwcROqiZvuMnIEHsGpEoKUaFWv" \
                 "L-sYZ6pc4g4FWxnwEaU-Orm4RKSUeZw-EVew"
-
-
-class DisneyPlusCatalogItem(scrapy.Item):
-    type = 'DisneyPlusCatalogItem'
-    id = scrapy.Field()
-    title = scrapy.Field()
-    slug = scrapy.Field()
-    description = scrapy.Field()
-    itemType = scrapy.Field()
-    releaseDate = scrapy.Field()
-    releaseYear = scrapy.Field()
-    url = scrapy.Field()
-    posterImageUrl = scrapy.Field()
-    network = 'disneyplus'
-    cast = scrapy.Field()
-    crew = scrapy.Field()
-
-
-class DisneyPlusCatalogCastMember(scrapy.Item):
-    name = scrapy.Field()
-    character = scrapy.Field()
-    order = scrapy.Field()
-
-
-class DisneyPlusCatalogCrewMember(scrapy.Item):
-    name = scrapy.Field()
-    order = scrapy.Field()
-    role = scrapy.Field()

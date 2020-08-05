@@ -229,3 +229,31 @@ class AppleTvCrewMember(BaseItem):
     name = scrapy.Field()
     order = scrapy.Field()
     role = scrapy.Field()
+
+
+class DisneyPlusCatalogItem(BaseItem):
+    type = 'DisneyPlusCatalogItem'
+    id = scrapy.Field()
+    title = scrapy.Field()
+    slug = scrapy.Field()
+    description = scrapy.Field()
+    itemType = scrapy.Field()
+    releaseDate = scrapy.Field()
+    releaseYear = scrapy.Field()
+    url = scrapy.Field()
+    posterImageUrl = scrapy.Field()
+    network = 'disneyplus'
+    cast = scrapy.Field()
+    crew = scrapy.Field()
+
+
+class DisneyPlusCatalogCastMember(BaseItem):
+    name = scrapy.Field()
+    character = scrapy.Field()
+    order = scrapy.Field()
+
+
+class DisneyPlusCatalogCrewMember(BaseItem):
+    name = scrapy.Field()
+    order = scrapy.Field()
+    role = scrapy.Field()
