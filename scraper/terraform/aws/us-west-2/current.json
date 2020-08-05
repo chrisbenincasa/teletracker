@@ -4,8 +4,8 @@
   "hbo_max_crawler_version": "1.0-1596558079.00aa8720",
   "hulu_catalog_crawler_version": "1.0-1596558079.00aa8720",
   "netflix_catalog_crawler_version": "1.0-1596558079.00aa8720",
-  "disneyplus_catalog_crawler_version": "1.0-1596558079.00aa8720",
+  "disneyplus_catalog_crawler_version": "1.0-1596586423.e3f62748",
   "showtime_catalog_crawler_version": "1.0-1596558079.00aa8720",
-  "amazon_catalog_crawler_version": "1.0-1596558079.00aa8720",
+  "amazon_catalog_crawler_version": "1.0-1596588288.236eda32",
   "google_play_store_catalog_crawler_version": "1.0-1596558079.00aa8720"
 }
