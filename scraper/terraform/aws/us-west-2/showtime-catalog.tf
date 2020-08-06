@@ -10,6 +10,7 @@ module "showtime_catalog_crawler" {
 
   name        = "showtime_catalog_crawler"
   spider_name = "showtime"
+  cluster_name = data.aws_ecs_cluster.ecs-cluster.cluster_name
 
   outputs = [
     "s3://${data.aws_s3_bucket.data_bucket.id}/scrape-results/showtime/catalog/{date}/items_{time}.jl:jl",

@@ -24,7 +24,7 @@ data "aws_subnet_ids" "teletracker-subnet-ids" {
 }
 
 data "aws_ecs_cluster" "main_cluster" {
-  cluster_name = "teletracker-qa"
+  cluster_name = var.cluster_name
 }
 
 data "aws_region" "current" {}

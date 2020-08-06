@@ -10,6 +10,7 @@ module "hulu_crawler" {
 
   name        = "hulu_catalog_crawler"
   spider_name = "hulu"
+  cluster_name = data.aws_ecs_cluster.ecs-cluster.cluster_name
 
   outputs = [
     "s3://${data.aws_s3_bucket.data_bucket.id}/scrape-results/hulu/catalog/{date}/items_{time}.jl:jl",

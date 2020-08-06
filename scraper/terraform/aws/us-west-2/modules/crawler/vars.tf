@@ -6,6 +6,10 @@ variable "spider_name" {
   type = string
 }
 
+variable "cluster_name" {
+  type = string
+}
+
 variable "crawler_image" {
   type = string
 }
@@ -71,4 +75,9 @@ variable "cpu" {
 variable "memory" {
   type    = number
   default = 512
+}
+
+variable "fargate" {
+  type = bool
+  default = true
 }

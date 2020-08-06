@@ -10,6 +10,7 @@ module "disneyplus_catalog_crawler" {
 
   name        = "disneyplus_catalog_crawler"
   spider_name = "disneyplus"
+  cluster_name = data.aws_ecs_cluster.ecs-cluster.cluster_name
 
   outputs = [
     "s3://${data.aws_s3_bucket.data_bucket.id}/scrape-results/disneyplus/catalog/{date}/items_{time}.jl:jl",

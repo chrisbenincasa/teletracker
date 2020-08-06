@@ -10,6 +10,7 @@ module "netflix_crawler" {
 
   name        = "netflix_catalog_crawler"
   spider_name = "netflix"
+  cluster_name = data.aws_ecs_cluster.ecs-cluster.cluster_name
 
   outputs = [
     "s3://${data.aws_s3_bucket.data_bucket.id}/scrape-results/netflix/catalog/{date}/items_{time}.jl:jl",

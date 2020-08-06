@@ -1,2 +1,2 @@
 #!/bin/bash
-echo ECS_CLUSTER=teletracker-qa >> /etc/ecs/ecs.config
+echo ECS_CLUSTER=${cluster} >> /etc/ecs/ecs.config

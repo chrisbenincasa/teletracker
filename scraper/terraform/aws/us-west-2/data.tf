@@ -1,7 +1,7 @@
 data "aws_region" "current" {}
 
 data "aws_ecs_cluster" "ecs-cluster" {
-  cluster_name = "teletracker-qa"
+  cluster_name = "teletracker-crawlers-qa"
 }
 
 data "aws_ssm_parameter" "datadog_api_key" {
@@ -29,9 +29,6 @@ data "aws_subnet_ids" "teletracker-subnet-ids" {
   vpc_id = "vpc-09a64ee30f2e3e82e"
 }
 
-data "aws_ecs_cluster" "main_cluster" {
-  cluster_name = "teletracker-qa"
-}
 
 data "aws_s3_bucket" "data_bucket" {
   bucket = "teletracker-data-us-west-2"

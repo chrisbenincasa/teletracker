@@ -28,7 +28,14 @@ resource "aws_ecs_task_definition" "crawler_task_def" {
           name : "REDIS_HOST",
           value : var.redis_host
         }
+      ],
+      [
+        {
+          name: "AWS_DEFAULT_REGION",
+          value: data.aws_region.current.name
+        }
       ]),
+      portMappings : var.fargate ? [] : [{ containerPort : 6023 }],
       command : concat([
         "./run_spider.sh",
       var.spider_name], var.outputs, var.extra_args)
@@ -41,9 +48,8 @@ resource "aws_ecs_task_definition" "crawler_task_def" {
   cpu    = var.cpu
   memory = var.memory
   //  Bring back if we go back to EC2 style
-  network_mode = "awsvpc"
-  requires_compatibilities = [
-  "FARGATE"]
+  network_mode             = var.fargate ? "awsvpc" : "bridge"
+  requires_compatibilities = var.fargate ? ["FARGATE"] : []
 }
 
 resource "aws_security_group" "crawler_sg" {
@@ -67,11 +73,11 @@ output "crawler_sg_id" {
   value = aws_security_group.crawler_sg.id
 }
 
-resource "aws_ecs_service" "crawler_ecs_service" {
-  count = var.gen_service ? 1 : 0
+resource "aws_ecs_service" "crawler_ecs_fargate_service" {
+  count = var.gen_service && var.fargate ? 1 : 0
 
   name            = var.name
-  cluster         = data.aws_ecs_cluster.main_cluster.id
+  cluster         = data.aws_ecs_cluster.main_cluster.cluster_name
   task_definition = aws_ecs_task_definition.crawler_task_def.arn
   desired_count   = 0
   launch_type     = "FARGATE"
@@ -89,5 +95,23 @@ resource "aws_ecs_service" "crawler_ecs_service" {
   lifecycle {
     ignore_changes = [
     "desired_count"]
+  }
+}
+
+resource "aws_ecs_service" "crawler_ecs_ec2_service" {
+  count = var.gen_service && !var.fargate ? 1 : 0
+
+  name            = var.name
+  cluster         = data.aws_ecs_cluster.main_cluster.cluster_name
+  task_definition = aws_ecs_task_definition.crawler_task_def.arn
+  desired_count   = 0
+  launch_type     = "EC2"
+
+  deployment_minimum_healthy_percent = 0
+  deployment_maximum_percent         = 100
+
+  lifecycle {
+    ignore_changes = [
+      "desired_count"]
   }
 }

@@ -14,6 +14,7 @@ module "hbo_crawler" {
 
   name        = "hbo_catalog_crawler"
   spider_name = "hbo_go_catalog"
+  cluster_name = data.aws_ecs_cluster.ecs-cluster.cluster_name
 
   outputs = [
     "s3://${data.aws_s3_bucket.data_bucket.id}/scrape-results/hbo/catalog/{date}/items_{time}.jl:jl",
@@ -38,6 +39,7 @@ module "hbo_changes_crawler" {
 
   name        = "hbo_changes_crawler"
   spider_name = "hbo_changes"
+  cluster_name = data.aws_ecs_cluster.ecs-cluster.cluster_name
 
   outputs = [
   "s3://${data.aws_s3_bucket.data_bucket.id}/scrape-results/hbo/changes/{date}/items_{time}.jl:jl"]
@@ -60,6 +62,7 @@ module "hbo_max_crawler" {
 
   name        = "hbo_max_crawler"
   spider_name = "hbo_max_authenticated"
+  cluster_name = data.aws_ecs_cluster.ecs-cluster.cluster_name
 
   outputs = [
     "s3://${data.aws_s3_bucket.data_bucket.id}/scrape-results/hbo-max/catalog/{date}/items_{time}.jl:jl",

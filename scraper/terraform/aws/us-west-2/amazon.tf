@@ -8,8 +8,9 @@ module "amazon_crawler" {
   crawler_image = var.crawler_image
   image_version = var.amazon_catalog_crawler_version
 
-  name        = "amazon_crawler"
-  spider_name = "amazon_distributed"
+  name         = "amazon_crawler"
+  spider_name  = "amazon_distributed"
+  cluster_name = data.aws_ecs_cluster.ecs-cluster.cluster_name
 
   outputs = [
     "s3://${data.aws_s3_bucket.data_bucket.id}/scrape-results/%(canonical_name)s/catalog/%(today)s/%(version)s/items_%(now)s.jl:jl",
@@ -19,7 +20,9 @@ module "amazon_crawler" {
 
   extra_args = [
     "-sEMPTY_RESPONSE_RECORDER_ENABLED=True",
-    "-sAUTOTHROTTLE_TARGET_CONCURRENCY=8"
+    "-sAUTOTHROTTLE_TARGET_CONCURRENCY=8",
+    "-sTELNETCONSOLE_HOST=0.0.0.0",
+    "-sLOG_LEVEL=DEBUG"
   ]
 
   dynamodb_output_table = aws_dynamodb_table.crawls.name
@@ -30,6 +33,7 @@ module "amazon_crawler" {
   max_spider_count = 3
 
   gen_service = true
-  memory      = 1024
+  memory      = 768
+  fargate     = false
   //  gen_scaling = true
 }

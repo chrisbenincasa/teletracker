@@ -138,7 +138,7 @@ resource "aws_appautoscaling_target" "ecs_scale_target" {
 
   max_capacity       = var.max_spider_count
   min_capacity       = 0
-  resource_id        = "service/${aws_ecs_service.crawler_ecs_service[0].cluster}/${aws_ecs_service.crawler_ecs_service[0].name}"
+  resource_id        = "service/${data.aws_ecs_cluster.main_cluster.cluster_name}/${var.name}"
   role_arn           = data.aws_iam_role.ecs-autoscalng-role.arn
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"

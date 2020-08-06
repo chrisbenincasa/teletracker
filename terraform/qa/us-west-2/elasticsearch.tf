@@ -4,7 +4,7 @@ resource "aws_elasticsearch_domain" "teletracker-qa-es" {
 
   cluster_config {
     instance_type  = "t2.small.elasticsearch"
-    instance_count = 1
+    instance_count = 2
 
     dedicated_master_enabled = false
     zone_awareness_enabled   = false
@@ -19,10 +19,6 @@ resource "aws_elasticsearch_domain" "teletracker-qa-es" {
     volume_size = 15
   }
 
-  #   domain_endpoint_options {
-  #     enforce_https = true
-  #   }
-
   log_publishing_options {
     cloudwatch_log_group_arn = "arn:aws:logs:us-west-2:302782651551:log-group:/aws/aes/domains/teletracker-qa/application-logs"
     enabled                  = true
@@ -35,45 +31,39 @@ resource "aws_elasticsearch_domain" "teletracker-qa-es" {
   }
 }
 
+data "aws_iam_policy_document" "main_es_policy" {
+  statement {
+    actions = ["es:*"]
+    effect  = "Allow"
+    condition {
+      test = "IpAddress"
+      values = [
+        "67.164.191.249",
+        "54.193.107.226",
+        "54.148.251.95",
+        "73.243.144.208",
+        "71.185.54.20",
+      "52.24.141.158"]
+      variable = "aws:SourceIp"
+    }
+    resources = ["${aws_elasticsearch_domain.teletracker-qa-es.arn}/*"]
+  }
+
+  statement {
+    actions = ["es:*"]
+    effect  = "Allow"
+    principals {
+      identifiers = [data.aws_iam_role.ecs-fargate-task-role.arn]
+      type        = "AWS"
+    }
+    resources = ["${aws_elasticsearch_domain.teletracker-qa-es.arn}/*"]
+  }
+}
 
 resource "aws_elasticsearch_domain_policy" "main" {
   domain_name = aws_elasticsearch_domain.teletracker-qa-es.domain_name
 
-  access_policies = <<POLICIES
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Action": "es:*",
-            "Principal": "*",
-            "Effect": "Allow",
-            "Condition": {
-                "IpAddress": {
-                    "aws:SourceIp": [
-                        "67.164.191.249",
-                        "54.193.107.226",
-                        "54.148.251.95",
-                        "73.243.144.208",
-                        "71.185.54.20",
-                        "52.24.141.158"
-                    ]
-                }
-            },
-            "Resource": "${aws_elasticsearch_domain.teletracker-qa-es.arn}/*"
-        },
-        {
-            "Action": "es:*",
-            "Principal": {
-                "AWS": [
-                    "${data.aws_iam_role.ecs-fargate-task-role.arn}"
-                ]
-            },
-            "Effect": "Allow",
-            "Resource": "${aws_elasticsearch_domain.teletracker-qa-es.arn}/*"
-        }
-    ]
-}
-POLICIES
+  access_policies = data.aws_iam_policy_document.main_es_policy.json
 }
 
 data "template_file" "elasticdump-task-definition-template" {

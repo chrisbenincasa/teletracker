@@ -10,6 +10,7 @@ module "google_play_store_crawler" {
 
   name        = "google_crawler"
   spider_name = "google_play_store"
+  cluster_name = data.aws_ecs_cluster.ecs-cluster.cluster_name
 
   outputs = [
     "s3://${data.aws_s3_bucket.data_bucket.id}/scrape-results/google_play_store/catalog/{date}/items_{time}.jl:jl",
