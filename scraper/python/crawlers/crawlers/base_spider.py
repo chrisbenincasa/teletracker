@@ -14,7 +14,8 @@ def json_translate(obj):
 
 class CustomJsonFormatter(jsonlogger.JsonFormatter):
     def add_fields(self, log_record, record, message_dict):
-        super(CustomJsonFormatter, self).add_fields(log_record, record, message_dict)
+        super(CustomJsonFormatter, self).add_fields(
+            log_record, record, message_dict)
         if not log_record.get('timestamp'):
             # this doesn't use record.created, so it is slightly off
             now = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
@@ -43,14 +44,16 @@ class BaseSitemapSpider(scrapy.spiders.SitemapSpider, VersionedSpider):
             logger = logging.getLogger()
             log_handler = logging.StreamHandler()
             log_handler.setLevel(level)
-            formatter = CustomJsonFormatter(json_default=json_translate, json_encoder=json.JSONEncoder)
+            formatter = CustomJsonFormatter(
+                json_default=json_translate, json_encoder=json.JSONEncoder)
             log_handler.setFormatter(formatter)
             logger.addHandler(log_handler)
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
         settings = crawler.settings
-        spider = cls(settings.getbool('JSON_LOGGING'), level=settings.get('LOG_LEVEL'), *args, **kwargs)
+        spider = cls(settings.getbool('JSON_LOGGING'),
+                     level=settings.get('LOG_LEVEL'), *args, **kwargs)
         spider._set_crawler(crawler)
         return spider
 
@@ -62,16 +65,19 @@ class BaseCrawlSpider(scrapy.spiders.CrawlSpider, VersionedSpider):
             logger = logging.getLogger()
             log_handler = logging.StreamHandler()
             log_handler.setLevel(level)
-            formatter = CustomJsonFormatter(json_default=json_translate, json_encoder=json.JSONEncoder)
+            formatter = CustomJsonFormatter(
+                json_default=json_translate, json_encoder=json.JSONEncoder)
             log_handler.setFormatter(formatter)
             logger.addHandler(log_handler)
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
         settings = crawler.settings
-        spider = cls(settings.getbool('JSON_LOGGING'), level=settings.get('LOG_LEVEL'), *args, **kwargs)
+        spider = cls(settings.getbool('JSON_LOGGING'),
+                     level=settings.get('LOG_LEVEL'), *args, **kwargs)
         spider._set_crawler(crawler)
-        spider._follow_links = crawler.settings.getbool('CRAWLSPIDER_FOLLOW_LINKS', True)
+        spider._follow_links = crawler.settings.getbool(
+            'CRAWLSPIDER_FOLLOW_LINKS', True)
         if isinstance(spider, RedisMixin):
             spider.setup_redis(crawler)
         return spider
@@ -84,13 +90,15 @@ class BaseSpider(scrapy.spiders.Spider, VersionedSpider):
             logger = logging.getLogger()
             log_handler = logging.StreamHandler()
             log_handler.setLevel(level)
-            formatter = CustomJsonFormatter(json_default=json_translate, json_encoder=json.JSONEncoder)
+            formatter = CustomJsonFormatter(
+                json_default=json_translate, json_encoder=json.JSONEncoder)
             log_handler.setFormatter(formatter)
             logger.addHandler(log_handler)
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
         settings = crawler.settings
-        spider = cls(settings.getbool('JSON_LOGGING'), level=settings.get('LOG_LEVEL'), *args, **kwargs)
+        spider = cls(settings.getbool('JSON_LOGGING'),
+                     level=settings.get('LOG_LEVEL'), *args, **kwargs)
         spider._set_crawler(crawler)
         return spider

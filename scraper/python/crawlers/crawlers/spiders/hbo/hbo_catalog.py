@@ -29,7 +29,8 @@ class HboCrawlSpider(BaseSpider):
         pass
 
     def parse_series_page(self, response):
-        data_state = response.xpath('//noscript[@id="react-data"]/@data-state').get()
+        data_state = response.xpath(
+            '//noscript[@id="react-data"]/@data-state').get()
         loaded = json.loads(data_state)
 
         for band in loaded['bands']:
@@ -44,7 +45,8 @@ class HboCrawlSpider(BaseSpider):
                                              callback=self.parse_series)
 
     def parse_specials_page(self, response):
-        data_state = response.xpath('//noscript[@id="react-data"]/@data-state').get()
+        data_state = response.xpath(
+            '//noscript[@id="react-data"]/@data-state').get()
         loaded = json.loads(data_state)
 
         for band in loaded['bands']:
@@ -59,7 +61,8 @@ class HboCrawlSpider(BaseSpider):
                                              callback=self.parse_series)
 
     def parse_movie_catalog_page(self, response, **kwargs):
-        data_state = response.xpath('//noscript[@id="react-data"]/@data-state').get()
+        data_state = response.xpath(
+            '//noscript[@id="react-data"]/@data-state').get()
         loaded = json.loads(data_state)
 
         for band in loaded['bands']:
@@ -86,7 +89,8 @@ class HboCrawlSpider(BaseSpider):
         )
 
         yield scrapy.Request(
-            'https://proxy-v4.cms.hbo.com/v1/schedule/programs?productIds={}'.format(data['streamingId']['id']),
+            'https://proxy-v4.cms.hbo.com/v1/schedule/programs?productIds={}'.format(
+                data['streamingId']['id']),
             callback=self.finish_parse_movie,
             meta={'item': item})
 
@@ -103,15 +107,18 @@ class HboCrawlSpider(BaseSpider):
         )
 
         yield scrapy.Request(
-            'https://proxy-v4.cms.hbo.com/v1/schedule/programs?productIds={}'.format(data['streamingId']['id']),
+            'https://proxy-v4.cms.hbo.com/v1/schedule/programs?productIds={}'.format(
+                data['streamingId']['id']),
             callback=self.finish_parse_series,
             meta={'item': item})
 
     def parse_series(self, response):
-        loaded = json.loads(response.xpath('//noscript[@id="react-data"]/@data-state').get())
+        loaded = json.loads(response.xpath(
+            '//noscript[@id="react-data"]/@data-state').get())
 
         if loaded and _is_series_data(loaded):
-            series_data = _get_page_schema_with_type(react_data=loaded, typ='TVSeries')
+            series_data = _get_page_schema_with_type(
+                react_data=loaded, typ='TVSeries')
             streaming_id = _get_streaming_id(react_data=loaded)
             if series_data and streaming_id:
                 synopsis = _get_synopsis(loaded)
@@ -123,7 +130,8 @@ class HboCrawlSpider(BaseSpider):
                 )
 
                 yield scrapy.Request(
-                    'https://proxy-v4.cms.hbo.com/v1/schedule/programs?seriesIds={}'.format(streaming_id),
+                    'https://proxy-v4.cms.hbo.com/v1/schedule/programs?seriesIds={}'.format(
+                        streaming_id),
                     callback=self.finish_parse_series,
                     meta={'item': item})
 
@@ -133,11 +141,14 @@ class HboCrawlSpider(BaseSpider):
         yield _parse_series_programs_json(loaded, item)
 
     def parse_movie(self, response):
-        loaded = json.loads(response.xpath('//noscript[@id="react-data"]/@data-state').get())
+        loaded = json.loads(response.xpath(
+            '//noscript[@id="react-data"]/@data-state').get())
         if loaded:
-            movie_data = _get_page_schema_with_type(react_data=loaded, typ='movie')
+            movie_data = _get_page_schema_with_type(
+                react_data=loaded, typ='movie')
             if not movie_data:
-                movie_data = _get_page_schema_with_type(react_data=loaded, typ='documentary')
+                movie_data = _get_page_schema_with_type(
+                    react_data=loaded, typ='documentary')
             streaming_id = _get_streaming_id(react_data=loaded)
             if movie_data and streaming_id:
                 synopsis = _get_movie_description(react_data=loaded)
@@ -145,8 +156,10 @@ class HboCrawlSpider(BaseSpider):
 
                 go_url, now_url = None, None
                 if external_id:
-                    go_url = 'https://play.hbogo.com/feature/urn:hbo:feature:{}'.format(external_id)
-                    now_url = 'https://play.hbonow.com/feature/urn:hbo:feature:{}'.format(external_id)
+                    go_url = 'https://play.hbogo.com/feature/urn:hbo:feature:{}'.format(
+                        external_id)
+                    now_url = 'https://play.hbonow.com/feature/urn:hbo:feature:{}'.format(
+                        external_id)
 
                 item = HboItem(
                     id=external_id,
@@ -160,7 +173,8 @@ class HboCrawlSpider(BaseSpider):
                 )
 
                 yield scrapy.Request(
-                    'https://proxy-v4.cms.hbo.com/v1/schedule/programs?productIds={}'.format(streaming_id),
+                    'https://proxy-v4.cms.hbo.com/v1/schedule/programs?productIds={}'.format(
+                        streaming_id),
                     callback=self.finish_parse_movie,
                     meta={'item': item})
 

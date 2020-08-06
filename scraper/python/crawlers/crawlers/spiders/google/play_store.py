@@ -28,7 +28,8 @@ class GooglePlayStoreSpider(BaseSitemapSpider):
 
     def parse_show(self, response):
         title = response.xpath('//h1[@itemprop="name"]/span/text()').get()
-        release_year = response.xpath('//h1[@itemprop="name"]/following-sibling::div//text()').re(r'\d{4}')[0]
+        release_year = response.xpath(
+            '//h1[@itemprop="name"]/following-sibling::div//text()').re(r'\d{4}')[0]
         descriptions = response.xpath('//div[@itemprop="description"]')
         item_description = ''
         for description_node in descriptions:
@@ -37,7 +38,8 @@ class GooglePlayStoreSpider(BaseSitemapSpider):
                 item_description = text
                 break
 
-        seasons = response.xpath('//*[@aria-label="Seasons"]//*[@role="option"]')
+        seasons = response.xpath(
+            '//*[@aria-label="Seasons"]//*[@role="option"]')
         for season in seasons:
             link = season.attrib['data-value']
             yield scrapy.Request(url='https://play.google.com{}'.format(link), callback=self.parse_show_season)
@@ -47,7 +49,8 @@ class GooglePlayStoreSpider(BaseSitemapSpider):
 
     def parse_movie(self, response):
         title = response.xpath('//h1[@itemprop="name"]/span/text()').get()
-        release_year = response.xpath('//h1[@itemprop="name"]/following-sibling::div//text()').re(r'\d{4}')[0]
+        release_year = response.xpath(
+            '//h1[@itemprop="name"]/following-sibling::div//text()').re(r'\d{4}')[0]
         descriptions = response.xpath('//div[@itemprop="description"]')
         item_description = ''
         for description_node in descriptions:
@@ -62,8 +65,10 @@ class GooglePlayStoreSpider(BaseSitemapSpider):
         for rent_button in rent_buttons:
             offers = rent_button.xpath('.//span[@itemprop="offers"]')
             for offer in offers:
-                price = offer.xpath('.//meta[@itemprop="price"]')[0].attrib['content']
-                description = offer.xpath('.//meta[@itemprop="description"]')[0].attrib['content']
+                price = offer.xpath(
+                    './/meta[@itemprop="price"]')[0].attrib['content']
+                description = offer.xpath(
+                    './/meta[@itemprop="description"]')[0].attrib['content']
                 parsed_price = float(price.strip().lstrip('$'))
                 if 'plays in hd' in description.lower():
                     item_offers.append(
@@ -86,9 +91,12 @@ class GooglePlayStoreSpider(BaseSitemapSpider):
         for buy_button in buy_buttons:
             offers = buy_button.xpath('.//span[@itemprop="offers"]')
             for offer in offers:
-                price = offer.xpath('.//meta[@itemprop="price"]')[0].attrib['content']
-                description = offer.xpath('.//meta[@itemprop="description"]')[0].attrib['content']
-                self.log('Buy: description = {}, price = {}'.format(description, price))
+                price = offer.xpath(
+                    './/meta[@itemprop="price"]')[0].attrib['content']
+                description = offer.xpath(
+                    './/meta[@itemprop="description"]')[0].attrib['content']
+                self.log('Buy: description = {}, price = {}'.format(
+                    description, price))
                 parsed_price = float(price.strip().lstrip('$'))
                 if 'plays in hd' in description.lower():
                     item_offers.append(

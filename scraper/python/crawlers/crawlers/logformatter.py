@@ -1,6 +1,7 @@
 
 from scrapy import logformatter
 
+
 class LogFormatter(logformatter.LogFormatter):
     def crawled(self, request, response, spider):
         return super().crawled(request, response, spider)
@@ -23,4 +24,3 @@ class LogFormatter(logformatter.LogFormatter):
     @classmethod
     def from_crawler(cls, crawler):
         return super().from_crawler(crawler)
-

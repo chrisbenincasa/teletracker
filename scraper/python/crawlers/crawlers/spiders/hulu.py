@@ -42,10 +42,12 @@ class HuluSpider(BaseSitemapSpider):
                         tabs = next((i for i in components if
                                      'type' in i.keys() and i["type"] == "collection_tabs"), None)
 
-                        episodes = self._extract_episodes(tabs['tabs']) if tabs else []
+                        episodes = self._extract_episodes(
+                            tabs['tabs']) if tabs else []
 
                         image_url = None
-                        images = response.css('.DetailEntityMasthead__vertical-tile-img')
+                        images = response.css(
+                            '.DetailEntityMasthead__vertical-tile-img')
                         if len(images) > 0:
                             image_url = images[0].attrib['src']
 
@@ -58,7 +60,8 @@ class HuluSpider(BaseSitemapSpider):
                             itemType='show',
                             premiereDate=entity['premiereDate'],
                             episodes=episodes,
-                            additionalServiceRequired=self._extract_additional_service(components),
+                            additionalServiceRequired=self._extract_additional_service(
+                                components),
                             posterImageUrl=image_url
                         )
 
@@ -112,7 +115,8 @@ class HuluSpider(BaseSitemapSpider):
                     for component in components:
                         if 'entityType' in component.keys() and component["entityType"] == "movie":
                             image_url = None
-                            images = response.css('.DetailEntityMasthead__vertical-tile-img')
+                            images = response.css(
+                                '.DetailEntityMasthead__vertical-tile-img')
                             if len(images) > 0:
                                 image_url = images[0].attrib['src']
 
@@ -124,7 +128,8 @@ class HuluSpider(BaseSitemapSpider):
                                 network='Hulu',
                                 itemType='movie',
                                 premiereDate=component['premiereDate'],
-                                additionalServiceRequired=self._extract_additional_service(components),
+                                additionalServiceRequired=self._extract_additional_service(
+                                    components),
                                 posterImageUrl=image_url
                             )
             except KeyError as e:

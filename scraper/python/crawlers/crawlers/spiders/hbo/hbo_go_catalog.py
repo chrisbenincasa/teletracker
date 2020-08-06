@@ -28,13 +28,16 @@ def _parse_crew(payload):
     if 'credits' in payload:
         if 'directors' in payload['credits']:
             for (idx, director) in enumerate(payload['credits']['directors']):
-                crew.append(HboCrewMember(name=director['person'], order=idx, role='Director'))
+                crew.append(HboCrewMember(
+                    name=director['person'], order=idx, role='Director'))
         if 'producers' in payload['credits']:
             for (idx, producer) in enumerate(payload['credits']['producers']):
-                crew.append(HboCrewMember(name=producer['person'], order=idx, role=producer['role']))
+                crew.append(HboCrewMember(
+                    name=producer['person'], order=idx, role=producer['role']))
         if 'writers' in payload['credits']:
             for (idx, writer) in enumerate(payload['credits']['writers']):
-                crew.append(HboCrewMember(name=writer['person'], order=idx, role=writer['role']))
+                crew.append(HboCrewMember(
+                    name=writer['person'], order=idx, role=writer['role']))
     return crew
 
 
@@ -99,7 +102,8 @@ class HboGoCrawlSpider(BaseSpider):
 
     def handle_movie(self, response):
         full_response = json.loads(response.text)
-        self.log('Processing https://play.hbogo.com/feature/{}'.format(response.meta['id']))
+        self.log(
+            'Processing https://play.hbogo.com/feature/{}'.format(response.meta['id']))
         for r in full_response:
             if r['id'] == response.meta['id']:
                 payload = r['body']
@@ -110,7 +114,8 @@ class HboGoCrawlSpider(BaseSpider):
                     description=payload['summaries']['full'],
                     itemType='movie',
                     network='hbo',
-                    goUrl='https://play.hbogo.com/feature/{}'.format(response.meta['id']),
+                    goUrl='https://play.hbogo.com/feature/{}'.format(
+                        response.meta['id']),
                     releaseYear=payload['releaseYear'],
                     highDef=True,
                     cast=_parse_cast(payload),
@@ -119,7 +124,8 @@ class HboGoCrawlSpider(BaseSpider):
                 )
 
     def handle_series(self, response):
-        self.log('Processing https://play.hbogo.com/series/{}'.format(response.meta['id']))
+        self.log(
+            'Processing https://play.hbogo.com/series/{}'.format(response.meta['id']))
         full_response = json.loads(response.text)
         season_ref = None
         episode_ref = None
@@ -141,7 +147,8 @@ class HboGoCrawlSpider(BaseSpider):
                     description=payload['summaries']['full'],
                     itemType='show',
                     network='hbo',
-                    goUrl='https://play.hbogo.com/series/{}'.format(response.meta['id']),
+                    goUrl='https://play.hbogo.com/series/{}'.format(
+                        response.meta['id']),
                     highDef=True
                 )
 

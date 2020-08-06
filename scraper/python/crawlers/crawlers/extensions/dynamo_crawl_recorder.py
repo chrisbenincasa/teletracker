@@ -33,7 +33,8 @@ def _get_uri_params(spider, uri_params):
         params[k] = getattr(spider, k)
     ts = datetime.utcnow().replace(microsecond=0).isoformat().replace(':', '-')
     params['time'] = ts
-    uripar_function = load_object(uri_params) if uri_params else lambda x, y: None
+    uripar_function = load_object(
+        uri_params) if uri_params else lambda x, y: None
     uripar_function(params, spider)
     return params
 
@@ -41,7 +42,8 @@ def _get_uri_params(spider, uri_params):
 class DynamoCrawlRecorder:
     def __init__(self, table_name, dry_mode=False):
         self.time_opened = 0
-        self.dynamo_table = boto3.resource('dynamodb', endpoint_url=get_boto3_endpoint_url()).Table(table_name)
+        self.dynamo_table = boto3.resource(
+            'dynamodb', endpoint_url=get_boto3_endpoint_url()).Table(table_name)
         self.default_version = int(time.time())
         self.dry_mode = dry_mode
         self.spider_info = dict()
@@ -49,21 +51,25 @@ class DynamoCrawlRecorder:
 
     @classmethod
     def from_crawler(cls, crawler):
-        is_enabled = crawler.settings.getbool(DRY_MODE_SETTING) or crawler.settings.getbool(ENABLED_SETTING)
+        is_enabled = crawler.settings.getbool(
+            DRY_MODE_SETTING) or crawler.settings.getbool(ENABLED_SETTING)
         is_dry_mode = crawler.settings.getbool(DRY_MODE_SETTING)
 
         if not is_enabled:
             raise NotConfigured
         elif not crawler.settings.get(TABLE_NAME_SETTING):
-            logger.warning('Must define {} setting if enabled'.format(TABLE_NAME_SETTING))
+            logger.warning(
+                'Must define {} setting if enabled'.format(TABLE_NAME_SETTING))
             raise NotConfigured
 
         table_name = crawler.settings.get(TABLE_NAME_SETTING)
 
         ext = cls(table_name, dry_mode=is_dry_mode)
 
-        crawler.signals.connect(ext.spider_opened, signal=signals.spider_opened)
-        crawler.signals.connect(ext.spider_closed, signal=signals.spider_closed)
+        crawler.signals.connect(
+            ext.spider_opened, signal=signals.spider_opened)
+        crawler.signals.connect(
+            ext.spider_closed, signal=signals.spider_closed)
         crawler.signals.connect(ext.item_scraped, signal=signals.item_scraped)
 
         return ext
@@ -73,7 +79,8 @@ class DynamoCrawlRecorder:
 
         # Use spider's defined version, if available.
         if spider.name not in self.spider_info:
-            self.spider_info[spider.name] = {**(self._build_spider_info(spider)), 'time_opened': time_opened}
+            self.spider_info[spider.name] = {
+                **(self._build_spider_info(spider)), 'time_opened': time_opened}
 
         info = self.spider_info[spider.name]
 
@@ -92,7 +99,8 @@ class DynamoCrawlRecorder:
                 ExpressionAttributeValues={
                     ':n': info['name']
                 },
-                FilterExpression=And(Attr('time_closed').not_exists(), Attr('is_distributed').eq(True)),
+                FilterExpression=And(Attr('time_closed').not_exists(), Attr(
+                    'is_distributed').eq(True)),
                 ScanIndexForward=False,
                 Limit=1
             )
@@ -157,7 +165,8 @@ class DynamoCrawlRecorder:
         }
 
     def spider_closed(self, spider, reason):
-        logger.info(f'Dynamo crawl recorder closing spider with reason: {reason}')
+        logger.info(
+            f'Dynamo crawl recorder closing spider with reason: {reason}')
 
         if spider.name not in self.spider_info:
             self.spider_info[spider.name] = self._build_spider_info(spider)
@@ -178,7 +187,8 @@ class DynamoCrawlRecorder:
         final_set_expr = 'SET time_closed = :tc, total_items_scraped = :tic'
 
         if self.dry_mode:
-            logger.info('Dynamo DRY MODE (close): Would\'ve updated item {}.'.format(key))
+            logger.info(
+                'Dynamo DRY MODE (close): Would\'ve updated item {}.'.format(key))
         elif info['is_distributed']:
             response = self.dynamo_table.update_item(
                 Key=key,
@@ -201,7 +211,8 @@ class DynamoCrawlRecorder:
                     )
                 except ClientError as error:
                     if error.response['Error']['Code'] == 'ConditionalCheckFailedException':
-                        logger.warning('Another spider was opened before crawl could be closed.')
+                        logger.warning(
+                            'Another spider was opened before crawl could be closed.')
                     else:
                         raise error
 
@@ -218,10 +229,13 @@ class DynamoCrawlRecorder:
         if hasattr(spider, 'version'):
             logger.debug('Got version from spider: {}'.format(spider.version))
 
-        is_distributed = spider.is_distributed if hasattr(spider, 'is_distributed') else False
+        is_distributed = spider.is_distributed if hasattr(
+            spider, 'is_distributed') else False
 
-        spider_version = spider.version if hasattr(spider, 'version') else self.default_version
-        spider_name = spider.store_name if hasattr(spider, 'store_name') else spider.name
+        spider_version = spider.version if hasattr(
+            spider, 'version') else self.default_version
+        spider_name = spider.store_name if hasattr(
+            spider, 'store_name') else spider.name
 
         return dict({
             'version': spider_version,
@@ -256,7 +270,8 @@ class DynamoCrawlRecorder:
             new_feeds = {}
             for key, value in feeds.items():
                 uri = str(key)  # handle pathlib.Path objects
-                new_feeds[uri] = feed_complete_default_values_from_settings(value, spider.settings)
+                new_feeds[uri] = feed_complete_default_values_from_settings(
+                    value, spider.settings)
 
             for uri, feed in new_feeds.items():
                 uri = uri % _get_uri_params(spider, feed['uri_params'])
@@ -268,11 +283,13 @@ class DynamoCrawlRecorder:
                     if parsed.scheme:
                         # Special case for distributed spiders, which could
                         if getattr(spider, 'is_distributed') and parsed.scheme == 's3':
-                            parsed = parsed._replace(path='/'.join(parsed.path.split('/')[:-1]))
+                            parsed = parsed._replace(
+                                path='/'.join(parsed.path.split('/')[:-1]))
 
                         full_path = parsed.geturl()
                     else:
-                        full_path = 'file://{}'.format(str(pathlib.Path(uri).absolute()))
+                        full_path = 'file://{}'.format(
+                            str(pathlib.Path(uri).absolute()))
 
                 outputs.append({
                     full_path: feed

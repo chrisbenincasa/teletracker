@@ -46,25 +46,30 @@ class HboChangesSpider(BaseSpider):
                     for item in self.parse_new(section, title):
                         yield item
                 else:
-                    self.log('unrecognized title: {}'.format(title), logging.WARN)
+                    self.log('unrecognized title: {}'.format(
+                        title), logging.WARN)
 
     def parse_theatrical_releases(self, section):
         today = datetime.now()
         for line in section.xpath('./p/b'):
             date = line.xpath('./text()').get().strip().rstrip(':')
-            title = line.xpath('./following-sibling::*[1]/text()').get().strip()
+            title = line.xpath(
+                './following-sibling::*[1]/text()').get().strip()
             full_date = None
             try:
-                full_date = datetime.strptime(date, '%B %d at %I %p').replace(year=today.year)
+                full_date = datetime.strptime(
+                    date, '%B %d at %I %p').replace(year=today.year)
             except ValueError:
                 pass
 
             if not full_date:
                 month_string = _month_name_match(date.split(' ')[0])
-                date_num = re.search(r'{} (\d+)'.format(month_string), date, re.IGNORECASE)
+                date_num = re.search(
+                    r'{} (\d+)'.format(month_string), date, re.IGNORECASE)
                 if date_num:
                     full_date = datetime.strptime(
-                        '{}-{}-{}'.format(today.year, _month_number(month_string), date_num.group(1)),
+                        '{}-{}-{}'.format(today.year,
+                                          _month_number(month_string), date_num.group(1)),
                         '%Y-%m-%d')
                     self.log('{}, {}'.format(title, full_date))
 
@@ -93,7 +98,8 @@ class HboChangesSpider(BaseSpider):
 
         self.log('Handle {} on {}'.format(status, full_date))
 
-        titles_and_years = [x.strip() for x in ''.join(section.xpath('.//p//text()').getall()).split('\n')]
+        titles_and_years = [x.strip() for x in ''.join(
+            section.xpath('.//p//text()').getall()).split('\n')]
         for title_and_year in titles_and_years:
             if len(title_and_year) > 0:
                 year_match = re.search(year_regex, title_and_year)

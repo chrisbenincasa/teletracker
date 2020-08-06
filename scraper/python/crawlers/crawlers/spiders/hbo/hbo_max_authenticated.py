@@ -33,13 +33,16 @@ def _parse_crew(payload):
     if 'credits' in payload:
         if 'directors' in payload['credits']:
             for (idx, director) in enumerate(payload['credits']['directors']):
-                crew.append(HboCrewMember(name=director['person'], order=idx, role='Director'))
+                crew.append(HboCrewMember(
+                    name=director['person'], order=idx, role='Director'))
         if 'producers' in payload['credits']:
             for (idx, producer) in enumerate(payload['credits']['producers']):
-                crew.append(HboCrewMember(name=producer['person'], order=idx, role=producer['role']))
+                crew.append(HboCrewMember(
+                    name=producer['person'], order=idx, role=producer['role']))
         if 'writers' in payload['credits']:
             for (idx, writer) in enumerate(payload['credits']['writers']):
-                crew.append(HboCrewMember(name=writer['person'], order=idx, role=writer['role']))
+                crew.append(HboCrewMember(
+                    name=writer['person'], order=idx, role=writer['role']))
     return crew
 
 
@@ -74,13 +77,14 @@ class HboMaxAuthenticatedCrawlSpider(BaseSpider):
         return JsonRequest(url=EXPRESS_CONTENT_API_URL_FMT.format(typ),
                            headers={
                                'Authorization': 'Bearer {}'.format(self.token)
-                           },
-                           callback=cb,
-                           dont_filter=True)
+        },
+            callback=cb,
+            dont_filter=True)
 
     def schedule_types(self, response):
         responses = json.loads(response.text)
-        grid_ids = [x.value for x in parse('$[?(@.body.label=="A-Z")].body.references.items[*]').find(responses)]
+        grid_ids = [x.value for x in parse(
+            '$[?(@.body.label=="A-Z")].body.references.items[*]').find(responses)]
         all_ids = []
         for grid_id in grid_ids:
             all_ids.extend(
@@ -104,7 +108,8 @@ class HboMaxAuthenticatedCrawlSpider(BaseSpider):
 
     def handle_movie(self, response):
         full_response = json.loads(response.text)
-        self.log('Processing https://play.hbomax.com/feature/{}'.format(response.meta['id']))
+        self.log(
+            'Processing https://play.hbomax.com/feature/{}'.format(response.meta['id']))
         for r in full_response:
             if r['id'] == response.meta['id']:
                 payload = r['body']
@@ -115,7 +120,8 @@ class HboMaxAuthenticatedCrawlSpider(BaseSpider):
                     description=payload['summaries']['full'],
                     itemType='movie',
                     network='hbo-max',
-                    url='https://play.hbomax.com/feature/{}'.format(response.meta['id']),
+                    url='https://play.hbomax.com/feature/{}'.format(
+                        response.meta['id']),
                     releaseYear=payload['releaseYear'],
                     cast=_parse_cast(payload),
                     crew=_parse_crew(payload),
@@ -127,7 +133,8 @@ class HboMaxAuthenticatedCrawlSpider(BaseSpider):
         parts = response.meta['id'].split(':')
         typ = parts[2]
 
-        self.log('Processing https://play.hbomax.com/{}/{}'.format(typ, response.meta['id']))
+        self.log(
+            'Processing https://play.hbomax.com/{}/{}'.format(typ, response.meta['id']))
         full_response = json.loads(response.text)
 
         season_ref = None
@@ -150,7 +157,8 @@ class HboMaxAuthenticatedCrawlSpider(BaseSpider):
                     description=payload['summaries']['full'],
                     itemType='show',
                     network='hbo-max',
-                    url='https://play.hbomax.com/{}/{}'.format(typ, response.meta['id']),
+                    url='https://play.hbomax.com/{}/{}'.format(
+                        typ, response.meta['id']),
                     version=self.version
                 )
 

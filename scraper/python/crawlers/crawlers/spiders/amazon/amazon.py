@@ -1,3 +1,6 @@
+from scrapy.downloadermiddlewares.robotstxt import RobotsTxtMiddleware
+from scrapy_redis import picklecompat
+from scrapy.utils.reqser import request_to_dict, request_from_dict
 import json
 import logging
 import re
@@ -57,7 +60,8 @@ class AmazonSpider(BaseCrawlSpider):
 
     rules = (
         Rule(
-            LinkExtractor(allow=(r'(https://www.amazon.com)?/gp/video/detail/.*',), process_value=_process_detail_link),
+            LinkExtractor(allow=(r'(https://www.amazon.com)?/gp/video/detail/.*',),
+                          process_value=_process_detail_link),
             callback='_handle_amazon_page', follow=True),
         Rule(LinkExtractor(
             allow=r'(https://www\.amazon\.com)?/gp/video/storefront/?.*'), follow=True)
@@ -75,7 +79,8 @@ class AmazonSpider(BaseCrawlSpider):
 
             page_it = paginator.paginate(
                 Bucket=get_data_bucket(self.settings),
-                Prefix='elasticsearch/items/',  # Filter this down further to limit results...maybe by year?
+                # Filter this down further to limit results...maybe by year?
+                Prefix='elasticsearch/items/',
                 Delimiter='/'
             )
 
@@ -110,10 +115,12 @@ class AmazonSpider(BaseCrawlSpider):
                                 break
                             raw_id = imdb_id.lstrip('imdb__')
                             if len(raw_id) > 0:
-                                self.log(f'TT id: {tt_id}, IMDB ID: {imdb_id}', level=logging.DEBUG)
+                                self.log(
+                                    f'TT id: {tt_id}, IMDB ID: {imdb_id}', level=logging.DEBUG)
                                 imdb_ids_handled += 1
                                 if imdb_ids_handled % 1000 == 0:
-                                    self.log(f'Handled {imdb_ids_handled} so far')
+                                    self.log(
+                                        f'Handled {imdb_ids_handled} so far')
                                 yield Request(f'https://www.imdb.com/title/{raw_id}/', dont_filter=True,
                                               callback=self._handle_imdb_page, meta={'id': tt_id, 'imdb_id': raw_id})
                 self.log(f'Total imdb ids = {imdb_ids_handled}')
@@ -145,12 +152,15 @@ class AmazonSpider(BaseCrawlSpider):
                 loaded = json.loads(line)
                 if 'external_ids' in loaded:
                     # Find items that have an imdb but not an amazon id, these have not been matched yet.
-                    imdb_id = next((i for i in loaded['external_ids'] if i.startswith('imdb')), None)
-                    amazon_id = next((i for i in loaded['external_ids'] if i.startswith('amazon')), None)
+                    imdb_id = next(
+                        (i for i in loaded['external_ids'] if i.startswith('imdb')), None)
+                    amazon_id = next(
+                        (i for i in loaded['external_ids'] if i.startswith('amazon')), None)
                     if imdb_id and not amazon_id:
                         yield loaded['id'], imdb_id
             except JSONDecodeError:
-                self.log(f'Failure decoding string: {line}', level=logging.WARN)
+                self.log(
+                    f'Failure decoding string: {line}', level=logging.WARN)
                 continue
 
     # Extract the amazon link from the imdb page and queue the offsite link result
@@ -172,7 +182,8 @@ class AmazonSpider(BaseCrawlSpider):
                                       parse(f'$.props.state.detail.headerDetail.{official_id}').find(loaded)]
                     if len(header_details) > 0:
                         header_detail = header_details[0]
-                        item_type = 'movie' if header_detail['titleType'].lower() == 'movie' else 'show'
+                        item_type = 'movie' if header_detail['titleType'].lower(
+                        ) == 'movie' else 'show'
                         cast = []
                         crew = []
                         crew.extend([AmazonCrewMember(name=c.value['name'], order=idx, role='director') for (idx, c) in
@@ -198,7 +209,8 @@ class AmazonSpider(BaseCrawlSpider):
                                 is_rent = offer.value['purchaseData']['offerType'] == 'TVOD_RENTAL'
 
                                 price = None
-                                match = re.search(PRICE_RE, offer.value['label'])
+                                match = re.search(
+                                    PRICE_RE, offer.value['label'])
                                 if match:
                                     try:
                                         price = float(match.group(1))
@@ -239,7 +251,8 @@ class AmazonSpider(BaseCrawlSpider):
                 continue
 
         if not item:
-            self.crawler.signals.send_catch_log(empty_item_signal, response=response)
+            self.crawler.signals.send_catch_log(
+                empty_item_signal, response=response)
 
 
 class AmazonDistributedSpider(AmazonSpider, CustomRedisMixin):

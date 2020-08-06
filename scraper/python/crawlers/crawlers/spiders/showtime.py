@@ -19,7 +19,8 @@ def try_decode_json(s):
 
 
 def _schema_org_details(response, type):
-    scripts = response.xpath('//script[@type="application/ld+json"]/text()').getall()
+    scripts = response.xpath(
+        '//script[@type="application/ld+json"]/text()').getall()
     for script in scripts:
         parsed = try_decode_json(script)
         if parsed and parsed['@context'] == 'https://schema.org' and parsed['@type'] == type:
@@ -39,7 +40,8 @@ def _season_page_details(response):
 
 
 def _episode_page_details(response):
-    scripts = response.xpath('//script[@type="application/ld+json"]/text()').getall()
+    scripts = response.xpath(
+        '//script[@type="application/ld+json"]/text()').getall()
     for script in scripts:
         parsed = try_decode_json(script)
         if not parsed:
@@ -76,16 +78,19 @@ class ShowtimeSpider(BaseSitemapSpider):
     def parse_title(self, response):
         page_details = _movie_page_details(response)
         if page_details:
-            external_id = b64encode(response.url.encode('utf-8')).decode('utf-8')
+            external_id = b64encode(
+                response.url.encode('utf-8')).decode('utf-8')
             description = page_details['description']
             if not description:
-                description = response.css('.about-the-series-section p.block-container__copy::text').get()
+                description = response.css(
+                    '.about-the-series-section p.block-container__copy::text').get()
 
             release_year = None
             metadata = response.css('dt.metadata__key')
             for datum in metadata:
                 if datum.xpath('./text()').get() == 'Released':
-                    metadata_value = datum.xpath('./following-sibling::dd[1]/text()').get()
+                    metadata_value = datum.xpath(
+                        './following-sibling::dd[1]/text()').get()
                     if metadata_value:
                         release_year = _safe_to_int(metadata_value)
 
@@ -115,11 +120,13 @@ class ShowtimeSpider(BaseSitemapSpider):
         show_page_details = _show_page_details(response)
         if show_page_details:
             page_path = urlparse(response.url)
-            description = response.css('.about-the-series-section p.block-container__copy::text').get()
+            description = response.css(
+                '.about-the-series-section p.block-container__copy::text').get()
             season_links = [link.attrib['href'] for link in
                             response.xpath('//a[contains(@href, "{}/season")]'.format(page_path.path))]
             season_links.sort()
-            external_id = b64encode(response.url.encode('utf-8')).decode('utf-8')
+            external_id = b64encode(
+                response.url.encode('utf-8')).decode('utf-8')
             actors = []
             if 'actor' in show_page_details:
                 for (idx, actor) in enumerate(show_page_details['actor']):
@@ -158,7 +165,8 @@ class ShowtimeSpider(BaseSitemapSpider):
 
             description = response.css('p.hero__description::text').get()
 
-            episode_links = [x.attrib['href'] for x in response.css('div.promo-season-group a.promo__link')]
+            episode_links = [x.attrib['href'] for x in response.css(
+                'div.promo-season-group a.promo__link')]
 
             season_publication_date = _publication_date(page_details)
             season = ShowtimeItemSeason(
@@ -172,7 +180,8 @@ class ShowtimeSpider(BaseSitemapSpider):
 
             if season_number and season_number == 1 and season_publication_date:
                 try:
-                    item['releaseYear'] = datetime.strptime(season_publication_date, '%Y-%m-%d').year
+                    item['releaseYear'] = datetime.strptime(
+                        season_publication_date, '%Y-%m-%d').year
                 except ValueError:
                     pass
 

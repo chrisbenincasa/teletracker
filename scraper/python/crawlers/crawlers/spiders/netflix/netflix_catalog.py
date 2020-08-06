@@ -60,13 +60,15 @@ class NetflixSpider(BaseCrawlSpider):
     def start_requests(self):
         seed_file_path = self.settings.get('SEED_FILE')
         if seed_file_path:
-            self.log('Reading seed file {}'.format(seed_file_path), level=logging.INFO)
+            self.log('Reading seed file {}'.format(
+                seed_file_path), level=logging.INFO)
             try:
                 for request in self._generate_requests_from_json(seed_file_path, 'manual_seed'):
                     yield request
             except:
                 e = sys.exc_info()[0]
-                self.log('Error while attempting to seed urls from previous dump: {}'.format(e))
+                self.log(
+                    'Error while attempting to seed urls from previous dump: {}'.format(e))
 
         if self.settings.getbool('USE_PREVIOUS_SEED'):
             try:
@@ -85,14 +87,16 @@ class NetflixSpider(BaseCrawlSpider):
                         yield request
             except:
                 e = sys.exc_info()[0]
-                self.log('Error while attempting to seed urls from previous dump: {}'.format(e))
+                self.log(
+                    'Error while attempting to seed urls from previous dump: {}'.format(e))
 
         for url in self.start_urls:
             yield scrapy.Request(url, dont_filter=True)
 
     def _generate_requests_from_json(self, key, name, dont_filter=True):
         with open('/tmp/{}.jl'.format(name), 'wb') as f:
-            self._s3_client.download_fileobj('teletracker-data-us-west-2', key, f)
+            self._s3_client.download_fileobj(
+                'teletracker-data-us-west-2', key, f)
 
         with open('/tmp/{}.jl'.format(name), 'r') as f:
             while True:
@@ -126,10 +130,12 @@ class NetflixSpider(BaseCrawlSpider):
         if schema_org_json:
             if 'creator' in schema_org_json:
                 for (idx, creator) in enumerate(schema_org_json['creator']):
-                    crew.append(NetflixCrewMember(name=creator['name'], order=idx, role='Creator'))
+                    crew.append(NetflixCrewMember(
+                        name=creator['name'], order=idx, role='Creator'))
             if 'director' in schema_org_json:
                 for (idx, director) in enumerate(schema_org_json['director']):
-                    crew.append(NetflixCrewMember(name=director['name'], order=idx, role='Director'))
+                    crew.append(NetflixCrewMember(
+                        name=director['name'], order=idx, role='Director'))
 
         content_rating = schema_org_json['contentRating'] if schema_org_json and 'contentRating' in schema_org_json \
             else self._extract_content_rating(

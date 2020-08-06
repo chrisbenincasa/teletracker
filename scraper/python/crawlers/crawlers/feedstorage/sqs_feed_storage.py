@@ -43,7 +43,8 @@ class SqsFeedStorageWriter:
         self.queue_url = queue_url
         self.buffer_size = buffer_size
         self.chunk_size = chunk_size
-        self.sqs_client = boto3.client('sqs', endpoint_url=get_boto3_endpoint_url())
+        self.sqs_client = boto3.client(
+            'sqs', endpoint_url=get_boto3_endpoint_url())
 
     def add(self, item):
         self.deck.append(item)
@@ -60,7 +61,8 @@ class SqsFeedStorageWriter:
             for _ in range(0, self.buffer_size):
                 buf.append(self.deck.popleft())
 
-        logger.info(f'Enqueuing {len(buf)} items in chunks of {self.chunk_size}')
+        logger.info(
+            f'Enqueuing {len(buf)} items in chunks of {self.chunk_size}')
 
         for group in _chunk(buf, self.chunk_size):
             self.sqs_client.send_message_batch(

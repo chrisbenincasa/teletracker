@@ -13,6 +13,7 @@ _device_serial_number = '7de92ed7-d64c-4534-9dd8-fca4cd105262'
 
 CONTENT_API_URL = 'https://comet.api.hbo.com/content'
 
+
 def _load_script_data(response):
     data = response.xpath('//script[@id="__NEXT_DATA__"]/text()').get()
     if data:

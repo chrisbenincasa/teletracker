@@ -82,7 +82,8 @@ class AppleTvSpider(BaseCrawlSpider):
             desc = response.css('.product-hero-desc p::text').get()
 
             offers = []
-            prices = set([l.strip() for l in response.css('.movie-header__list--price span::text').getall()])
+            prices = set([l.strip() for l in response.css(
+                '.movie-header__list--price span::text').getall()])
             for price in prices:
                 matched_price = re.search(PRICE_RE, price)
                 if matched_price:
@@ -94,34 +95,43 @@ class AppleTvSpider(BaseCrawlSpider):
                         offers.append(
                             AppleTvItemOffer(offerType='buy', price=actual_price, currency='USD', quality='HD'))
 
-            release_date_sel = response.css('.movie-header__list__item--release-date time')
+            release_date_sel = response.css(
+                '.movie-header__list__item--release-date time')
             release_date = None
             release_year = None
             if len(release_date_sel) > 0:
-                release_year = int(release_date_sel[0].xpath('.//text()').get())
-                release_date = dateutil.parser.isoparse(release_date_sel[0].attrib['datetime'])
+                release_year = int(
+                    release_date_sel[0].xpath('.//text()').get())
+                release_date = dateutil.parser.isoparse(
+                    release_date_sel[0].attrib['datetime'])
 
             cast = []
             crew = []
             if 'actor' in loaded_schema:
                 for (idx, actor) in enumerate(loaded_schema['actor']):
-                    cast.append(AppleTvCastMember(name=actor['name'], order=idx, role='actor'))
+                    cast.append(AppleTvCastMember(
+                        name=actor['name'], order=idx, role='actor'))
 
             if 'director' in loaded_schema or 'producer' in loaded_schema:
-                directors = loaded_schema['director'] if 'director' in loaded_schema else []
-                producers = loaded_schema['producer'] if 'producer' in loaded_schema else []
+                directors = loaded_schema['director'] if 'director' in loaded_schema else [
+                ]
+                producers = loaded_schema['producer'] if 'producer' in loaded_schema else [
+                ]
                 order = 0
                 for director in directors:
-                    crew.append(AppleTvCrewMember(name=director['name'], order=order, role='director'))
+                    crew.append(AppleTvCrewMember(
+                        name=director['name'], order=order, role='director'))
                     order += 1
 
                 for producer in producers:
-                    crew.append(AppleTvCrewMember(name=producer['name'], order=order, role='producer'))
+                    crew.append(AppleTvCrewMember(
+                        name=producer['name'], order=order, role='producer'))
                     order += 1
 
             runtime = None
             if 'duration' in loaded_schema:
-                runtime = isodate.parse_duration(loaded_schema['duration']).seconds
+                runtime = isodate.parse_duration(
+                    loaded_schema['duration']).seconds
 
             yield AppleTvItem(
                 id=external_id,

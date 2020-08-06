@@ -29,7 +29,8 @@ class EmptyResponseRecorder:
         if not is_enabled:
             raise NotConfigured
         elif not crawler.settings.get(OUTPUT_PREFIX_SETTING):
-            logger.warning('Must define {} setting if enabled'.format(OUTPUT_PREFIX_SETTING))
+            logger.warning('Must define {} setting if enabled'.format(
+                OUTPUT_PREFIX_SETTING))
             raise NotConfigured
 
         bucket = get_data_bucket(crawler.settings)
@@ -44,10 +45,13 @@ class EmptyResponseRecorder:
 
     def empty_item(self, response: Response):
         if self.output_prefix:
-            logger.info(f'Got empty item for url: {response.url}. Uploading page result.')
-            url_key = base64.b64encode(response.url.encode('utf-8')).decode(encoding='utf-8')
+            logger.info(
+                f'Got empty item for url: {response.url}. Uploading page result.')
+            url_key = base64.b64encode(response.url.encode(
+                'utf-8')).decode(encoding='utf-8')
             key = f'{self.output_prefix}/{url_key}'
-            d = threads.deferToThread(lambda: self._s3_bucket.put_object(Body=response.body, Key=key))
+            d = threads.deferToThread(
+                lambda: self._s3_bucket.put_object(Body=response.body, Key=key))
             d.addCallback(self._handle_upload_success)
             d.addErrback(self._handle_upload_error)
         else:
