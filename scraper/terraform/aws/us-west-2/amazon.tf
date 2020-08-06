@@ -14,15 +14,13 @@ module "amazon_crawler" {
 
   outputs = [
     "s3://${data.aws_s3_bucket.data_bucket.id}/scrape-results/%(canonical_name)s/catalog/%(today)s/%(version)s/items_%(now)s.jl:jl",
-    "sqs://${replace(data.aws_sqs_queue.scrape_item_output_queue.id, "https://", "")}:sqs",
-    //    "sqs://${replace(data.aws_sqs_queue.amazon_item_output_queue.id, "https://", "")}:sqs"
+    "sqs://${replace(data.aws_sqs_queue.scrape_item_output_queue.id, "https://", "")}:sqs"
   ]
 
   extra_args = [
     "-sEMPTY_RESPONSE_RECORDER_ENABLED=True",
     "-sAUTOTHROTTLE_TARGET_CONCURRENCY=8",
-    "-sTELNETCONSOLE_HOST=0.0.0.0",
-    "-sLOG_LEVEL=DEBUG"
+    "-sTELNETCONSOLE_HOST=0.0.0.0"
   ]
 
   dynamodb_output_table = aws_dynamodb_table.crawls.name
@@ -32,8 +30,7 @@ module "amazon_crawler" {
 
   max_spider_count = 3
 
-  gen_service = true
-  memory      = 768
-  fargate     = false
-  //  gen_scaling = true
+  gen_service = false
+  memory      = 512
+  fargate     = true
 }
