@@ -227,8 +227,10 @@ const Availability = (props: Props) => {
                   style={{ backgroundColor: networkToColor[network!.slug] }}
                 />
                 <CardContent className={classes.cardContent}>
-                  <Typography>{`${cleanOfferTitle} ${
-                    network!.name
+                  <Typography>{`${cleanOfferTitle} ${network!.name} ${
+                    offersOfType[index].cost
+                      ? 'for $' + offersOfType[index].cost
+                      : ''
                   }`}</Typography>
                 </CardContent>
               </Card>
