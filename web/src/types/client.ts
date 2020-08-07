@@ -1,9 +1,16 @@
-import { ItemType, NetworkType, OpenRange, SortOptions } from './index';
+import {
+  ItemType,
+  NetworkType,
+  OfferType,
+  OpenRange,
+  SortOptions,
+} from './index';
+import { SelectableNetworks } from '../utils/searchFilters';
 
 export interface ItemSearchRequest {
   readonly searchText?: string;
   readonly itemTypes?: ItemType[];
-  readonly networks?: NetworkType[];
+  readonly networks?: SelectableNetworks;
   readonly bookmark?: string;
   readonly sort?: SortOptions | 'search_score';
   readonly limit?: number;
@@ -12,4 +19,5 @@ export interface ItemSearchRequest {
   readonly castIncludes?: string[];
   readonly crewIncludes?: string[];
   readonly imdbRating?: OpenRange;
+  readonly offerTypes?: OfferType[];
 }

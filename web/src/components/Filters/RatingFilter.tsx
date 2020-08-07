@@ -3,11 +3,15 @@ import { makeStyles, Slider, Theme, Typography } from '@material-ui/core';
 import { SliderChange } from '../../utils/searchFilters';
 import { useDebouncedCallback } from 'use-debounce';
 import { FilterContext } from './FilterContext';
+import FilterSectionTitle from './FilterSectionTitle';
 
 const styles = makeStyles((theme: Theme) => ({
   sliderContainer: {
     width: '100%',
     padding: theme.spacing(0, 2),
+  },
+  filterLabel: {
+    padding: theme.spacing(0.5),
   },
 }));
 
@@ -80,7 +84,7 @@ export default function RatingFilter(props: Props) {
 
   return (
     <div className={classes.sliderContainer}>
-      {props.showTitle && <Typography>IMDb Rating</Typography>}
+      {props.showTitle && <FilterSectionTitle title="IMDb Rating" />}
       <Slider
         value={imdbRatingValue}
         min={MIN_RATING}

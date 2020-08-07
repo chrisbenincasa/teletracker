@@ -9,6 +9,7 @@ import {
 import _ from 'lodash';
 import { useGenres } from '../../hooks/useStateMetadata';
 import { FilterContext } from './FilterContext';
+import FilterSectionTitle from './FilterSectionTitle';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -24,6 +25,10 @@ const useStyles = makeStyles((theme: Theme) =>
     genreContainer: {
       display: 'flex',
       flexDirection: 'column',
+      marginBottom: theme.spacing(1),
+    },
+    filterLabel: {
+      padding: theme.spacing(0.5),
     },
   }),
 );
@@ -90,7 +95,7 @@ export default function GenreSelect(props: NewProps) {
     .value();
   return (
     <div className={classes.genreContainer}>
-      {props.showTitle && <Typography display="block">Genre</Typography>}
+      {props.showTitle && <FilterSectionTitle title="Genre" />}
       <div className={classes.chipContainer}>
         <Chip
           key={0}

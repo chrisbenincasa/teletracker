@@ -343,11 +343,18 @@ export class TeletrackerApi {
     const { itemTypes, networks, sortOrder, genresFilter, sliders } =
       filterParams || {};
 
+    let networksParam;
+    if (_.isUndefined(networks) || networks === 'all') {
+      networksParam = networks;
+    } else {
+      networksParam = networks.join(',');
+    }
+
     return this.api.get<any>(`/api/v2/people/${id}/credits`, {
       token,
       itemTypes:
         itemTypes && itemTypes.length ? itemTypes.join(',') : undefined,
-      networks: networks && networks.length ? networks.join(',') : undefined,
+      networks: networksParam,
       bookmark,
       sort: sortOrder,
       limit,
@@ -457,16 +464,25 @@ export class TeletrackerApi {
       imdbPart = `${imdbMin}:${imdbMax}`;
     }
 
+    let networksParam;
+    if (_.isUndefined(request.networks) || request.networks === 'all') {
+      networksParam = request.networks;
+    } else {
+      networksParam = request.networks.join(',');
+    }
+
+    let offerTypes;
+    if (!_.isUndefined(request.offerTypes)) {
+      offerTypes = request.offerTypes.join(',');
+    }
+
     return {
       query: request.searchText,
       itemTypes:
         request.itemTypes && request.itemTypes.length
           ? request.itemTypes.join(',')
           : undefined,
-      networks:
-        request.networks && request.networks.length
-          ? request.networks.join(',')
-          : undefined,
+      networks: networksParam,
       bookmark: request.bookmark,
       sort: request.sort,
       limit: request.limit,
@@ -487,6 +503,7 @@ export class TeletrackerApi {
           ? request.castIncludes.join(',')
           : undefined,
       imdbRating: imdbPart,
+      offerTypes: offerTypes,
     };
   }
 

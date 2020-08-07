@@ -22,12 +22,14 @@ export interface FilterContextState {
   readonly setFilters: (newFilters: FilterParams) => void;
   readonly clearFilters: () => void;
   readonly defaultFilters?: FilterParams;
+  readonly currentFiltersAreDefault: boolean;
 }
 
 export const FilterContext = createContext<FilterContextState>({
   filters: DEFAULT_FILTER_PARAMS,
   setFilters: () => {},
   clearFilters: () => {},
+  currentFiltersAreDefault: true,
 });
 
 interface WithItemFiltersProps {
@@ -60,6 +62,7 @@ function withFilters(
     filters,
     setFilters: actuallySetFilters,
     clearFilters,
+    currentFiltersAreDefault: filterParamsEqual(filters, defaultFilters),
   };
 }
 
