@@ -229,7 +229,7 @@ class DynamoCrawlRecorder:
         if hasattr(spider, 'version'):
             logger.debug('Got version from spider: {}'.format(spider.version))
 
-        is_distributed = spider.is_distributed if hasattr(
+        is_distributed = getattr(spider, 'is_distributed', False) if hasattr(
             spider, 'is_distributed') else False
 
         spider_version = spider.version if hasattr(
@@ -282,7 +282,7 @@ class DynamoCrawlRecorder:
                     # Have something in the form xyz://123
                     if parsed.scheme:
                         # Special case for distributed spiders, which could
-                        if getattr(spider, 'is_distributed') and parsed.scheme == 's3':
+                        if getattr(spider, 'is_distributed', False) and parsed.scheme == 's3':
                             parsed = parsed._replace(
                                 path='/'.join(parsed.path.split('/')[:-1]))
 

@@ -5,6 +5,7 @@ import com.teletracker.common.util.{AsyncStream, HasId}
 import io.circe.{Codec, Encoder}
 import io.circe.syntax._
 import org.elasticsearch.action.bulk.BulkRequest
+import org.elasticsearch.action.delete.{DeleteRequest, DeleteResponse}
 import org.elasticsearch.action.get.GetRequest
 import org.elasticsearch.action.index.{IndexRequest, IndexResponse}
 import org.elasticsearch.action.update.{UpdateRequest, UpdateResponse}
@@ -67,6 +68,12 @@ abstract class ElasticsearchCrud[Id, T: Codec: ClassTag](
     elasticsearchExecutor.update(
       new UpdateRequest(indexName, hasId.idString(item))
         .jsonDoc(item, removeNulls = true)
+    )
+  }
+
+  def delete(id: Id): Future[DeleteResponse] = {
+    elasticsearchExecutor.delete(
+      new DeleteRequest(indexName, hasId.asString(id))
     )
   }
 
