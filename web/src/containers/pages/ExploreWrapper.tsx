@@ -68,6 +68,7 @@ export default function makeExploreWrapper(defaultFilters: FilterParams) {
           releaseYearRange: filterParams.sliders?.releaseYear,
           castIncludes: filterParams.people,
           imdbRating: filterParams.sliders?.imdbRating,
+          offerTypes: filterParams?.offers?.types,
         },
       );
 

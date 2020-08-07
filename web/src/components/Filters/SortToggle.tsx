@@ -11,6 +11,7 @@ import {
 import { SortOptions } from '../../types';
 import _ from 'lodash';
 import { FilterContext } from './FilterContext';
+import FilterSectionTitle from './FilterSectionTitle';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -77,12 +78,8 @@ export default function SortToggle(props: Props) {
   ));
 
   return (
-    <div>
-      {props.showTitle && (
-        <Typography className={classes.filterLabel} display="block">
-          Sort
-        </Typography>
-      )}
+    <div style={{ width: '100%' }}>
+      {props.showTitle && <FilterSectionTitle title="Sort" />}
       <div className={classes.chipContainer}>{menuItems}</div>
     </div>
   );

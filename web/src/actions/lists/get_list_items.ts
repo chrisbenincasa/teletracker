@@ -76,6 +76,7 @@ export const retrieveListItemsSaga = function*() {
             releaseYearRange: payload.filters?.sliders?.releaseYear,
             castIncludes: payload.filters?.people,
             imdbRating: payload.filters?.sliders?.imdbRating,
+            offerTypes: payload.filters?.offers?.types,
           },
         );
 

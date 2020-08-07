@@ -12,7 +12,7 @@
     "@types/chai": "^4.2.11",
     "@types/enzyme": "^3.10.5",
     "@types/jest": "^25.2.1",
-    "@types/lodash": "^4.14.123",
+    "@types/lodash": "^4.14.158",
     "@types/material-ui": "^0.21.7",
     "@types/moment": "^2.13.0",
     "@types/node": "^11.13.4",
