@@ -3,7 +3,7 @@ package com.teletracker.tasks.scraper.netflix
 import com.teletracker.common.db.dynamo.{CrawlStore, CrawlerName}
 import com.teletracker.common.db.model.{ExternalSource, SupportedNetwork}
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
-import com.teletracker.common.model.scraping.ScrapeItemType
+import com.teletracker.common.model.scraping.ScrapeCatalogType
 import com.teletracker.common.model.scraping.netflix.NetflixOriginalScrapeItem
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
@@ -34,8 +34,8 @@ class IngestNetflixOriginalsArrivals @Inject()(
 
   override protected val externalSource: ExternalSource = ExternalSource.Netflix
 
-  override protected val scrapeItemType: ScrapeItemType =
-    ScrapeItemType.NetflixOriginalsArriving
+  override protected val scrapeItemType: ScrapeCatalogType =
+    ScrapeCatalogType.NetflixOriginalsArriving
 
   private val farIntoTheFuture = LocalDate.now().plusYears(1)
 

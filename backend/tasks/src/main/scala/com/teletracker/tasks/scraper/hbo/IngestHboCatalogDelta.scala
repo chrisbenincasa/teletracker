@@ -9,7 +9,7 @@ import com.teletracker.common.db.model.{
 }
 import com.teletracker.common.elasticsearch.ItemsScroller
 import com.teletracker.common.elasticsearch.model.{EsAvailability, EsItem}
-import com.teletracker.common.model.scraping.ScrapeItemType
+import com.teletracker.common.model.scraping.ScrapeCatalogType
 import com.teletracker.common.model.scraping.hbo.HboScrapedCatalogItem
 import com.teletracker.tasks.scraper.loaders.CrawlAvailabilityItemLoaderFactory
 import com.teletracker.tasks.scraper.{
@@ -49,8 +49,8 @@ class IngestHboCatalogDelta @Inject()(
       ExternalSource.HboMax -> item.externalId.get
     )
 
-  override protected def scrapeItemType: ScrapeItemType =
-    ScrapeItemType.HboCatalog
+  override protected def scrapeItemType: ScrapeCatalogType =
+    ScrapeCatalogType.HboCatalog
 }
 
 class IngestHboLiveCatalogDelta @Inject()(
@@ -76,8 +76,8 @@ class IngestHboLiveCatalogDelta @Inject()(
 
   override protected val externalSource: ExternalSource = ExternalSource.HboGo
 
-  override protected val scrapeItemType: ScrapeItemType =
-    ScrapeItemType.HboCatalog
+  override protected val scrapeItemType: ScrapeCatalogType =
+    ScrapeCatalogType.HboCatalog
 
   override protected def createDeltaAvailabilities(
     networks: Set[StoredNetwork],

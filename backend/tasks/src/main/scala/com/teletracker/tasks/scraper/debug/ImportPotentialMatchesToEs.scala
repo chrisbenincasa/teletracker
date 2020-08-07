@@ -7,7 +7,7 @@ import com.teletracker.common.elasticsearch.scraping.EsPotentialMatchItemStore
 import UpdateableEsItem.syntax._
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.elasticsearch.ItemLookup
-import com.teletracker.common.model.scraping.{PotentialMatch, ScrapeItemType}
+import com.teletracker.common.model.scraping.{PotentialMatch, ScrapeCatalogType}
 import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.NetworkCache
@@ -97,7 +97,7 @@ class ImportPotentialMatchesToEs @Inject()(
     extends UntypedTeletrackerTask {
   override protected def runInternal(): Unit = {
     val input = rawArgs.valueOrThrow[URI]("input")
-    val itemType = rawArgs.valueOrThrow[ScrapeItemType]("itemType")
+    val itemType = rawArgs.valueOrThrow[ScrapeCatalogType]("itemType")
     val limit = rawArgs.valueOrDefault("limit", -1)
     val dryRun = rawArgs.valueOrDefault[Boolean]("dryRun", true)
 
@@ -184,32 +184,33 @@ class ImportPotentialMatchesToEs @Inject()(
       })
   }
 
-  private def scrapeItemTypeToExternalSource(itemType: ScrapeItemType) = {
+  private def scrapeItemTypeToExternalSource(itemType: ScrapeCatalogType) = {
     itemType match {
-      case ScrapeItemType.HuluCatalog              => ExternalSource.Hulu
-      case ScrapeItemType.HboCatalog               => ExternalSource.HboGo
-      case ScrapeItemType.NetflixCatalog           => ExternalSource.Netflix
-      case ScrapeItemType.DisneyPlusCatalog        => ExternalSource.DisneyPlus
-      case ScrapeItemType.HboMaxCatalog            => ExternalSource.HboMax
-      case ScrapeItemType.HboChanges               => ExternalSource.HboGo
-      case ScrapeItemType.NetflixOriginalsArriving => ExternalSource.Netflix
-      case ScrapeItemType.AmazonVideo              => ExternalSource.AmazonVideo
+      case ScrapeCatalogType.HuluCatalog              => ExternalSource.Hulu
+      case ScrapeCatalogType.HboCatalog               => ExternalSource.HboGo
+      case ScrapeCatalogType.NetflixCatalog           => ExternalSource.Netflix
+      case ScrapeCatalogType.DisneyPlusCatalog        => ExternalSource.DisneyPlus
+      case ScrapeCatalogType.HboMaxCatalog            => ExternalSource.HboMax
+      case ScrapeCatalogType.HboChanges               => ExternalSource.HboGo
+      case ScrapeCatalogType.NetflixOriginalsArriving => ExternalSource.Netflix
+      case ScrapeCatalogType.AmazonVideo              => ExternalSource.AmazonVideo
     }
   }
 
-  private def scrapeItemTypeToSupportedNetworks(itemType: ScrapeItemType) = {
+  private def scrapeItemTypeToSupportedNetworks(itemType: ScrapeCatalogType) = {
     itemType match {
-      case ScrapeItemType.HuluCatalog => Set(SupportedNetwork.Hulu)
-      case ScrapeItemType.HboCatalog =>
+      case ScrapeCatalogType.HuluCatalog => Set(SupportedNetwork.Hulu)
+      case ScrapeCatalogType.HboCatalog =>
         Set(SupportedNetwork.Hbo, SupportedNetwork.HboMax)
-      case ScrapeItemType.NetflixCatalog    => Set(SupportedNetwork.Netflix)
-      case ScrapeItemType.DisneyPlusCatalog => Set(SupportedNetwork.DisneyPlus)
-      case ScrapeItemType.HboMaxCatalog     => Set(SupportedNetwork.HboMax)
-      case ScrapeItemType.HboChanges =>
+      case ScrapeCatalogType.NetflixCatalog => Set(SupportedNetwork.Netflix)
+      case ScrapeCatalogType.DisneyPlusCatalog =>
+        Set(SupportedNetwork.DisneyPlus)
+      case ScrapeCatalogType.HboMaxCatalog => Set(SupportedNetwork.HboMax)
+      case ScrapeCatalogType.HboChanges =>
         Set(SupportedNetwork.Hbo, SupportedNetwork.HboMax)
-      case ScrapeItemType.NetflixOriginalsArriving =>
+      case ScrapeCatalogType.NetflixOriginalsArriving =>
         Set(SupportedNetwork.Netflix)
-      case ScrapeItemType.AmazonVideo =>
+      case ScrapeCatalogType.AmazonVideo =>
         Set(SupportedNetwork.AmazonVideo, SupportedNetwork.AmazonPrimeVideo)
     }
   }

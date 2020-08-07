@@ -3,7 +3,7 @@ package com.teletracker.tasks.scraper.hulu
 import com.teletracker.common.db.dynamo.{CrawlStore, CrawlerName}
 import com.teletracker.common.db.model.{ExternalSource, SupportedNetwork}
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
-import com.teletracker.common.model.scraping.ScrapeItemType
+import com.teletracker.common.model.scraping.ScrapeCatalogType
 import com.teletracker.common.model.scraping.hulu.HuluScrapeCatalogItem
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
 import com.teletracker.common.tasks.TeletrackerTask
@@ -40,8 +40,8 @@ class IngestHuluCatalog @Inject()(
 
   override protected val externalSource: ExternalSource = ExternalSource.Hulu
 
-  override protected val scrapeItemType: ScrapeItemType =
-    ScrapeItemType.HuluCatalog
+  override protected val scrapeItemType: ScrapeCatalogType =
+    ScrapeCatalogType.HuluCatalog
 
   override protected def shouldProcessItem(
     item: HuluScrapeCatalogItem
@@ -92,7 +92,7 @@ class IngestHuluCatalog @Inject()(
           "input" -> URI
             .create(s"file://${matchItemsFile.getAbsolutePath}")
             .toString,
-          "type" -> ScrapeItemType.HuluCatalog.toString
+          "type" -> ScrapeCatalogType.HuluCatalog.toString
         )
       ),
       TeletrackerTask.taskMessage[GeneratePotentialMatchCsv](
@@ -100,7 +100,7 @@ class IngestHuluCatalog @Inject()(
           "input" -> URI
             .create(s"file://${potentialMatchFile.getAbsolutePath}")
             .toString,
-          "type" -> ScrapeItemType.HuluCatalog.toString
+          "type" -> ScrapeCatalogType.HuluCatalog.toString
         )
       )
     )

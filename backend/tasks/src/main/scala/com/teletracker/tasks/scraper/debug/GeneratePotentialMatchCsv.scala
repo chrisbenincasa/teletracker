@@ -1,6 +1,6 @@
 package com.teletracker.tasks.scraper.debug
 
-import com.teletracker.common.model.scraping.ScrapeItemType
+import com.teletracker.common.model.scraping.ScrapeCatalogType
 import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.tasks.scraper.ScrapeItemStreams
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
@@ -11,7 +11,7 @@ import scala.io.Source
 class GeneratePotentialMatchCsv extends UntypedTeletrackerTask {
   override protected def runInternal(): Unit = {
     val input = rawArgs.valueOrThrow[URI]("input")
-    val scrapeItemType = rawArgs.valueOrThrow[ScrapeItemType]("type")
+    val scrapeItemType = rawArgs.valueOrThrow[ScrapeCatalogType]("type")
 
     val source = Source.fromURI(input)
 
@@ -75,7 +75,7 @@ class GeneratePotentialMatchCsv extends UntypedTeletrackerTask {
 class GenerateMatchCsv extends UntypedTeletrackerTask {
   override protected def runInternal(): Unit = {
     val input = rawArgs.valueOrThrow[URI]("input")
-    val scrapeItemType = rawArgs.valueOrThrow[ScrapeItemType]("type")
+    val scrapeItemType = rawArgs.valueOrThrow[ScrapeCatalogType]("type")
 
     val source = Source.fromURI(input)
 

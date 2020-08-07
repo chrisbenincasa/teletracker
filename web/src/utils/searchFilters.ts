@@ -1,4 +1,10 @@
-import { ItemType, NetworkType, OpenRange, SortOptions } from '../types';
+import {
+  ItemType,
+  NetworkType,
+  OfferType,
+  OpenRange,
+  SortOptions,
+} from '../types';
 import _ from 'lodash';
 import produce from 'immer';
 
@@ -7,10 +13,30 @@ export interface SlidersState {
   readonly imdbRating?: OpenRange;
 }
 
+export type SelectableNetworks = NetworkType[] | 'all' | undefined;
+
+export type OffersFilters = {
+  readonly types?: OfferType[];
+};
+
+export function selectableNetworksEqual(
+  left: SelectableNetworks,
+  right: SelectableNetworks,
+): boolean {
+  if (left === 'all') {
+    return right === 'all';
+  } else if (_.isUndefined(left)) {
+    return _.isUndefined(right);
+  } else {
+    return _.xor(left, right).length === 0;
+  }
+}
+
 export interface FilterParams {
   readonly genresFilter?: number[];
   readonly itemTypes?: ItemType[];
-  readonly networks?: NetworkType[];
+  readonly networks?: SelectableNetworks;
+  readonly offers?: OffersFilters;
   readonly sortOrder?: SortOptions;
   readonly sliders?: SlidersState;
   readonly people?: string[];
@@ -80,6 +106,13 @@ export function normalizeFilterParams(
 
       if (isObjectEmpty(newSliders)) {
         delete draft.sliders;
+      }
+    }
+
+    if (draft.offers) {
+      const newOffers = removeUndefinedKeys(draft.offers);
+      if (isObjectEmpty(newOffers)) {
+        delete draft.offers;
       }
     }
   });

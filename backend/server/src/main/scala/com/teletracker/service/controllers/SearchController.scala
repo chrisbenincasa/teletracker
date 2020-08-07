@@ -1,6 +1,6 @@
 package com.teletracker.service.controllers
 
-import com.teletracker.common.db.model.ItemType
+import com.teletracker.common.db.model.{ItemType, OfferType}
 import com.teletracker.common.db.{Bookmark, SearchScore}
 import com.teletracker.common.elasticsearch.BinaryOperator
 import com.teletracker.common.elasticsearch.model.PeopleCreditsFilter
@@ -8,7 +8,11 @@ import com.teletracker.common.model.{DataResponse, Paging}
 import com.teletracker.common.util.time.LocalDateUtils
 import com.teletracker.common.util.{CanParseFieldFilter, OpenDateRange}
 import com.teletracker.service.api.model.Person
-import com.teletracker.service.api.{ItemApi, ItemSearchRequest}
+import com.teletracker.service.api.{
+  AvailabilityFilters,
+  ItemApi,
+  ItemSearchRequest
+}
 import com.teletracker.service.controllers.annotations.{
   ItemReleaseYear,
   RatingRange
@@ -70,10 +74,14 @@ class SearchController @Inject()(
     }
   }
 
+  import com.teletracker.common.util.Monoidal._
+  import cats.instances.all._
+
   private def makeSearchRequest(req: SearchRequest) = {
     ItemSearchRequest(
       genres = Some(req.genres.map(_.toString)).filter(_.nonEmpty),
       networks = Some(req.networks).filter(_.nonEmpty),
+      allNetworks = Some(req.networks).map(_ == Set(ItemSearchRequest.All)),
       itemTypes = Some(
         req.itemTypes.flatMap(t => Try(ItemType.fromString(t)).toOption)
       ),
@@ -96,7 +104,15 @@ class SearchController @Inject()(
             )
           )
         else None,
-      imdbRating = req.imdbRating.flatMap(RangeParser.parseRatingString)
+      imdbRating = req.imdbRating.flatMap(RangeParser.parseRatingString),
+      availabilityFilters = Some(
+        AvailabilityFilters(
+          offerTypes = req.offerTypes
+            .flatMap(ot => Try(OfferType.fromString(ot)).toOption)
+            .ifEmptyOption,
+          presentationTypes = None
+        )
+      )
     )
   }
 }
@@ -125,5 +141,7 @@ case class SearchRequest(
   @QueryParam(commaSeparatedList = true)
   crew: Set[String] = Set.empty,
   @QueryParam @RatingRange(min = 0.0d, max = 10.0d) imdbRating: Option[String],
+  @QueryParam(commaSeparatedList = true)
+  offerTypes: Set[String] = Set(),
   request: Request)
     extends InjectedRequest

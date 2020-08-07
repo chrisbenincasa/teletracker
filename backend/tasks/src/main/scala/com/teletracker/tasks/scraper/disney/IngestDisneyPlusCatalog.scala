@@ -9,7 +9,7 @@ import com.teletracker.common.db.model.{
 }
 import com.teletracker.common.elasticsearch.ItemsScroller
 import com.teletracker.common.elasticsearch.model.{EsAvailability, EsItem}
-import com.teletracker.common.model.scraping.ScrapeItemType
+import com.teletracker.common.model.scraping.ScrapeCatalogType
 import com.teletracker.common.model.scraping.disney.DisneyPlusCatalogItem
 import com.teletracker.tasks.scraper.loaders.CrawlAvailabilityItemLoaderFactory
 import com.teletracker.tasks.scraper.{
@@ -35,8 +35,8 @@ class IngestDisneyPlusCatalog @Inject()(
       DisneyPlusCatalogItem,
       LiveIngestDeltaJobArgs
     ] {
-  override protected val scrapeItemType: ScrapeItemType =
-    ScrapeItemType.DisneyPlusCatalog
+  override protected val scrapeItemType: ScrapeCatalogType =
+    ScrapeCatalogType.DisneyPlusCatalog
 
   override protected val crawlerName: CrawlerName = CrawlStore.DisneyPlusCatalog
 

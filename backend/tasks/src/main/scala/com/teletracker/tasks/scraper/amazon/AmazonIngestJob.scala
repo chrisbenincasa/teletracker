@@ -6,7 +6,7 @@ import com.teletracker.common.db.dynamo.{CrawlStore, CrawlerName}
 import com.teletracker.common.db.model.{ExternalSource, SupportedNetwork}
 import com.teletracker.common.elasticsearch.model.{EsAvailability, EsItem}
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
-import com.teletracker.common.model.scraping.ScrapeItemType
+import com.teletracker.common.model.scraping.ScrapeCatalogType
 import com.teletracker.common.model.scraping.amazon.AmazonItem
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.json.circe._
@@ -28,8 +28,8 @@ class AmazonIngestJob @Inject()(
   override protected val externalSource: ExternalSource =
     ExternalSource.AmazonVideo
 
-  override protected val scrapeItemType: ScrapeItemType =
-    ScrapeItemType.AmazonVideo
+  override protected val scrapeItemType: ScrapeCatalogType =
+    ScrapeCatalogType.AmazonVideo
 
   override protected val supportedNetworks: Set[SupportedNetwork] =
     Set(SupportedNetwork.AmazonPrimeVideo, SupportedNetwork.AmazonVideo)

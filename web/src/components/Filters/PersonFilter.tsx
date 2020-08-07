@@ -1,5 +1,10 @@
 import React, { useContext, useState } from 'react';
-import { CircularProgress, makeStyles, TextField } from '@material-ui/core';
+import {
+  CircularProgress,
+  makeStyles,
+  TextField,
+  Typography,
+} from '@material-ui/core';
 import Autocomplete, { RenderInputParams } from '@material-ui/lab/Autocomplete';
 import { useDispatch, useSelector } from 'react-redux';
 import _ from 'lodash';
@@ -8,6 +13,7 @@ import { AppState } from '../../reducers';
 import { getTmdbProfileImage } from '../../utils/image-helper';
 import { truncateText } from '../../utils/textHelper';
 import { FilterContext } from './FilterContext';
+import FilterSectionTitle from './FilterSectionTitle';
 
 const useStyles = makeStyles(theme => ({
   autocompleteField: {
@@ -17,6 +23,10 @@ const useStyles = makeStyles(theme => ({
     width: 25,
     boxShadow: theme.shadows[1],
     marginRight: theme.spacing(1),
+  },
+  container: {
+    width: '100%',
+    padding: theme.spacing(0, 2),
   },
 }));
 
@@ -113,29 +123,32 @@ export default function PersonFilter(props: Props) {
   );
 
   return (
-    <Autocomplete
-      id="person-filter-autocomplete"
-      className={classes.autocompleteField}
-      open={open}
-      onOpen={() => {
-        setOpen(true);
-      }}
-      onClose={() => {
-        setOpen(false);
-      }}
-      onChange={personSelected}
-      onInputChange={onInputUpdate}
-      getOptionLabel={option => nameBySlugOrId[option]}
-      options={slugz}
-      filterOptions={opts => opts}
-      filterSelectedOptions={false}
-      loading={loading}
-      multiple
-      renderOption={renderSelectOption}
-      disablePortal
-      renderInput={renderInput}
-      value={filters.people || []}
-    />
+    <div className={classes.container}>
+      {props.showTitle && <FilterSectionTitle title="Starring" />}
+      <Autocomplete
+        id="person-filter-autocomplete"
+        className={classes.autocompleteField}
+        open={open}
+        onOpen={() => {
+          setOpen(true);
+        }}
+        onClose={() => {
+          setOpen(false);
+        }}
+        onChange={personSelected}
+        onInputChange={onInputUpdate}
+        getOptionLabel={option => nameBySlugOrId[option]}
+        options={slugz}
+        filterOptions={opts => opts}
+        filterSelectedOptions={false}
+        loading={loading}
+        multiple
+        renderOption={renderSelectOption}
+        disablePortal
+        renderInput={renderInput}
+        value={filters.people || []}
+      />
+    </div>
   );
 }
 

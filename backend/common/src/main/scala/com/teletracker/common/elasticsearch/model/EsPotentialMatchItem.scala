@@ -3,7 +3,7 @@ package com.teletracker.common.elasticsearch.model
 import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.model.scraping.{
   PartialEsItem,
-  ScrapeItemType,
+  ScrapeCatalogType,
   ScrapedCastMember,
   ScrapedCrewMember,
   ScrapedItem
@@ -86,7 +86,7 @@ case class EsPotentialMatchItemUpdateView(
 
 @JsonCodec
 case class EsGenericScrapedItem(
-  `type`: ScrapeItemType,
+  `type`: ScrapeCatalogType,
   item: EsScrapedItem,
   raw: Json)
 

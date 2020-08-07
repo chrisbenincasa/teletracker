@@ -25,7 +25,7 @@ import {
   Sort,
   Tv,
 } from '@material-ui/icons';
-import { FilterParams } from '../../utils/searchFilters';
+import { FilterParams, SelectableNetworks } from '../../utils/searchFilters';
 import {
   Genre,
   ItemType,
@@ -114,7 +114,8 @@ export default function CreateDynamicListDialog(props: Props) {
       );
     }
 
-    if (filters.networks) {
+    //TODO: Support all network filtering for smart lists
+    if (filters.networks && filters.networks !== 'all') {
       rules = rules.concat(
         filters.networks
           .map(network => {
@@ -221,18 +222,23 @@ export default function CreateDynamicListDialog(props: Props) {
     );
   };
 
-  const renderNetworkRules = (networkTypes: NetworkType[]) => {
-    let actualNetworks = collect(networkTypes, networkId =>
-      _.find(networks, g => g.slug === networkId),
-    );
+  const renderNetworkRules = (networkTypes: SelectableNetworks) => {
+    // TODO: Support 'all' networkTypes in smart lists
+    if (!networkTypes || networkTypes === 'all') {
+      return null;
+    } else {
+      let actualNetworks = collect(networkTypes, networkId =>
+        _.find(networks, g => g.slug === networkId),
+      );
 
-    return renderLabels(
-      <Tv />,
-      'network_rules',
-      'Network',
-      actualNetworks,
-      network => network.name,
-    );
+      return renderLabels(
+        <Tv />,
+        'network_rules',
+        'Network',
+        actualNetworks,
+        network => network.name,
+      );
+    }
   };
 
   const renderImdbRules = (ratingState: OpenRange) => {

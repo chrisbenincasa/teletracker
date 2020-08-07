@@ -8,7 +8,7 @@ import com.teletracker.common.elasticsearch.{
   ItemLookup,
   ItemUpdater
 }
-import com.teletracker.common.model.scraping.ScrapeItemType
+import com.teletracker.common.model.scraping.ScrapeCatalogType
 import com.teletracker.common.model.scraping.hbo.HboScrapedCatalogItem
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
 import com.teletracker.common.tasks.TeletrackerTask
@@ -42,8 +42,8 @@ class IngestHboCatalog @Inject()(
 
   override protected val externalSource: ExternalSource = ExternalSource.HboGo
 
-  override protected val scrapeItemType: ScrapeItemType =
-    ScrapeItemType.HboCatalog
+  override protected val scrapeItemType: ScrapeCatalogType =
+    ScrapeCatalogType.HboCatalog
 
   override protected def isAvailable(
     item: HboScrapedCatalogItem,
@@ -92,7 +92,7 @@ class IngestHboCatalog @Inject()(
           "input" -> URI
             .create(s"file://${matchItemsFile.getAbsolutePath}")
             .toString,
-          "type" -> ScrapeItemType.HboCatalog.toString
+          "type" -> ScrapeCatalogType.HboCatalog.toString
         )
       ),
       TeletrackerTask.taskMessage[GeneratePotentialMatchCsv](
@@ -100,7 +100,7 @@ class IngestHboCatalog @Inject()(
           "input" -> URI
             .create(s"file://${potentialMatchFile.getAbsolutePath}")
             .toString,
-          "type" -> ScrapeItemType.HboCatalog.toString
+          "type" -> ScrapeCatalogType.HboCatalog.toString
         )
       )
     )

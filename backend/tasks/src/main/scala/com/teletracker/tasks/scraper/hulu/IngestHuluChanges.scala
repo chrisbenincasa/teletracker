@@ -4,7 +4,7 @@ import com.teletracker.common.db.dynamo.{CrawlStore, CrawlerName}
 import com.teletracker.common.db.model.{ExternalSource, SupportedNetwork}
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.model.scraping.hulu.HuluScrapeItem
-import com.teletracker.common.model.scraping.{NonMatchResult, ScrapeItemType}
+import com.teletracker.common.model.scraping.{NonMatchResult, ScrapeCatalogType}
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper._
 import javax.inject.Inject
@@ -23,8 +23,8 @@ class IngestHuluChanges @Inject()(
     with SubscriptionNetworkAvailability[HuluScrapeItem] {
   override protected val crawlerName: CrawlerName = CrawlStore.HuluChanges
 
-  override protected val scrapeItemType: ScrapeItemType =
-    ScrapeItemType.HuluCatalog
+  override protected val scrapeItemType: ScrapeCatalogType =
+    ScrapeCatalogType.HuluCatalog
 
   override protected val supportedNetworks: Set[SupportedNetwork] = Set(
     SupportedNetwork.Hulu

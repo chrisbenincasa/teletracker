@@ -8,7 +8,7 @@ import com.teletracker.common.elasticsearch.model.{
 }
 import com.teletracker.common.elasticsearch.scraping.EsPotentialMatchItemStore.Sort
 import com.teletracker.common.elasticsearch._
-import com.teletracker.common.model.scraping.ScrapeItemType
+import com.teletracker.common.model.scraping.ScrapeCatalogType
 import com.teletracker.common.util.Functions._
 import io.circe.Json
 import io.circe.syntax._
@@ -256,7 +256,7 @@ class EsPotentialMatchItemStore @Inject()(
 }
 
 case class PotentialMatchItemSearch(
-  scraperTypes: Option[Set[ScrapeItemType]],
+  scraperTypes: Option[Set[ScrapeCatalogType]],
   state: Option[EsPotentialMatchState],
   limit: Int,
   bookmark: Option[Bookmark],

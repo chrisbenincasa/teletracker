@@ -3,7 +3,9 @@ package com.teletracker.service.api
 import com.teletracker.common.db.dynamo.model.{StoredGenre, StoredNetwork}
 import com.teletracker.common.db.model.{
   ItemType,
+  OfferType,
   PersonAssociationType,
+  PresentationType,
   UserThingTagType
 }
 import com.teletracker.common.db.{Bookmark, SortMode}
@@ -160,6 +162,7 @@ class ItemApi @Inject()(
       ItemSearchRequest(
         genres = request.genres,
         networks = request.networks,
+        allNetworks = request.networks.map(_ == Set(ItemSearchRequest.All)),
         itemTypes = request.itemTypes,
         sortMode = request.sortMode,
         limit = request.limit,
@@ -176,7 +179,8 @@ class ItemApi @Inject()(
             BinaryOperator.Or
           )
         ),
-        imdbRating = None
+        imdbRating = None,
+        availabilityFilters = request.availabilityFilters
       )
     )
   }
@@ -216,6 +220,7 @@ class ItemApi @Inject()(
       ItemSearchParams(
         genres = Some(filterGenres).filter(_.nonEmpty),
         networks = Some(filterNetworks).filter(_.nonEmpty),
+        allNetworks = request.allNetworks,
         itemTypes = request.itemTypes,
         releaseYear = request.releaseYear,
         peopleCredits = request.peopleCredits.flatMap(_.toPeopleCreditSearch),
@@ -224,7 +229,10 @@ class ItemApi @Inject()(
         sortMode = request.sortMode,
         limit = request.limit,
         bookmark = request.bookmark,
-        forList = None
+        forList = None,
+        availability = request.availabilityFilters.map(filters => {
+          AvailabilitySearch(offerTypes = filters.offerTypes)
+        })
       )
     }
   }
@@ -262,16 +270,26 @@ class ItemApi @Inject()(
   }
 }
 
+object ItemSearchRequest {
+  final val All = "all"
+}
+
 case class ItemSearchRequest(
   genres: Option[Set[String]],
   networks: Option[Set[String]],
+  allNetworks: Option[Boolean],
   itemTypes: Option[Set[ItemType]],
   sortMode: SortMode,
   limit: Int,
   bookmark: Option[Bookmark],
   releaseYear: Option[OpenDateRange],
   peopleCredits: Option[PeopleCreditsFilter],
-  imdbRating: Option[ClosedNumericRange[Double]])
+  imdbRating: Option[ClosedNumericRange[Double]],
+  availabilityFilters: Option[AvailabilityFilters])
+
+case class AvailabilityFilters(
+  offerTypes: Option[Set[OfferType]],
+  presentationTypes: Option[Set[PresentationType]])
 
 case class PersonCreditsRequest(
   genres: Option[Set[String]],
@@ -281,4 +299,5 @@ case class PersonCreditsRequest(
   sortMode: SortMode,
   limit: Int,
   bookmark: Option[Bookmark],
-  releaseYear: Option[OpenDateRange])
+  releaseYear: Option[OpenDateRange],
+  availabilityFilters: Option[AvailabilityFilters])

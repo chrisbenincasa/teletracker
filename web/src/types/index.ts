@@ -1,4 +1,5 @@
 import { ApiPerson, Person, PersonFactory } from './v2/Person';
+import * as networks from '../constants/networks';
 
 export interface Paging {
   readonly bookmark?: string;
@@ -87,15 +88,14 @@ export function toItemTypeEnum(itemType: ItemType): ItemTypeEnum {
 }
 
 export type NetworkType =
-  | 'netflix'
-  | 'netflix-kids'
+  | typeof networks.Netflix
   | 'hbo-go'
   | 'hbo-now'
-  | 'amazon-prime-video'
-  | 'amazon-video'
-  | 'hulu'
-  | 'disney-plus'
-  | 'hbo-max';
+  | typeof networks.PrimeVideo
+  | typeof networks.AmazonVideo
+  | typeof networks.Hulu
+  | typeof networks.DisneyPlus
+  | typeof networks.HboMax;
 
 export function isNetworkType(s: string): s is NetworkType {
   const allowed = [
@@ -113,9 +113,13 @@ export function isNetworkType(s: string): s is NetworkType {
   return allowed.includes(s);
 }
 
-export const networkToPrettyName: { readonly [K in NetworkType]?: string } = {
+export function isNetworkTypeOrAll(s: string): s is NetworkType | 'all' {
+  return s === 'all' || isNetworkType(s);
+}
+
+export const networkToPrettyName: { readonly [K in NetworkType]: string } = {
   netflix: 'Netflix',
-  'netflix-kids': 'Netflix Kids',
+  // 'netflix-kids': 'Netflix Kids',
   'hbo-go': 'HBO Go',
   'hbo-now': 'HBO',
   'amazon-prime-video': 'Prime Video',
@@ -129,6 +133,7 @@ export const networkToColor: { readonly [K in NetworkType]?: string } = {
   netflix: '#000',
   'hbo-now': '#fff',
   'amazon-video': '#fff',
+  'amazon-prime-video': '#fff',
   hulu: '#1ce783',
   'disney-plus': '#1a1d29',
   'hbo-max': '#fff',
@@ -259,6 +264,16 @@ export enum OfferType {
   free = 'free',
   ads = 'ads',
   aggregate = 'aggregate',
+}
+
+export function isOfferType(s: string): s is OfferType {
+  for (let ot in OfferType) {
+    if (s.toLowerCase() === ot) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 export interface UserPreferences {

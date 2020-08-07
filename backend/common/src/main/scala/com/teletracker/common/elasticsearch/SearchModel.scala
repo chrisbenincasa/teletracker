@@ -1,6 +1,6 @@
 package com.teletracker.common.elasticsearch
 
-import com.teletracker.common.db.model.PersonAssociationType
+import com.teletracker.common.db.model.{OfferType, PersonAssociationType}
 import com.teletracker.common.util.IdOrSlug
 
 sealed trait BinaryOperator
@@ -16,3 +16,5 @@ case class PersonCreditSearch(
 case class PeopleCreditSearch(
   people: Seq[PersonCreditSearch],
   operator: BinaryOperator)
+
+case class AvailabilitySearch(offerTypes: Option[Set[OfferType]])

@@ -488,6 +488,7 @@ class PersonLookup @Inject()(
       ItemSearchParams(
         genres = None,
         networks = None,
+        allNetworks = None,
         itemTypes = None,
         sortMode = Recent(),
         limit = limit,
@@ -506,7 +507,8 @@ class PersonLookup @Inject()(
         ),
         imdbRating = None,
         titleSearch = None,
-        forList = None
+        forList = None,
+        availability = None
       )
     )
   }

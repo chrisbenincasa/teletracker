@@ -9,7 +9,7 @@ import com.teletracker.common.db.model.{
 }
 import com.teletracker.common.elasticsearch.ItemsScroller
 import com.teletracker.common.elasticsearch.model.{EsAvailability, EsItem}
-import com.teletracker.common.model.scraping.ScrapeItemType
+import com.teletracker.common.model.scraping.ScrapeCatalogType
 import com.teletracker.common.model.scraping.hulu.HuluScrapeCatalogItem
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper.loaders.CrawlAvailabilityItemLoaderFactory
@@ -41,8 +41,8 @@ class HuluCatalogDeltaIngestJob @Inject()(
 
   override protected def offerType: OfferType = OfferType.Subscription
 
-  override protected def scrapeItemType: ScrapeItemType =
-    ScrapeItemType.HuluCatalog
+  override protected def scrapeItemType: ScrapeCatalogType =
+    ScrapeCatalogType.HuluCatalog
 
   override protected val supportedNetworks: Set[SupportedNetwork] = Set(
     SupportedNetwork.Hulu

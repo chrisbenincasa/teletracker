@@ -12,7 +12,7 @@ import com.teletracker.common.elasticsearch.model.{EsAvailability, EsItem}
 import com.teletracker.common.http.{HttpClient, HttpClientOptions}
 import com.teletracker.common.inject.SingleThreaded
 import com.teletracker.common.model.scraping.netflix.NetflixScrapedCatalogItem
-import com.teletracker.common.model.scraping.{NonMatchResult, ScrapeItemType}
+import com.teletracker.common.model.scraping.{NonMatchResult, ScrapeCatalogType}
 import com.teletracker.common.util.AsyncStream
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper._
@@ -31,8 +31,8 @@ class NetflixCatalogDeltaIngestJob @Inject()(
 
   override protected def offerType: OfferType = OfferType.Subscription
 
-  override protected def scrapeItemType: ScrapeItemType =
-    ScrapeItemType.NetflixCatalog
+  override protected def scrapeItemType: ScrapeCatalogType =
+    ScrapeCatalogType.NetflixCatalog
 
   override protected val supportedNetworks: Set[SupportedNetwork] = Set(
     SupportedNetwork.Netflix
@@ -116,8 +116,8 @@ class IngestNetflixCatalogDelta @Inject()(
 
   override protected val offerType: OfferType = OfferType.Subscription
 
-  override protected val scrapeItemType: ScrapeItemType =
-    ScrapeItemType.NetflixCatalog
+  override protected val scrapeItemType: ScrapeCatalogType =
+    ScrapeCatalogType.NetflixCatalog
 
   override protected def createDeltaAvailabilities(
     networks: Set[StoredNetwork],

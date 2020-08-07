@@ -13,7 +13,7 @@ import com.teletracker.common.elasticsearch.{
   ItemUpdater,
   ItemsScroller
 }
-import com.teletracker.common.model.scraping.ScrapeItemType
+import com.teletracker.common.model.scraping.ScrapeCatalogType
 import com.teletracker.common.model.scraping.hbo.HboMaxScrapedCatalogItem
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper._
@@ -25,8 +25,8 @@ import java.util.regex.Pattern
 import scala.concurrent.ExecutionContext
 
 trait CommonHboMaxCatalogIngest {
-  protected def scrapeItemType: ScrapeItemType =
-    ScrapeItemType.HboMaxCatalog
+  protected def scrapeItemType: ScrapeCatalogType =
+    ScrapeCatalogType.HboMaxCatalog
 
   protected def externalSources: List[ExternalSource] =
     List(ExternalSource.HboMax)
@@ -103,8 +103,8 @@ class IngestHboMaxCatalogDelta @Inject()(
 
   override protected val offerType: OfferType = OfferType.Subscription
 
-  override protected val scrapeItemType: ScrapeItemType =
-    ScrapeItemType.HboMaxCatalog
+  override protected val scrapeItemType: ScrapeCatalogType =
+    ScrapeCatalogType.HboMaxCatalog
 
   override protected def createDeltaAvailabilities(
     networks: Set[StoredNetwork],

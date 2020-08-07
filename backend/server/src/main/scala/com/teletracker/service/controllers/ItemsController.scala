@@ -1,7 +1,12 @@
 package com.teletracker.service.controllers
 
+import cats.instances.all._
 import com.teletracker.common.db.{Bookmark, Recent, SearchRankingMode, SortMode}
-import com.teletracker.common.db.model.{ItemType, PersonAssociationType}
+import com.teletracker.common.db.model.{
+  ItemType,
+  OfferType,
+  PersonAssociationType
+}
 import com.teletracker.common.elasticsearch.model.{
   EsItem,
   EsPerson,
@@ -9,11 +14,16 @@ import com.teletracker.common.elasticsearch.model.{
 }
 import com.teletracker.common.elasticsearch.{BinaryOperator, PersonLookup}
 import com.teletracker.common.model.{DataResponse, Paging}
+import com.teletracker.common.util.Monoidal.toMonoidalExtras
 import com.teletracker.common.util.{CanParseFieldFilter, OpenDateRange}
 import com.teletracker.common.util.json.circe._
 import com.teletracker.common.util.time.LocalDateUtils
 import com.teletracker.service.api
-import com.teletracker.service.api.{ItemApi, ItemSearchRequest}
+import com.teletracker.service.api.{
+  AvailabilityFilters,
+  ItemApi,
+  ItemSearchRequest
+}
 import com.teletracker.service.api.model.{Item, Person}
 import com.teletracker.service.controllers.annotations.{
   ItemReleaseYear,
@@ -159,6 +169,14 @@ class ItemsController @Inject()(
             req.minReleaseYear.map(LocalDateUtils.localDateAtYear),
             req.maxReleaseYear.map(LocalDateUtils.localDateAtYear)
           )
+        ),
+        availabilityFilters = Some(
+          AvailabilityFilters(
+            offerTypes = req.offerTypes
+              .flatMap(ot => Try(OfferType.fromString(ot)).toOption)
+              .ifEmptyOption,
+            presentationTypes = None
+          )
         )
       )
 
@@ -202,7 +220,12 @@ class ItemsController @Inject()(
   private def makeSearchRequest(req: GetItemsRequest) = {
     ItemSearchRequest(
       genres = Some(req.genres.map(_.toString)).filter(_.nonEmpty),
-      networks = Some(req.networks).filter(_.nonEmpty),
+      networks = Some(req.networks)
+        .filter(_.nonEmpty)
+        .filterNot(_.contains(ItemSearchRequest.All)),
+      allNetworks = Some(req.networks)
+        .filter(_.nonEmpty)
+        .map(_ == Set(ItemSearchRequest.All)),
       itemTypes = Some(
         req.itemTypes.flatMap(t => Try(ItemType.fromString(t)).toOption)
       ),
@@ -225,7 +248,15 @@ class ItemsController @Inject()(
             )
           )
         else None,
-      imdbRating = req.imdbRating.flatMap(RangeParser.parseRatingString)
+      imdbRating = req.imdbRating.flatMap(RangeParser.parseRatingString),
+      availabilityFilters = Some(
+        AvailabilityFilters(
+          offerTypes = req.offerTypes
+            .flatMap(ot => Try(OfferType.fromString(ot)).toOption)
+            .ifEmptyOption,
+          presentationTypes = None
+        )
+      )
     )
   }
 }
@@ -282,6 +313,8 @@ case class GetPersonCreditsRequest(
   @Min(0) @Max(50) @QueryParam limit: Int = GetItemsRequest.DefaultLimit,
   @QueryParam @ItemReleaseYear minReleaseYear: Option[Int],
   @QueryParam @ItemReleaseYear maxReleaseYear: Option[Int],
+  @QueryParam(commaSeparatedList = true)
+  offerTypes: Set[String] = Set(),
   request: Request)
     extends InjectedRequest {
   @MethodValidation
@@ -316,6 +349,8 @@ case class GetItemsRequest(
   @QueryParam(commaSeparatedList = true) cast: Set[String] = Set.empty,
   @QueryParam(commaSeparatedList = true) crew: Set[String] = Set.empty,
   @QueryParam @RatingRange(min = 0.0d, max = 10.0d) imdbRating: Option[String],
+  @QueryParam(commaSeparatedList = true)
+  offerTypes: Set[String] = Set(),
   request: Request)
     extends InjectedRequest {
 

@@ -535,14 +535,24 @@ trait ElasticsearchAccess extends ElasticsearchImplicits {
   protected def availabilityByNetworksOr(
     builder: BoolQueryBuilder,
     networks: Set[StoredNetwork]
-  ) = {
+  ): BoolQueryBuilder = {
     availabilityByNetworkIdsOr(builder, networks.map(_.id))
+  }
+
+  protected def anyAvailability(builder: BoolQueryBuilder): BoolQueryBuilder = {
+    builder.filter(
+      QueryBuilders.nestedQuery(
+        "availability",
+        QueryBuilders.existsQuery("availability.network_id"),
+        ScoreMode.Avg
+      )
+    )
   }
 
   protected def availabilityByNetworksOrNested(
     builder: BoolQueryBuilder,
     networks: Set[StoredNetwork]
-  ) = {
+  ): BoolQueryBuilder = {
     builder.filter(
       networks
         .map(_.id)
@@ -555,7 +565,7 @@ trait ElasticsearchAccess extends ElasticsearchImplicits {
   protected def availabilityByNetworkIdsOr(
     builder: BoolQueryBuilder,
     networks: Set[Int]
-  ) = {
+  ): BoolQueryBuilder = {
     builder.filter(
       networks.foldLeft(QueryBuilders.boolQuery())(
         availabilityByNetworkId(_, _, "availability")

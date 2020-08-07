@@ -3,7 +3,7 @@ package com.teletracker.tasks.scraper.disney
 import com.teletracker.common.db.dynamo.CrawlerName
 import com.teletracker.common.db.model.{ExternalSource, SupportedNetwork}
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
-import com.teletracker.common.model.scraping.ScrapeItemType
+import com.teletracker.common.model.scraping.ScrapeCatalogType
 import com.teletracker.common.model.scraping.disney.DisneyPlusCatalogItem
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.model.PotentialInput
@@ -33,6 +33,6 @@ class IngestDisneyPlusPotentialMatches @Inject()(
   override protected val externalSource: ExternalSource =
     ExternalSource.DisneyPlus
 
-  override protected val scrapeItemType: ScrapeItemType =
-    ScrapeItemType.DisneyPlusCatalog
+  override protected val scrapeItemType: ScrapeCatalogType =
+    ScrapeCatalogType.DisneyPlusCatalog
 }

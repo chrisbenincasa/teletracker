@@ -12,7 +12,13 @@ import _ from 'lodash';
 import { ItemAvailability, ItemAvailabilityOffer } from '../types/v2';
 import { Item } from '../types/v2/Item';
 import { useNetworks } from '../hooks/useStateMetadata';
-import { deepLinkForId, Platform } from '../utils/availability-utils';
+import {
+  deepLinkForId,
+  extractExternalIdForDeepLink,
+  networksToExclude,
+  Platform,
+  sanitizeNetwork,
+} from '../utils/availability-utils';
 import { networkToColor, OfferType } from '../types';
 import useStateSelector from '../hooks/useStateSelector';
 import selectItem from '../selectors/selectItem';
@@ -153,9 +159,7 @@ const Availability = (props: Props) => {
     const network = _.find(networks, { id: availability.networkId });
 
     if (network) {
-      const externalId = _.find(itemDetail.external_ids || [], {
-        provider: network.slug,
-      });
+      const externalId = extractExternalIdForDeepLink(itemDetail, network.slug);
 
       if (externalId) {
         return deepLinkForId(
@@ -169,76 +173,85 @@ const Availability = (props: Props) => {
   };
 
   const renderOfferDetails = (offerType: OfferType) => {
-    return _.compact(
-      _.map(
-        itemDetail.availability || [],
-        (availability: ItemAvailability, index) => {
-          let network = _.find(networks!, { id: availability.networkId });
+    return _.chain(itemDetail.availability || [])
+      .filter(av => {
+        let network = _.find(networks!, { id: av.networkId });
 
-          if (!network) {
-            return;
-          }
+        if (!network || networksToExclude.includes(network.slug)) {
+          return false;
+        }
 
-          const logoUri = getLogoUrl(network!.slug, true);
-          const offersOfType = _.filter(availability.offers, { offerType });
+        return true;
+      })
+      .map((availability: ItemAvailability, index) => {
+        let network = _.find(networks!, { id: availability.networkId });
 
-          if (offersOfType.length === 0) {
-            return;
-          }
+        if (!network) {
+          return;
+        }
 
-          let cleanOfferTitle: string;
-          switch (offerType) {
-            case OfferType.subscription:
-              cleanOfferTitle = 'Stream on';
-              break;
-            case OfferType.buy:
-              cleanOfferTitle = 'Buy on';
-              break;
-            case OfferType.rent:
-              cleanOfferTitle = 'Rent on';
-              break;
-            case OfferType.theater:
-              cleanOfferTitle = 'In theaters now! Get tickets on';
-              break;
-            case OfferType.free:
-              cleanOfferTitle = 'Free on';
-              break;
-            case OfferType.aggregate:
-              cleanOfferTitle = 'Watch all seasons on';
-              break;
-            default:
-              cleanOfferTitle = 'Watch all seasons on';
-          }
+        network = sanitizeNetwork(network);
 
-          const link = getDeepLink(availability, offersOfType);
+        const logoUri = getLogoUrl(network!.slug, true);
+        const offersOfType = _.filter(availability.offers, { offerType });
 
-          return (
-            <a
-              href={link ? link : '#'}
-              target="_blank"
-              className={classes.link}
-              key={index}
-            >
-              <Card className={classes.cardRoot}>
-                <CardMedia
-                  className={classes.networkLogo}
-                  image={logoUri}
-                  title={network!.name}
-                  style={{ backgroundColor: networkToColor[network!.slug] }}
-                />
-                <CardContent className={classes.cardContent}>
-                  <Typography>{`${cleanOfferTitle} ${network!.name} ${
-                    offersOfType[index].cost
-                      ? 'for $' + offersOfType[index].cost
-                      : ''
-                  }`}</Typography>
-                </CardContent>
-              </Card>
-            </a>
-          );
-        },
-      ),
-    );
+        if (offersOfType.length === 0) {
+          return;
+        }
+
+        let cleanOfferTitle: string;
+        switch (offerType) {
+          case OfferType.subscription:
+            cleanOfferTitle = 'Stream on';
+            break;
+          case OfferType.buy:
+            cleanOfferTitle = 'Buy on';
+            break;
+          case OfferType.rent:
+            cleanOfferTitle = 'Rent on';
+            break;
+          case OfferType.theater:
+            cleanOfferTitle = 'In theaters now! Get tickets on';
+            break;
+          case OfferType.free:
+            cleanOfferTitle = 'Free on';
+            break;
+          case OfferType.aggregate:
+            cleanOfferTitle = 'Watch all seasons on';
+            break;
+          default:
+            cleanOfferTitle = 'Watch all seasons on';
+        }
+
+        const link = getDeepLink(availability, offersOfType);
+
+        return (
+          <a
+            href={link ? link : '#'}
+            target="_blank"
+            className={classes.link}
+            key={index}
+          >
+            <Card className={classes.cardRoot}>
+              <CardMedia
+                className={classes.networkLogo}
+                image={logoUri}
+                title={network!.name}
+                style={{ backgroundColor: networkToColor[network!.slug] }}
+              />
+              <CardContent className={classes.cardContent}>
+                <Typography>{`${cleanOfferTitle} ${network!.name} ${
+                  offersOfType[index].cost
+                    ? 'for $' + offersOfType[index].cost
+                    : ''
+                }`}</Typography>
+              </CardContent>
+            </Card>
+          </a>
+        );
+      })
+      .compact()
+      .value();
   };
 
   return networks ? (
