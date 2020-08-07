@@ -6,6 +6,8 @@ from crawlers.base_spider import BaseSpider
 from calendar import monthrange, month_name
 from datetime import datetime
 
+from crawlers.items import BaseItem
+
 year_regex = r'\(([0-9)]+)\)'
 parens_regex = r'\(([^)]+)\)'
 
@@ -117,7 +119,7 @@ class HboChangesSpider(BaseSpider):
                     )
 
 
-class HboChangeItem(scrapy.Item):
+class HboChangeItem(BaseItem):
     type = 'HboChangeItem'
     availableDate = scrapy.Field()
     title = scrapy.Field()
