@@ -64,6 +64,7 @@ function webDeepLinkForId(
   // TODO: We should route these thru a server so we can know when people clicked
   // Or maybe GA
   let typePart;
+  // TODO: Produce these URLs as part of the API response.
   switch (networkType) {
     case Netflix:
       return `https://netflix.com/watch/${id}`;
@@ -84,6 +85,11 @@ function webDeepLinkForId(
       } else {
         return baseUrl;
       }
+    case 'disney-plus':
+      typePart = itemType === 'movie' ? 'movies' : 'series';
+      const lastSepPos = id.lastIndexOf('_');
+      const path = id.substr(0, lastSepPos) + '/' + id.substr(lastSepPos + 1);
+      return `https://www.disneyplus.com/${typePart}/${path}`;
     default:
       return;
   }
