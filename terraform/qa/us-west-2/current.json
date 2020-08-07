@@ -1,8 +1,8 @@
 {
-  "server_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/server:0.1-1591733292.c54a382",
-  "task_consumer_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/consumer:0.1-1596378803.31c3aa3",
-  "es_ingest_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/consumer:0.1-1596378803.31c3aa3",
-  "es_item_denorm_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/consumer:0.1-1596378803.31c3aa3",
-  "es_person_denorm_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/consumer:0.1-1596378803.31c3aa3",
-  "scrape_item_consumer_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/consumer:0.1-1596378803.31c3aa3"
+  "server_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/server:0.1-1596836072.7416b83",
+  "task_consumer_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/consumer:0.1-1596836085.7416b83",
+  "es_ingest_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/consumer:0.1-1596836085.7416b83",
+  "es_item_denorm_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/consumer:0.1-1596836085.7416b83",
+  "es_person_denorm_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/consumer:0.1-1596836085.7416b83",
+  "scrape_item_consumer_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/consumer:0.1-1596836085.7416b83"
 }
