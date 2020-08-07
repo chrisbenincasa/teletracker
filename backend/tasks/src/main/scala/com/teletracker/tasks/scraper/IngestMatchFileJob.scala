@@ -4,7 +4,7 @@ import com.teletracker.common.db.model.{ExternalSource, SupportedNetwork}
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.model.scraping.netflix.NetflixScrapedCatalogItem
 import com.teletracker.common.model.scraping.{
-  ScrapeItemType,
+  ScrapeCatalogType,
   ScrapedItem,
   ScrapedItemAvailabilityDetails
 }
@@ -47,6 +47,6 @@ class IngestNetflixCatalogMatchFile @Inject()(
 
   override protected val externalSource: ExternalSource = ExternalSource.Netflix
 
-  override protected val scrapeItemType: ScrapeItemType =
-    ScrapeItemType.NetflixCatalog
+  override protected val scrapeItemType: ScrapeCatalogType =
+    ScrapeCatalogType.NetflixCatalog
 }

@@ -14,7 +14,7 @@ import com.teletracker.common.elasticsearch.{
   ItemLookupResponse,
   ItemUpdater
 }
-import com.teletracker.common.model.scraping.ScrapeItemType
+import com.teletracker.common.model.scraping.ScrapeCatalogType
 import com.teletracker.common.model.{DataResponse, Paging}
 import com.teletracker.common.pubsub.EsDenormalizeItemMessage
 import com.teletracker.common.util.{HasThingIdOrSlug, NetworkCache}
@@ -50,20 +50,23 @@ class AdminController @Inject()(
             req.networks.map(SupportedNetwork.fromString).flatMap {
               case SupportedNetwork.Netflix =>
                 Set(
-                  ScrapeItemType.NetflixCatalog,
-                  ScrapeItemType.NetflixOriginalsArriving
+                  ScrapeCatalogType.NetflixCatalog,
+                  ScrapeCatalogType.NetflixOriginalsArriving
                 )
-              case SupportedNetwork.Hulu => Set(ScrapeItemType.HuluCatalog)
+              case SupportedNetwork.Hulu => Set(ScrapeCatalogType.HuluCatalog)
               case SupportedNetwork.Hbo =>
-                Set(ScrapeItemType.HboCatalog, ScrapeItemType.HboChanges)
+                Set(ScrapeCatalogType.HboCatalog, ScrapeCatalogType.HboChanges)
               case SupportedNetwork.HboMax =>
-                Set(ScrapeItemType.HboChanges, ScrapeItemType.HboMaxCatalog)
+                Set(
+                  ScrapeCatalogType.HboChanges,
+                  ScrapeCatalogType.HboMaxCatalog
+                )
               case SupportedNetwork.DisneyPlus =>
-                Set(ScrapeItemType.DisneyPlusCatalog)
+                Set(ScrapeCatalogType.DisneyPlusCatalog)
               case SupportedNetwork.AmazonPrimeVideo |
                   SupportedNetwork.AmazonVideo =>
                 // TODO Support amazon filtering
-                Set.empty[ScrapeItemType]
+                Set.empty[ScrapeCatalogType]
             }
 
           Some(scrapeItemTypes)
@@ -180,7 +183,7 @@ class AdminController @Inject()(
 }
 
 case class PotentialMatchSearchRequest(
-  @QueryParam scraperItemType: Option[ScrapeItemType],
+  @QueryParam scraperItemType: Option[ScrapeCatalogType],
   @QueryParam(commaSeparatedList = true) networks: Set[String] = Set.empty,
   @QueryParam matchState: Option[String],
   @QueryParam limit: Int = 20,

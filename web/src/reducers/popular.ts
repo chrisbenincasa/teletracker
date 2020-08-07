@@ -66,9 +66,9 @@ const PopularSuccess = handleAction<PopularSuccessfulAction, State>(
 
 const PopularFailed = handleError<PopularFailedAction, State>(
   POPULAR_FAILED,
-  (state: State, { payload }: PopularFailedAction) => {
+  (state: State, { payload, error }: PopularFailedAction) => {
     // TODO: Return popularity and sort by that.
-    console.log('failed');
+    console.log('failed', payload);
     return {
       ...state,
       loadingPopular: false,

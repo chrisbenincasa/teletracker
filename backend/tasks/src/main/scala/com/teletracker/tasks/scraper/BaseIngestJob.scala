@@ -73,7 +73,7 @@ abstract class BaseIngestJob[
   protected def externalSource: ExternalSource
 
   // The type of items scraped from this data source.
-  protected def scrapeItemType: ScrapeItemType
+  protected def scrapeItemType: ScrapeCatalogType
 
   protected val missingItemsFile = new File(
     s"${today}_${getClass.getSimpleName}-missing-items.json"

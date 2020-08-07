@@ -3,7 +3,7 @@ package com.teletracker.common.elasticsearch.model
 import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.model.scraping.{
   PartialEsItem,
-  ScrapeItemType,
+  ScrapeCatalogType,
   ScrapedCastMember,
   ScrapedCrewMember,
   ScrapedItem
@@ -19,6 +19,7 @@ import io.circe.generic.extras.semiauto.{
 }
 import java.time.OffsetDateTime
 import java.util.UUID
+import scala.util.Try
 
 object EsPotentialMatchItem {
   implicit val codec: Codec[EsPotentialMatchItem] =
@@ -60,6 +61,22 @@ object EsPotentialMatchItem {
   ): String = {
     s"${esItemId}__${esExternalId}"
   }
+
+  object EsPotentialMatchItemId {
+    def unapply(arg: String): Option[(UUID, EsExternalId)] = {
+      val parts = arg.split("__", 2)
+      if (parts.length == 2) {
+        for {
+          uuid <- Try(UUID.fromString(parts(0))).toOption
+          exId <- Try(EsExternalId.parse(parts(1))).toOption
+        } yield {
+          uuid -> exId
+        }
+      } else {
+        None
+      }
+    }
+  }
 }
 
 @JsonCodec
@@ -86,7 +103,7 @@ case class EsPotentialMatchItemUpdateView(
 
 @JsonCodec
 case class EsGenericScrapedItem(
-  `type`: ScrapeItemType,
+  `type`: ScrapeCatalogType,
   item: EsScrapedItem,
   raw: Json)
 
@@ -134,7 +151,7 @@ case class EsScrapedItem(
   override val posterImageUrl: Option[String],
   override val cast: Option[Seq[EsScrapedCastMember]],
   override val crew: Option[Seq[EsScrapedCrewMember]],
-  override val version: Long = -1)
+  override val version: Option[Long])
     extends ScrapedItem {
   override def isMovie: Boolean = itemType == ItemType.Movie
   override def isTvShow: Boolean = itemType == ItemType.Show

@@ -1,7 +1,14 @@
 package com.teletracker.common.elasticsearch
 
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.elasticsearch.model.{EsItem, EsPerson, EsUserItem}
+import com.teletracker.common.elasticsearch.model.{
+  EsItem,
+  EsPerson,
+  EsPotentialMatchItem,
+  EsScrapedItem,
+  EsUserItem
+}
+import com.teletracker.common.elasticsearch.scraping.EsScrapedItemDoc
 import com.teletracker.common.util.AsyncStream
 import io.circe.Json
 import javax.inject.Inject
@@ -173,4 +180,34 @@ final class UserItemsScroller @Inject()(
   ): List[EsUserItem] = {
     searchResponseToUserItems(searchResponse).items
   }
+}
+
+final class PotentialMatchScroller @Inject()(
+  teletrackerConfig: TeletrackerConfig,
+  elasticsearchExecutor: ElasticsearchExecutor
+)(implicit executionContext: ExecutionContext)
+    extends Scroller[EsPotentialMatchItem](elasticsearchExecutor)
+    with ElasticsearchAccess {
+  override protected def indexName: String =
+    teletrackerConfig.elasticsearch.potential_matches_index_name
+
+  override protected def parseResponse(
+    searchResponse: SearchResponse
+  ): List[EsPotentialMatchItem] =
+    decodeSearchResponse[EsPotentialMatchItem](searchResponse)
+}
+
+final class ScrapeItemScroller @Inject()(
+  teletrackerConfig: TeletrackerConfig,
+  elasticsearchExecutor: ElasticsearchExecutor
+)(implicit executionContext: ExecutionContext)
+    extends Scroller[EsScrapedItemDoc](elasticsearchExecutor)
+    with ElasticsearchAccess {
+  override protected def indexName: String =
+    teletrackerConfig.elasticsearch.scraped_items_index_name
+
+  override protected def parseResponse(
+    searchResponse: SearchResponse
+  ): List[EsScrapedItemDoc] =
+    decodeSearchResponse[EsScrapedItemDoc](searchResponse)
 }

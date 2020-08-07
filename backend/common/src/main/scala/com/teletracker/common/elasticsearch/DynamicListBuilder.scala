@@ -241,6 +241,8 @@ class DynamicListBuilder @Inject()(
       ItemSearchParams(
         genres = genreFilters,
         networks = networkFilters,
+        // TODO: Hookup "any availability" rule to smart lists
+        allNetworks = None,
         itemTypes = itemTypeFilters,
         releaseYear = releaseYearFilter,
         peopleCredits = personSearch,
@@ -250,7 +252,9 @@ class DynamicListBuilder @Inject()(
         sortMode = sortToUse.getOrElse(Popularity()),
         limit = limit.getOrElse(20),
         bookmark = bookmark,
-        forList = Some(dynamicList)
+        forList = Some(dynamicList),
+        // TODO: Hookup availability rules to smart lists
+        availability = None
       )
     }
   }

@@ -2,10 +2,11 @@ package com.teletracker.common.elasticsearch
 
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db._
-import com.teletracker.common.db.model.ExternalSource
+import com.teletracker.common.db.model.{ExternalSource, OfferType}
 import com.teletracker.common.elasticsearch.model.{EsItem, ItemSearchParams}
 import com.teletracker.common.util.Functions._
 import javax.inject.Inject
+import org.apache.lucene.search.join.ScoreMode
 import org.elasticsearch.action.search.SearchRequest
 import org.elasticsearch.client.core.CountRequest
 import org.elasticsearch.common.lucene.search.function.FieldValueFactorFunction
@@ -42,20 +43,6 @@ class ItemSearch @Inject()(
       query: String,
       boost: Float = 1.0f
     ) = {
-      // TODO: Use this method when we have ES 7.5 available
-//      QueryBuilders
-//        .multiMatchQuery(
-//          query,
-//          "title^2",
-//          "title._2gram",
-//          "title._3gram",
-//          "original_title",
-//          "original_title._2gram",
-//          "original_title._3gram"
-//        )
-//        .`type`(MultiMatchQueryBuilder.Type.BOOL_PREFIX)
-//        .fuzziness(5)
-//        .operator(Operator.AND)
       QueryBuilders
         .boolQuery()
         .should(
@@ -86,9 +73,7 @@ class ItemSearch @Inject()(
         .minimumShouldMatch(1)
     }
 
-    // TODO: Support all of the filters that regular search does
-    val searchQuery = QueryBuilders
-      .boolQuery()
+    val searchQuery = buildSearchRequest(params)
       .must(
         QueryBuilders
           .boolQuery()
@@ -98,27 +83,6 @@ class ItemSearch @Inject()(
               builder.should(makeMultiMatchQuery(synonymQuery))
           )
           .minimumShouldMatch(1)
-      )
-      .applyOptional(params.genres.filter(_.nonEmpty))(genresFilter)
-      .applyOptional(params.networks.filter(_.nonEmpty))(
-        availabilityByNetworksOr
-      )
-      .applyOptional(params.releaseYear.filter(_.isFinite))(
-        openDateRangeFilter
-      )
-      .applyOptional(
-        params.peopleCredits
-          .filter(_.people.nonEmpty)
-      )(
-        peopleCreditSearchQuery
-      )
-      .applyOptional(params.tagFilters)((builder, tags) => {
-        tags.foldLeft(builder)(itemTagFilter)
-      })
-      .through(posterImageFilter)
-      .through(removeAdultItems)
-      .applyOptional(params.itemTypes.filter(_.nonEmpty))(
-        (builder, types) => types.foldLeft(builder)(itemTypeFilter)
       )
 
     val query = QueryBuilders.functionScoreQuery(
@@ -183,8 +147,6 @@ class ItemSearch @Inject()(
           new FieldSortBuilder("id").order(SortOrder.ASC)
         )
 
-      println(searchSourceBuilder)
-
       elasticsearchExecutor
         .search(
           new SearchRequest(teletrackerConfig.elasticsearch.items_index_name)
@@ -219,6 +181,7 @@ class ItemSearch @Inject()(
       .applyOptional(params.networks.filter(_.nonEmpty))(
         availabilityByNetworksOr
       )
+      .applyIf(params.allNetworks.contains(true))(anyAvailability)
       .applyOptional(params.releaseYear.filter(_.isFinite))(
         openDateRangeFilter
       )
@@ -238,6 +201,26 @@ class ItemSearch @Inject()(
       .applyOptional(params.imdbRating)(
         openRatingRangeFilter(_, ExternalSource.Imdb, _)
       )
+      .applyOptional(
+        params.availability.flatMap(_.offerTypes).filter(_.nonEmpty)
+      )((builder, offerTypes) => {
+        builder.filter(
+          offerTypesQuery(offerTypes)
+        )
+      })
+  }
+
+  private def offerTypesQuery(offerTypes: Set[OfferType]) = {
+    QueryBuilders.nestedQuery(
+      "availability",
+      offerTypes.foldLeft(QueryBuilders.boolQuery().minimumShouldMatch(1))(
+        (builder, ot) =>
+          builder.should(
+            QueryBuilders.termQuery("availability.offer_type", ot.toString)
+          )
+      ),
+      ScoreMode.Avg
+    )
   }
 
   private def applyNextBookmark(

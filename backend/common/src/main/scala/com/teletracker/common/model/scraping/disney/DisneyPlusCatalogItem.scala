@@ -63,7 +63,7 @@ case class DisneyPlusCatalogItem(
   override val url: Option[String])
     extends ScrapedItem {
   override def externalId: Option[String] =
-    Some(DisneyPlusCatalogItem.createSlug(title) + "/" + id)
+    Some(DisneyPlusCatalogItem.createSlug(title) + "_" + id)
 
   override def availableDate: Option[String] = None
 

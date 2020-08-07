@@ -3,9 +3,15 @@ import {
   isItemType,
   isListSortOption,
   isNetworkType,
+  isNetworkTypeOrAll,
+  isOfferType,
   SortOptions,
 } from '../types';
-import { FilterParams, removeUndefinedKeys } from './searchFilters';
+import {
+  FilterParams,
+  removeUndefinedKeys,
+  SelectableNetworks,
+} from './searchFilters';
 import querystring from 'querystring';
 import url from 'url';
 import { filterParamsEqual } from './changeDetection';
@@ -75,6 +81,7 @@ export const updateUrlParamsForNextRouter = (
     ],
     ['cast', filterParams.people],
     ['imdbRating', imdbPart],
+    ['ot', filterParams.offers?.types],
   ];
 
   paramUpdates = paramUpdates.filter(
@@ -144,6 +151,8 @@ export function parseFilterParams(params: Map<string, string>): FilterParams {
 
   let imdbRating = params.get('imdbRating');
 
+  let offerTypes = params.get('ot');
+
   let filters: FilterParams = {
     sortOrder:
       sortParam && isListSortOption(sortParam)
@@ -157,10 +166,21 @@ export function parseFilterParams(params: Map<string, string>): FilterParams {
         .filter(isItemType)
     : undefined;
 
-  let networks = networkParam
-    ? decodeURIComponent(networkParam)
+  let rawNetworks = networkParam
+    ? decodeURIComponent(networkParam).split(',')
+    : [];
+  let networkSetting: SelectableNetworks;
+  if (rawNetworks.length === 1 && rawNetworks[0] === 'all') {
+    networkSetting = 'all';
+  } else if (rawNetworks.length > 1) {
+    // Not valid to have 'all' + other networks
+    networkSetting = rawNetworks.filter(n => n !== 'all').filter(isNetworkType);
+  }
+
+  let offerTypesValue = offerTypes
+    ? decodeURIComponent(offerTypes)
         .split(',')
-        .filter(isNetworkType)
+        .filter(isOfferType)
     : undefined;
 
   let genres = genresParam
@@ -183,8 +203,8 @@ export function parseFilterParams(params: Map<string, string>): FilterParams {
       draft.itemTypes = itemTypes;
     }
 
-    if (networks) {
-      draft.networks = networks;
+    if (networkSetting) {
+      draft.networks = networkSetting;
     }
 
     if (genres) {
@@ -224,6 +244,13 @@ export function parseFilterParams(params: Map<string, string>): FilterParams {
           min: imdbMinNum,
           max: imdbMaxNum,
         },
+      };
+    }
+
+    if (offerTypesValue) {
+      draft.offers = {
+        ...filters.offers,
+        types: offerTypesValue,
       };
     }
   });

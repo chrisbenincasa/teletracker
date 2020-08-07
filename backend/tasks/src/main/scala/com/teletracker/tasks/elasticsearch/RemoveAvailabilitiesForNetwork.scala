@@ -9,6 +9,7 @@ import com.teletracker.common.elasticsearch.{
   AvailabilityQueryHelper,
   ItemsScroller
 }
+import com.teletracker.common.model.scraping.ScrapeCatalogType
 import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.util.NetworkCache
 import javax.inject.Inject
@@ -38,7 +39,7 @@ class RemoveAvailabilitiesForNetwork @Inject()(
       rawArgs.valueOrDefault("resetPotentialMatches", true)
     val catalogType = if (resetPotentialMatches) {
       rawArgs
-        .valueOrThrow[String]("catalogType")
+        .valueOrThrow[ScrapeCatalogType]("catalogType")
     } else {
       ""
     }

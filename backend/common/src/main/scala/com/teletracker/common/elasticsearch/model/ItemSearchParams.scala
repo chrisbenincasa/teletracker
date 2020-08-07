@@ -7,12 +7,16 @@ import com.teletracker.common.db.dynamo.model.{
 }
 import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.db.{Bookmark, SortMode}
-import com.teletracker.common.elasticsearch.PeopleCreditSearch
+import com.teletracker.common.elasticsearch.{
+  AvailabilitySearch,
+  PeopleCreditSearch
+}
 import com.teletracker.common.util.{ClosedNumericRange, OpenDateRange}
 
 case class ItemSearchParams(
   genres: Option[Set[StoredGenre]],
   networks: Option[Set[StoredNetwork]],
+  allNetworks: Option[Boolean],
   itemTypes: Option[Set[ItemType]],
   releaseYear: Option[OpenDateRange],
   peopleCredits: Option[PeopleCreditSearch],
@@ -22,7 +26,8 @@ case class ItemSearchParams(
   sortMode: SortMode,
   limit: Int,
   bookmark: Option[Bookmark],
-  forList: Option[StoredUserList])
+  forList: Option[StoredUserList],
+  availability: Option[AvailabilitySearch])
 
 case class TagFilter(
   tag: String,

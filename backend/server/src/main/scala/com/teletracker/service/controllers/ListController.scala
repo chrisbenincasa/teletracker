@@ -1,6 +1,7 @@
 package com.teletracker.service.controllers
 
-import com.teletracker.common.db.model.ItemType
+import cats.instances.all._
+import com.teletracker.common.db.model.{ItemType, OfferType}
 import com.teletracker.common.db.{
   Bookmark,
   DefaultForListType,
@@ -10,6 +11,7 @@ import com.teletracker.common.db.{
 import com.teletracker.common.elasticsearch.BinaryOperator
 import com.teletracker.common.elasticsearch.model.PeopleCreditsFilter
 import com.teletracker.common.model.{DataResponse, Paging}
+import com.teletracker.common.util.Monoidal._
 import com.teletracker.common.util.time.LocalDateUtils
 import com.teletracker.common.util.{
   HasFieldsFilter,
@@ -18,12 +20,11 @@ import com.teletracker.common.util.{
   OpenDateRange
 }
 import com.teletracker.service.api.{
-  ItemApi,
+  AvailabilityFilters,
   ItemSearchRequest,
   ListsApi,
   UsersApi
 }
-import com.teletracker.service.auth.CurrentAuthenticatedUser
 import com.teletracker.service.controllers.annotations.{
   ItemReleaseYear,
   RatingRange
@@ -31,7 +32,7 @@ import com.teletracker.service.controllers.annotations.{
 import com.teletracker.service.controllers.params.RangeParser
 import com.twitter.finagle.http.{ParamMap, Request}
 import com.twitter.finatra.request.{QueryParam, RouteParam}
-import javax.inject.{Inject, Provider}
+import javax.inject.Inject
 import scala.concurrent.ExecutionContext
 import scala.util.Try
 
@@ -132,6 +133,10 @@ class ListController @Inject()(
           itemTypes = itemTypes.map(
             _.flatMap(t => Try(ItemType.fromString(t)).toOption).toSet
           ),
+          allNetworks = networks
+            .map(_.toSet)
+            .filter(_.nonEmpty)
+            .map(_ == Set(ItemSearchRequest.All)),
           sortMode = req.sort.map(SortMode.fromString).getOrElse(Recent()),
           limit = req.limit,
           bookmark = req.bookmark.map(Bookmark.parse),
@@ -151,7 +156,15 @@ class ListController @Inject()(
                 )
               )
             else None,
-          imdbRating = req.imdbRating.flatMap(RangeParser.parseRatingString)
+          imdbRating = req.imdbRating.flatMap(RangeParser.parseRatingString),
+          availabilityFilters = Some(
+            AvailabilityFilters(
+              offerTypes = req.offerTypes
+                .flatMap(ot => Try(OfferType.fromString(ot)).toOption)
+                .ifEmptyOption,
+              presentationTypes = None
+            )
+          )
         )
       )
     }
@@ -180,6 +193,8 @@ private case class GetListItemsRequest(
   @QueryParam desc: Option[Boolean],
   @QueryParam bookmark: Option[String],
   @QueryParam limit: Int = 10,
+  @QueryParam(commaSeparatedList = true)
+  offerTypes: Set[String] = Set(),
   request: Request)
     extends HasFieldsFilter
     with InjectedRequest

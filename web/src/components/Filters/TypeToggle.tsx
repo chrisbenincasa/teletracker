@@ -8,6 +8,7 @@ import {
 } from '@material-ui/core';
 import { ItemType } from '../../types';
 import { FilterContext } from './FilterContext';
+import FilterSectionTitle from './FilterSectionTitle';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -27,6 +28,7 @@ const useStyles = makeStyles((theme: Theme) =>
       display: 'flex',
       flexDirection: 'column',
       width: '100%',
+      marginBottom: theme.spacing(1),
     },
   }),
 );
@@ -51,11 +53,7 @@ export default function TypeToggle(props: Props) {
 
   return (
     <div className={classes.typeContainer}>
-      {props.showTitle && (
-        <Typography className={classes.filterLabel} display="block">
-          Type
-        </Typography>
-      )}
+      {props.showTitle && <FilterSectionTitle title="Type" />}
       <div className={classes.chipContainer}>
         <Chip
           key={'all'}

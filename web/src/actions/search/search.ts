@@ -13,7 +13,11 @@ import {
 } from '../../types';
 import { ApiItem } from '../../types/v2';
 import { Item, ItemFactory } from '../../types/v2/Item';
-import { FilterParams, normalizeFilterParams } from '../../utils/searchFilters';
+import {
+  FilterParams,
+  normalizeFilterParams,
+  SelectableNetworks,
+} from '../../utils/searchFilters';
 
 export const SEARCH_INITIATED = 'search/INITIATED';
 export const SEARCH_PRELOAD_INITIATED = 'search/preload/INITIATED';
@@ -25,7 +29,7 @@ export interface SearchInitiatedPayload {
   bookmark?: string;
   limit?: number;
   itemTypes?: ItemType[];
-  networks?: NetworkType[];
+  networks?: SelectableNetworks;
   genres?: number[];
   releaseYearRange?: OpenRange;
   sort?: SortOptions | 'search_score';

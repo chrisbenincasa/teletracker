@@ -9,7 +9,7 @@ import com.teletracker.common.db.model.{
 }
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.model.scraping.{
-  ScrapeItemType,
+  ScrapeCatalogType,
   ScrapedItem,
   ScrapedItemAvailabilityDetails
 }
@@ -40,8 +40,8 @@ class IngestHboChanges @Inject()(
 
   override protected val externalSource: ExternalSource = ExternalSource.HboGo
 
-  override protected val scrapeItemType: ScrapeItemType =
-    ScrapeItemType.HboChanges
+  override protected val scrapeItemType: ScrapeCatalogType =
+    ScrapeCatalogType.HboChanges
 
   override protected def networkTimeZone: ZoneOffset =
     ZoneId.of("US/Eastern").getRules.getOffset(Instant.now())

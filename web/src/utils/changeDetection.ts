@@ -2,9 +2,11 @@ import _ from 'lodash';
 import {
   FilterParams,
   normalizeFilterParams,
+  selectableNetworksEqual,
   SlidersState,
 } from './searchFilters';
 import { OpenRange, SortOptions } from '../types';
+import { setsEqual } from './sets';
 
 export function filterParamsEqual(
   leftParam: FilterParams | undefined,
@@ -21,7 +23,8 @@ export function filterParamsEqual(
       _.isUndefined(left.networks) !== _.isUndefined(right.networks) ||
       _.isUndefined(left.sortOrder) !== _.isUndefined(right.sortOrder) ||
       _.isUndefined(left.sliders) !== _.isUndefined(right.sliders) ||
-      _.isUndefined(left.people) !== _.isUndefined(right.people)
+      _.isUndefined(left.people) !== _.isUndefined(right.people) ||
+      _.isUndefined(left.offers) !== _.isUndefined(right.offers)
     ) {
       return false;
     }
@@ -42,11 +45,7 @@ export function filterParamsEqual(
       return false;
     }
 
-    if (
-      left.networks &&
-      right.networks &&
-      _.xor(left.networks, right.networks).length !== 0
-    ) {
+    if (!selectableNetworksEqual(left.networks, right.networks)) {
       return false;
     }
 
@@ -60,6 +59,10 @@ export function filterParamsEqual(
       }
     }
 
+    if (left.offers && right.offers) {
+      return setsEqual(left.offers.types || [], right.offers.types || []);
+    }
+
     if (sliderChanged(left.sliders?.releaseYear, right.sliders?.releaseYear)) {
       return false;
     }
@@ -67,8 +70,6 @@ export function filterParamsEqual(
     if (sliderChanged(left.sliders?.imdbRating, right.sliders?.imdbRating)) {
       return false;
     }
-    // if (left.sliders && right.sliders) {
-    // }
 
     if (
       left.people &&

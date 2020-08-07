@@ -16,6 +16,7 @@ import {
   DEFAULT_FILTER_PARAMS,
   FilterParams,
   removeUndefinedKeys,
+  SelectableNetworks,
 } from '../../utils/searchFilters';
 import { setsEqual } from '../../utils/sets';
 import { useSelector } from 'react-redux';
@@ -69,7 +70,7 @@ export const prettySort = (sortOption: SortOptions) => {
 
 type FilterRemove = {
   sort?: SortOptions;
-  network?: NetworkType[];
+  network?: SelectableNetworks;
   type?: ItemType[];
   genre?: number[];
   releaseYearMin?: true;
@@ -85,7 +86,12 @@ export default function ActiveFilters(props: Props) {
   const filterState = useContext(FilterContext);
   const genres = useGenres();
   const { isListDynamic, variant } = props;
-  const { filters, setFilters, defaultFilters } = filterState;
+  const {
+    filters,
+    setFilters,
+    defaultFilters,
+    currentFiltersAreDefault,
+  } = filterState;
   const {
     genresFilter,
     itemTypes,
@@ -100,24 +106,29 @@ export default function ActiveFilters(props: Props) {
   );
 
   const deleteNetworkFilter = (
-    network?: NetworkType[],
-  ): [NetworkType[] | undefined, boolean] => {
-    if (!network) {
+    network?: SelectableNetworks,
+  ): [SelectableNetworks | undefined, boolean] => {
+    if (_.isUndefined(network)) {
+      // Trying to remove nothing, return unchanged.
       return [networks, false];
+    } else if (network === 'all') {
+      // Removing all, reset to nothing.
+      return [undefined, true];
+    } else {
+      // If the existing stuff is undefined or all, we can't remove anything,
+      // this is in invalid state.
+      if (_.isUndefined(networks) || networks === 'all') {
+        return [networks, false];
+      } else {
+        // Take the difference of the current networks and the ones we're
+        // attempting to remove.
+        let networkDiff = _.difference(networks, network);
+        return [
+          networkDiff.length === 0 ? undefined : networkDiff,
+          !setsEqual(networkDiff, networks),
+        ];
+      }
     }
-
-    // TODO: Put somewhere constant/common
-    let networkList: NetworkType[] = ['hbo-now', 'netflix', 'hulu'];
-
-    // Undefined networks means all networks.
-    let networksInFilter = networks || networkList;
-
-    let networkDiff = _.difference(networksInFilter, network);
-
-    return [
-      networkDiff.length === 0 ? undefined : networkDiff,
-      !setsEqual(networkDiff, networksInFilter),
-    ];
   };
 
   const deleteTypeFilter = (
@@ -255,29 +266,81 @@ export default function ActiveFilters(props: Props) {
   let imdbMin = sliders?.imdbRating?.min;
   let imdbMax = sliders?.imdbRating?.max;
 
-  const showGenreFilters = Boolean(genresFilter && genresFilter.length > 0);
-  const showNetworkFilters = Boolean(networks && networks.length > 0);
-  const showTypeFilters = Boolean(itemTypes && itemTypes.length > 0);
+  const showGenreFilters =
+    !currentFiltersAreDefault &&
+    Boolean(genresFilter && genresFilter.length > 0);
+  const showNetworkFilters =
+    !currentFiltersAreDefault && Boolean(networks && networks.length > 0);
+  const showTypeFilters =
+    !currentFiltersAreDefault && Boolean(itemTypes && itemTypes.length > 0);
   const showSort = defaultFilters?.sortOrder !== sortOrder;
-  const showPersonFilters = Boolean(people && people.length > 0);
+  const showPersonFilters =
+    !currentFiltersAreDefault && Boolean(people && people.length > 0);
+  const showOfferTypes =
+    !currentFiltersAreDefault &&
+    Boolean(filters.offers?.types && filters.offers?.types?.length > 0);
 
-  const showReleaseYearSlider = Boolean(
-    !_.isUndefined(sliders?.releaseYear?.min) ||
-      !_.isUndefined(sliders?.releaseYear?.max),
-  );
+  const showReleaseYearSlider =
+    !currentFiltersAreDefault &&
+    Boolean(
+      !_.isUndefined(sliders?.releaseYear?.min) ||
+        !_.isUndefined(sliders?.releaseYear?.max),
+    );
 
-  const showImdbSlider = Boolean(
-    !_.isUndefined(sliders?.imdbRating?.min) ||
-      !_.isUndefined(sliders?.imdbRating?.max),
-  );
+  const showImdbSlider =
+    !currentFiltersAreDefault &&
+    Boolean(
+      !_.isUndefined(sliders?.imdbRating?.min) ||
+        !_.isUndefined(sliders?.imdbRating?.max),
+    );
 
   const showReset = Boolean(
     showSort ||
       showGenreFilters ||
       showNetworkFilters ||
       showTypeFilters ||
-      showImdbSlider,
+      showImdbSlider ||
+      showOfferTypes,
   );
+
+  const renderSelectedNetworks = (selectedNetworks: NetworkType[] | 'all') => {
+    if (selectedNetworks === 'all') {
+      return (
+        <Chip
+          key="all"
+          className={classes.chip}
+          label="All Networks"
+          onDelete={() => removeFilters({ network: 'all' })}
+          variant={variant}
+        />
+      );
+    } else {
+      return selectedNetworks.map((network: NetworkType) => (
+        <Chip
+          key={network}
+          icon={
+            <div
+              style={{
+                padding: '1px 5px',
+                backgroundColor: networkToColor[network],
+                borderRadius: 8,
+              }}
+            >
+              <img
+                className={classes.networkIcon}
+                src={getLogoUrl(network)}
+                alt={network}
+              />
+            </div>
+          }
+          className={classes.chip}
+          label={networkToPrettyName[network]}
+          onDelete={() => removeFilters({ network: [network] })}
+          variant={variant}
+        />
+      ));
+    }
+  };
 
   return (
     <div className={classes.activeFiltersContainer}>
@@ -294,31 +357,7 @@ export default function ActiveFilters(props: Props) {
           ))
         : null}
       {showNetworkFilters
-        ? networks &&
-          networks.map((network: NetworkType) => (
-            <Chip
-              key={network}
-              icon={
-                <div
-                  style={{
-                    padding: '1px 5px',
-                    backgroundColor: networkToColor[network],
-                    borderRadius: 8,
-                  }}
-                >
-                  <img
-                    className={classes.networkIcon}
-                    src={getLogoUrl(network)}
-                    alt={network}
-                  />
-                </div>
-              }
-              className={classes.chip}
-              label={networkToPrettyName[network]}
-              onDelete={() => removeFilters({ network: [network] })}
-              variant={variant}
-            />
-          ))
+        ? !_.isUndefined(networks) && renderSelectedNetworks(networks)
         : null}
       {showTypeFilters
         ? itemTypes &&
@@ -411,6 +450,18 @@ export default function ActiveFilters(props: Props) {
               />
             ) : null,
           )
+        : null}
+      {showOfferTypes
+        ? filters.offers?.types &&
+          filters.offers.types.map(ot => (
+            <Chip
+              key={ot}
+              label={'Offer: ' + _.capitalize(ot)}
+              className={classes.chip}
+              clickable
+              variant={variant}
+            />
+          ))
         : null}
       {showReset ? (
         <Chip

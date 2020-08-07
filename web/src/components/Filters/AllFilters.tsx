@@ -20,11 +20,17 @@ import ReleaseYearFilter from './ReleaseYearFilter';
 import RatingFilter from './RatingFilter';
 import CreateSmartListButton from '../Buttons/CreateSmartListButton';
 import CreateDynamicListDialog from '../Dialogs/CreateDynamicListDialog';
-import { FilterParams, SliderChange } from '../../utils/searchFilters';
+import {
+  FilterParams,
+  OffersFilters,
+  SelectableNetworks,
+  SliderChange,
+} from '../../utils/searchFilters';
 import { filterParamsEqual } from '../../utils/changeDetection';
 import PersonFilter from './PersonFilter';
 import { FilterContext } from './FilterContext';
 import { useGenres, useNetworks } from '../../hooks/useStateMetadata';
+import OffersSelect from './OffersSelect';
 
 const useStyles = makeStyles((theme: Theme) => ({
   actionButtons: {
@@ -62,7 +68,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   genreContainer: {
     display: 'flex',
     flexDirection: 'row',
-    width: '40%',
+    width: '33.3333%',
     flexWrap: 'wrap',
     margin: theme.spacing(1, 0.5),
     [theme.breakpoints.down('sm')]: {
@@ -87,7 +93,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     },
     alignItems: 'flex-start',
     flexDirection: 'column',
-    width: '30%',
+    width: '33.3333%',
     [theme.breakpoints.down('sm')]: {
       width: '100%',
     },
@@ -97,7 +103,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     flexGrow: 1,
     margin: theme.spacing(1, 0),
     alignItems: 'flex-start',
-    width: '100%',
+    width: '33.3333%',
   },
   networkContainer: {
     display: 'flex',
@@ -137,6 +143,7 @@ interface Props {
   readonly disableReleaseYear?: boolean;
   readonly disableSortOptions?: boolean;
   readonly disableNetworks?: boolean;
+  readonly disableOffers?: boolean;
   readonly disableTypeChange?: boolean;
   readonly disableGenres?: boolean;
   readonly disableStarring?: boolean;
@@ -161,6 +168,7 @@ const AllFilters = (props: Props) => {
     disableStarring,
     disableSortOptions,
     disableNetworks,
+    disableOffers,
     disableTypeChange,
     disableGenres,
     sortOptions,
@@ -187,8 +195,12 @@ const AllFilters = (props: Props) => {
     handleFilterUpdate({ ...filters, itemTypes: type });
   };
 
-  const setNetworks = (networks?: NetworkType[]) => {
+  const setNetworks = (networks?: SelectableNetworks) => {
     handleFilterUpdate({ ...filters, networks });
+  };
+
+  const setOffers = (offers?: OffersFilters) => {
+    handleFilterUpdate({ ...filters, offers });
   };
 
   const setSort = (sortOrder: SortOptions) => {
@@ -424,8 +436,19 @@ const AllFilters = (props: Props) => {
                   handleChange={setGenre}
                 />
               )}
+              {!disableTypeChange && <TypeToggle handleChange={setType} />}
+              {!disableSortOptions && (
+                <SortToggle
+                  isListDynamic={!!isListDynamic}
+                  handleChange={setSort}
+                  validSortOptions={sortOptions}
+                />
+              )}
             </div>
-
+            <div className={classes.networkContainer}>
+              {!disableNetworks && <NetworkSelect handleChange={setNetworks} />}
+              {!disableOffers && <OffersSelect handleChange={setOffers} />}
+            </div>
             <div className={classes.slidersContainer}>
               {!disableRating ? (
                 <RatingFilter handleChange={setRating} />
@@ -441,18 +464,6 @@ const AllFilters = (props: Props) => {
                   />
                 ) : null}
               </div>
-            </div>
-
-            <div className={classes.networkContainer}>
-              {!disableNetworks && <NetworkSelect handleChange={setNetworks} />}
-              {!disableTypeChange && <TypeToggle handleChange={setType} />}
-              {!disableSortOptions && (
-                <SortToggle
-                  isListDynamic={!!isListDynamic}
-                  handleChange={setSort}
-                  validSortOptions={sortOptions}
-                />
-              )}
             </div>
           </div>
           {actionButtons()}

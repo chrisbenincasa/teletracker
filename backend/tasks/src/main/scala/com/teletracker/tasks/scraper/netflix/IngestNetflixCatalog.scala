@@ -4,7 +4,7 @@ import com.teletracker.common.db.dynamo.{CrawlStore, CrawlerName}
 import com.teletracker.common.db.model._
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.model.scraping.netflix.NetflixScrapedCatalogItem
-import com.teletracker.common.model.scraping.{NonMatchResult, ScrapeItemType}
+import com.teletracker.common.model.scraping.{NonMatchResult, ScrapeCatalogType}
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.matching.{
   ElasticsearchFallbackMatcher,
@@ -45,8 +45,8 @@ class IngestNetflixCatalog @Inject()(
 
   override protected val externalSource: ExternalSource = ExternalSource.Netflix
 
-  override protected val scrapeItemType: ScrapeItemType =
-    ScrapeItemType.NetflixCatalog
+  override protected val scrapeItemType: ScrapeCatalogType =
+    ScrapeCatalogType.NetflixCatalog
 
   private val elasticsearchMatcherOptions =
     ElasticsearchFallbackMatcherOptions(
