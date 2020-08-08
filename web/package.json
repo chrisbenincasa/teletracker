@@ -4,7 +4,7 @@
   "scripts": {
     "test": "jest",
     "precommit": "pretty-quick --staged",
-    "next-dev": "NODE_ENV=development node --inspect server.js",
+    "next-dev": "NODE_ENV=development ENABLE_HTTPS=true node --inspect server.js",
     "next-build": "NODE_ENV=production next build",
     "next-start": "NODE_ENV=production node server.js"
   },
@@ -17,8 +17,8 @@
     "@types/moment": "^2.13.0",
     "@types/node": "^11.13.4",
     "@types/ramda": "^0.26.6",
-    "@types/react": "^16.8.13",
-    "@types/react-dom": "^16.8.4",
+    "@types/react": "16.9.45",
+    "@types/react-dom": "16.9.8",
     "@types/react-infinite-scroller": "^1.2.1",
     "@types/react-redux": "7.1.5",
     "@types/react-router-dom": "5.1.2",
@@ -72,7 +72,7 @@
     "next": "^9.4.0",
     "ramda": "^0.26.1",
     "react": "16.8.6",
-    "react-dom": "16.8.6",
+    "react-dom": "16.13.1",
     "react-ga": "^2.6.0",
     "react-helmet": "^5.2.1",
     "react-infinite-scroller": "^1.2.4",

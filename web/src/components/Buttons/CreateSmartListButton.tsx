@@ -1,9 +1,9 @@
 import React from 'react';
 import { Button, Tooltip } from '@material-ui/core';
 import { OfflineBolt, Save } from '@material-ui/icons';
-import { useWidth } from '../../hooks/useWidth';
 import { FilterParams, isDefaultFilter } from '../../utils/searchFilters';
 import { filterParamsEqual } from '../../utils/changeDetection';
+import useIsMobile from '../../hooks/useIsMobile';
 
 interface Props {
   onClick: () => void;
@@ -13,8 +13,7 @@ interface Props {
 }
 
 export default function CreateSmartListButton(props: Props) {
-  const width = useWidth();
-  const isMobile = ['xs', 'sm'].includes(width);
+  const isMobile = useIsMobile();
 
   return (
     <Tooltip
