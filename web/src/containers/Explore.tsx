@@ -49,6 +49,7 @@ import { Id } from '../types/v2';
 import { FilterContext } from '../components/Filters/FilterContext';
 import selectItems from '../selectors/selectItems';
 import useFilterLoadEffect from '../hooks/useFilterLoadEffect';
+import useIsMobile from '../hooks/useIsMobile';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -102,6 +103,7 @@ function Explore() {
   const classes = useStyles();
   const theme = useTheme();
   const width = useWidth();
+  const isMobile = useIsMobile();
 
   let [featuredItemsIndex, setFeaturedItemsIndex] = useStateDeepEq<number[]>(
     [],
@@ -129,18 +131,19 @@ function Explore() {
   const [loading, wasLoading] = useStateSelectorWithPrevious(
     state => state.popular.loadingPopular,
   );
+  const isFirstLoad = useStateSelector(state => state.popular.isFirstLoad);
 
   //
   // Logic
   //
 
   const getNumberFeaturedItems = useCallback(() => {
-    if (['xs', 'sm'].includes(width)) {
+    if (isMobile) {
       return 1;
     } else {
       return 2;
     }
-  }, [width]);
+  }, [isMobile]);
 
   const loadPopular = (passBookmark: boolean, compensate?: number) => {
     if (!loading) {
@@ -316,15 +319,15 @@ function Explore() {
   const renderPopular = () => {
     const { genresFilter, itemTypes } = filters;
 
-    return popular ? (
+    return popular && popular.length > 0 ? (
       <div className={classes.popularContainer}>
         <div className={classes.listTitle}>
           <Typography
             color="inherit"
-            variant={['xs', 'sm'].includes(width) ? 'h6' : 'h4'}
+            variant={['xs', 'sm'].includes(width) ? 'h5' : 'h4'}
             style={{ flexGrow: 1 }}
           >
-            {`Popular ${
+            {`Explore ${
               genresFilter && genresFilter.length === 1
                 ? mapGenre(genresFilter[0])
                 : ''

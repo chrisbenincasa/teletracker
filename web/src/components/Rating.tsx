@@ -5,6 +5,7 @@ import { Id } from '../types/v2';
 import useStateSelector from '../hooks/useStateSelector';
 import selectItem from '../selectors/selectItem';
 import { getVoteAverage, getVoteCountFormatted } from '../utils/textHelper';
+import useIsMobile from '../hooks/useIsMobile';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -34,13 +35,19 @@ type Props = OwnProps;
 
 export default function StarRatings(props: Props) {
   const classes = useStyles();
+  const isMobile = useIsMobile();
   const itemDetail = useStateSelector(state => selectItem(state, props.itemId));
   const voteAverage = getVoteAverage(itemDetail);
   const voteCount = getVoteCountFormatted(itemDetail);
 
   return (
     <div className={classes.ratingContainer}>
-      <Rating value={voteAverage} precision={0.1} readOnly />
+      <Rating
+        size={isMobile ? 'small' : 'medium'}
+        value={voteAverage}
+        precision={0.1}
+        readOnly
+      />
       {props.showVoteCount && (
         <Typography
           color="inherit"

@@ -22,6 +22,7 @@ import dequal from 'dequal';
 import { Id } from '../types/v2';
 import useStateSelector from '../hooks/useStateSelector';
 import selectItems from '../selectors/selectItems';
+import useIsMobile from '../hooks/useIsMobile';
 
 const useStyles = makeStyles((theme: Theme) => ({
   backdropContainer: {
@@ -66,6 +67,10 @@ const useStyles = makeStyles((theme: Theme) => ({
     maxWidth: '50%',
     borderTopLeftRadius: 10,
     borderBottomLeftRadius: 10,
+    [theme.breakpoints.down('sm')]: {
+      marginBottom: 0,
+      borderBottomLeftRadius: 0,
+    },
   },
   wrapper: {
     display: 'flex',
@@ -96,6 +101,7 @@ function Featured(props: Props) {
   >(false);
   const [imageLoading, setImageLoading] = useState<boolean>(true);
   const classes = useStyles();
+  const isMobile = useIsMobile();
   const { featuredItems } = props;
   const theme: Theme = useTheme();
   const items = useStateSelector(state => selectItems(state, featuredItems));
@@ -111,7 +117,11 @@ function Featured(props: Props) {
 
     return (
       <div className={classes.titleContainer}>
-        <Typography color="inherit" variant="h4" itemProp="name">
+        <Typography
+          color="inherit"
+          variant={isMobile ? 'h5' : 'h4'}
+          itemProp="name"
+        >
           {truncateText(item.canonicalTitle, 200)}
         </Typography>
         <Rating itemId={item.id} />

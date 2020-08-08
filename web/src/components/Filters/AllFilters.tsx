@@ -1,5 +1,6 @@
 import React, { useContext, useState } from 'react';
 import {
+  Button,
   Collapse,
   ExpansionPanel,
   ExpansionPanelDetails,
@@ -10,8 +11,7 @@ import {
   Typography,
 } from '@material-ui/core';
 import { ExpandMore } from '@material-ui/icons';
-import { useWidth } from '../../hooks/useWidth';
-import { ItemType, NetworkType, SortOptions } from '../../types';
+import { ItemType, SortOptions } from '../../types';
 import TypeToggle from './TypeToggle';
 import NetworkSelect from './NetworkSelect';
 import GenreSelect from './GenreSelect';
@@ -29,8 +29,8 @@ import {
 import { filterParamsEqual } from '../../utils/changeDetection';
 import PersonFilter from './PersonFilter';
 import { FilterContext } from './FilterContext';
-import { useGenres, useNetworks } from '../../hooks/useStateMetadata';
 import OffersSelect from './OffersSelect';
+import useIsMobile from '../../hooks/useIsMobile';
 
 const useStyles = makeStyles((theme: Theme) => ({
   actionButtons: {
@@ -174,8 +174,7 @@ const AllFilters = (props: Props) => {
     sortOptions,
   } = props;
 
-  const width = useWidth();
-  const isMobile = ['xs', 'sm'].includes(width);
+  const isMobile = useIsMobile();
 
   const [smartListOpen, setSmartListOpen] = useState(false);
 
@@ -260,6 +259,16 @@ const AllFilters = (props: Props) => {
           onClick={() => setSmartListOpen(true)}
           isListDynamic={props.isListDynamic}
         />
+        {/*TODO: Figure out if we want this*/}
+        {/*<Button*/}
+        {/*  size="small"*/}
+        {/*  variant="contained"*/}
+        {/*  color="primary"*/}
+        {/*  fullWidth={isMobile}*/}
+        {/*  disabled*/}
+        {/*>*/}
+        {/*  Apply Filters*/}
+        {/*</Button>*/}
         {renderCreateSmartListDialog()}
       </div>
     );
@@ -327,6 +336,23 @@ const AllFilters = (props: Props) => {
           </ExpansionPanel>
         )}
 
+        {!disableOffers && (
+          <ExpansionPanel square>
+            <ExpansionPanelSummary
+              expandIcon={<ExpandMore />}
+              aria-controls="offers-content"
+              id="offers-header"
+            >
+              <Typography>Offers</Typography>
+            </ExpansionPanelSummary>
+            <ExpansionPanelDetails>
+              <div className={classes.genreContainer}>
+                <OffersSelect handleChange={setOffers} showTitle={false} />
+              </div>
+            </ExpansionPanelDetails>
+          </ExpansionPanel>
+        )}
+
         {!disableRating ? (
           <ExpansionPanel square>
             <ExpansionPanelSummary
@@ -368,24 +394,26 @@ const AllFilters = (props: Props) => {
           </ExpansionPanel>
         ) : null}
 
-        <ExpansionPanel square>
-          <ExpansionPanelSummary
-            expandIcon={<ExpandMore />}
-            aria-controls="people-content"
-            id="people-header"
-          >
-            <Typography>People</Typography>
-          </ExpansionPanelSummary>
-          <ExpansionPanelDetails>
-            <div className={classes.peopleContainer}>
-              <PersonFilter
-                handleChange={setPeople}
-                selectedCast={filters.people}
-                showTitle={false}
-              />
-            </div>
-          </ExpansionPanelDetails>
-        </ExpansionPanel>
+        {!disableStarring ? (
+          <ExpansionPanel square>
+            <ExpansionPanelSummary
+              expandIcon={<ExpandMore />}
+              aria-controls="people-content"
+              id="people-header"
+            >
+              <Typography>People</Typography>
+            </ExpansionPanelSummary>
+            <ExpansionPanelDetails>
+              <div className={classes.peopleContainer}>
+                <PersonFilter
+                  handleChange={setPeople}
+                  selectedCast={filters.people}
+                  showTitle={false}
+                />
+              </div>
+            </ExpansionPanelDetails>
+          </ExpansionPanel>
+        ) : null}
 
         {!disableSortOptions && (
           <ExpansionPanel square>

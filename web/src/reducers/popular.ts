@@ -11,11 +11,13 @@ import {
 } from '../actions/popular';
 import { flattenActions, handleAction, handleError } from './utils';
 import { FilterParams } from '../utils/searchFilters';
+import _ from 'lodash';
 
 export interface State {
   readonly popular?: string[]; // Array of popular slugs
   readonly genre?: string[]; // Array of slugs for the current genre view
   readonly loadingPopular: boolean;
+  readonly isFirstLoad: boolean;
   readonly loadingGenres: boolean;
   readonly popularBookmark?: string;
   readonly genreBookmark?: string;
@@ -24,15 +26,17 @@ export interface State {
 
 const initialState: State = {
   loadingPopular: false,
+  isFirstLoad: true,
   loadingGenres: false,
 };
 
 const PopularInitiated = handleAction<PopularInitiatedAction, State>(
   POPULAR_INITIATED,
-  (state: State) => {
+  (state: State, action) => {
     return {
       ...state,
       loadingPopular: true,
+      isFirstLoad: _.isUndefined(action.payload?.bookmark),
     };
   },
 );
