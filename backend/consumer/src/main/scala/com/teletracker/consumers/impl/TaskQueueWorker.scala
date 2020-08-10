@@ -109,7 +109,7 @@ class TaskQueueWorker @Inject()(
         // Send non-retryables to the DLQ if there is one and ack
         case (_, FailureResult(_)) =>
           setTaskFailedInStore(taskRecord)
-          queue.dlq.foreach(_.queue(message))
+          queue.dlq.foreach(_.queue(message, message.messageGroupId))
           completionPromise.success(message.receiptHandle)
         // Ack everything else
         case _ =>
