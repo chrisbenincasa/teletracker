@@ -77,6 +77,9 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
         try {
           AsyncStream
             .fromStream(source.getLines().toStream.zipWithIndex)
+            .filter {
+              case (line, _) => line.nonEmpty
+            }
             .flatMapSeq {
               case (line, idx) => extractLine(line, idx, uri)
             }

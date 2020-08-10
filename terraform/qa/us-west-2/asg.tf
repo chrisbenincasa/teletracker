@@ -17,9 +17,9 @@ resource "aws_autoscaling_group" "teletracker-ecs-asg" {
 resource "aws_autoscaling_group" "crawl_ecs_asg" {
   # availability_zones = ["us-west-2a", "us-west-2b", "us-west-2c", "us-west-2d"]
   availability_zones = ["us-west-2c"]
-  max_size           = 1
-  min_size           = 1
-  desired_capacity   = 1
+  max_size           = 0
+  min_size           = 0
+  desired_capacity   = 0
 
   vpc_zone_identifier = ["subnet-0866af572b483b24c"]
 
@@ -110,19 +110,7 @@ resource "aws_launch_template" "ecs-t3a-launch-template" {
   }
 
   network_interfaces {
-    # associate_public_ip_address = true
     delete_on_termination = false
-    # device_index          = 0
-
-    # ipv4_address_count = 0
-    # ipv4_addresses     = []
-    # ipv6_address_count = 0
-    # ipv6_addresses     = []
-
-    # security_groups = [
-    # aws_security_group.ecs-instance-sg.id
-    # ]
-    # subnet_id            = "subnet-97a65cff"
     network_interface_id = "eni-0294d89e1dc9b5f49"
   }
 
@@ -184,18 +172,9 @@ resource "aws_launch_template" "crawl_cluster_launch_template" {
   network_interfaces {
     associate_public_ip_address = true
     delete_on_termination = true
-    # device_index          = 0
-
-    # ipv4_address_count = 0
-    # ipv4_addresses     = []
-    # ipv6_address_count = 0
-    # ipv6_addresses     = []
-
     security_groups = [
       "sg-0590028b2b63d2325"
     ]
-
-//    network_interface_id = "eni-0294d89e1dc9b5f49"
   }
 
   placement {
