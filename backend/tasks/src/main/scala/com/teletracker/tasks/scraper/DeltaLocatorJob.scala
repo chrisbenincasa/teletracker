@@ -42,13 +42,6 @@ abstract class DeltaLocatorJob[_ArgsType <: DeltaLocatorJobArgsLike: ArgParser](
     extends TypedTeletrackerTask[_ArgsType] {
   protected def defaultMaxDaysBack = 3
 
-  override def preparseArgs(args: RawArgs): ArgsType =
-    postParseArgs(
-      args.parse[DeltaLocatorJobArgs].get
-    )
-
-  protected def postParseArgs(halfParsed: DeltaLocatorJobArgs): ArgsType
-
   override protected def runInternal(): Unit = {
     val seedDate = args.seedDumpDate.getOrElse(LocalDate.now())
 

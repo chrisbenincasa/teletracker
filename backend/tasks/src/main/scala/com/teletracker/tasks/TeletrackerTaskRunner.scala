@@ -1,6 +1,7 @@
 package com.teletracker.tasks
 
 import com.google.inject.{Injector, Module}
+import com.teletracker.common.pubsub.TaskScheduler
 import com.teletracker.common.tasks.model.TeletrackerTaskIdentifier
 import com.teletracker.common.tasks.storage.{
   TaskRecordCreator,
@@ -8,18 +9,21 @@ import com.teletracker.common.tasks.storage.{
   TaskStatus
 }
 import com.teletracker.common.tasks.TeletrackerTask
-import com.teletracker.common.tasks.args.{JsonTaskArgs}
+import com.teletracker.common.tasks.args.JsonTaskArgs
+import com.teletracker.common.util.shapeless._
 import com.teletracker.common.util.Futures._
 import com.teletracker.tasks.inject.TaskSchedulerModule
 import io.circe.Json
 import javax.inject.Inject
 import java.time.Instant
 import scala.compat.java8.OptionConverters._
+import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
 object TeletrackerTaskRunner extends TeletrackerTaskApp[NoopTeletrackerTask] {
   val clazz = flag[String]("class", "", "The Teletracker task class to run")
   val taskName = flag[String]("task", "", "The Teletracker task name to run")
+  val remote = flag[Boolean]("remote", false, "Whether to run the job remotely")
 
   @volatile private var _instance: TeletrackerTaskRunner = _
 
@@ -60,21 +64,39 @@ object TeletrackerTaskRunner extends TeletrackerTaskApp[NoopTeletrackerTask] {
     val recordCreator = injector.instance[TaskRecordCreator]
     val recordStore = injector.instance[TaskRecordStore]
 
-    val record = recordCreator
-      .create(task.taskId, task, strigifiedArgs, TaskStatus.Executing)
-      .copy(
-        startedAt = Some(Instant.now())
+    if (remote()) {
+      val remoteTask = _instance.getInstance[RemoteTask]
+
+      val remoteArgs
+        : Map[String, Any] = RemoteTaskArgs(classToRun = clazzToRun).mkMapAny
+      remoteTask.run(
+        args ++ remoteArgs
       )
 
-    recordStore
-      .recordNewTask(record)
-      .await()
+      val record = recordCreator
+        .create(task.taskId, task, strigifiedArgs, TaskStatus.Scheduled)
 
-    _instance.runFromString(clazzToRun, collectArgs) match {
-      case TeletrackerTask.SuccessResult =>
-        recordStore.setTaskSuccess(record.id).await()
-      case TeletrackerTask.FailureResult(_) =>
-        recordStore.setTaskFailed(record.id).await()
+      recordStore
+        .recordNewTask(record)
+        .await()
+
+    } else {
+      val record = recordCreator
+        .create(task.taskId, task, strigifiedArgs, TaskStatus.Executing)
+        .copy(
+          startedAt = Some(Instant.now())
+        )
+
+      recordStore
+        .recordNewTask(record)
+        .await()
+
+      _instance.runFromString(clazzToRun, collectArgs) match {
+        case TeletrackerTask.SuccessResult =>
+          recordStore.setTaskSuccess(record.id).await()
+        case TeletrackerTask.FailureResult(_) =>
+          recordStore.setTaskFailed(record.id).await()
+      }
     }
 
     System.exit(0)
@@ -99,6 +121,10 @@ object TeletrackerTaskRunner extends TeletrackerTaskApp[NoopTeletrackerTask] {
 }
 
 class TeletrackerTaskRunner @Inject()(injector: Injector) {
+  def getInstance[T <: TeletrackerTask](implicit ct: ClassTag[T]): T = {
+    injector.getInstance(ct.runtimeClass).asInstanceOf[T]
+  }
+
   def getInstance(clazz: String): TeletrackerTask = {
     val loadedClass = {
       Try(Class.forName(clazz)) match {

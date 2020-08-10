@@ -8,12 +8,13 @@ import com.teletracker.common.pubsub.{
 }
 import com.teletracker.common.tasks.TeletrackerTask.{JsonableArgs, RawArgs}
 import com.teletracker.common.tasks.args.{ArgParser, TaskArgImplicits}
-import com.teletracker.common.util.EnvironmentDetection
+import com.teletracker.common.util.{CaseClassImplicits, EnvironmentDetection}
 import com.teletracker.common.util.Futures._
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 import javax.inject.Inject
 import org.slf4j.{Logger, LoggerFactory}
+import shapeless.ops.product.ToMap
 import software.amazon.awssdk.services.s3.S3Client
 import java.net.URI
 import java.time.{LocalDate, OffsetDateTime}
@@ -92,12 +93,13 @@ object TeletrackerTask {
   type RawArgs = Map[String, Any]
 }
 
-trait TeletrackerTask extends TaskArgImplicits {
+trait TeletrackerTask extends TaskArgImplicits with CaseClassImplicits {
   import TeletrackerTask._
 
   type ArgsType <: AnyRef
 
   private[this] var didInit = false
+  private[this] var didSetArgs = false
   protected[this] var _taskId: UUID = UUID.randomUUID()
 
   def taskId: UUID = _taskId
@@ -129,6 +131,14 @@ trait TeletrackerTask extends TaskArgImplicits {
   private def checkInit() = {
     if (!didInit) {
       throw new IllegalStateException(
+        "Cannot perform operation before init is complete"
+      )
+    }
+  }
+
+  private def checkArgsInit() = {
+    if (!didSetArgs) {
+      throw new IllegalStateException(
         "Cannot access args before initialization"
       )
     }
@@ -136,7 +146,7 @@ trait TeletrackerTask extends TaskArgImplicits {
 
   private[this] var _rawArgs: RawArgs = _
   protected def rawArgs: RawArgs = {
-    checkInit()
+    checkArgsInit()
     assert(_rawArgs ne null) // This should be impossible
     _rawArgs
   }
@@ -185,14 +195,17 @@ trait TeletrackerTask extends TaskArgImplicits {
     if (!didInit) {
       didInit = true
 
+      // Order here is important. Set the raw args and mark them as init'd. This allows preparse
+      // to access rawArgs without an error.
       _rawArgs = args
+      didSetArgs = true
       _args = preparseArgs(args)
 
       val logToS3 =
-        EnvironmentDetection.runningRemotely || args
+        EnvironmentDetection.runningRemotely || rawArgs
           .valueOrDefault(CommonFlags.S3Logging, false)
 
-      val logToConsole = args
+      val logToConsole = rawArgs
         .valueOrDefault(CommonFlags.OutputToConsole, true)
 
       if (logToS3) {
@@ -215,13 +228,12 @@ trait TeletrackerTask extends TaskArgImplicits {
       }
 
       _options = Options(
-        scheduleFollowupTasks = args
+        scheduleFollowupTasks = rawArgs
           .value[Boolean](CommonFlags.ScheduleFollowups)
-          .orElse(args.value[Boolean](CommonFlags.ScheduleFollowupTasks))
+          .orElse(rawArgs.value[Boolean](CommonFlags.ScheduleFollowupTasks))
           .getOrElse(true)
       )
     }
-
   }
 
   final def run(args: RawArgs): TeletrackerTask.TaskResult = {

@@ -42,17 +42,6 @@ class AllTmdbIdsDumpDeltaLocator @Inject()(
       s3Client,
       teletrackerConfig
     ) {
-  override protected def postParseArgs(
-    halfParsed: DeltaLocatorJobArgs
-  ): AllTmdbIdsDumpDeltaLocatorArgs = {
-    AllTmdbIdsDumpDeltaLocatorArgs(
-      maxDaysBack = halfParsed.maxDaysBack,
-      local = halfParsed.local,
-      seedDumpDate = halfParsed.seedDumpDate,
-      itemType = rawArgs.valueOrThrow[ItemType]("itemType")
-    )
-  }
-
   override protected def getKey(today: LocalDate): String = {
     val typeString = args.itemType match {
       case ItemType.Movie  => "movie"

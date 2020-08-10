@@ -4,22 +4,33 @@ import com.teletracker.common.pubsub.{
   TaskScheduler,
   TeletrackerTaskQueueMessageFactory
 }
-import com.teletracker.common.tasks.UntypedTeletrackerTask
+import com.teletracker.common.tasks.{
+  TypedTeletrackerTask,
+  UntypedTeletrackerTask
+}
+import com.teletracker.common.tasks.args.GenArgParser
 import com.teletracker.common.util.Futures._
 import com.teletracker.tasks.annotations.TaskTags
+import io.circe.generic.JsonCodec
 import io.circe.syntax._
 import javax.inject.Inject
 import scala.util.control.NonFatal
 
+@JsonCodec
+@GenArgParser
+case class RemoteTaskArgs(
+  classToRun: String,
+  instances: Int = 1)
+
+object RemoteTaskArgs
+
 class RemoteTask @Inject()(
   teletrackerTaskRunner: TeletrackerTaskRunner,
   taskScheduler: TaskScheduler)
-    extends UntypedTeletrackerTask {
+    extends TypedTeletrackerTask[RemoteTaskArgs] {
   override def runInternal(): Unit = {
-    val clazz = rawArgs.value[String]("classToRun").get
-    val instances = rawArgs.valueOrDefault[Int]("instances", 1)
     val instance =
-      teletrackerTaskRunner.getInstance(clazz)
+      teletrackerTaskRunner.getInstance(args.classToRun)
 
     val jsonArgs = instance.argsAsJson(rawArgs - "classToRun" - "instances")
 
@@ -34,14 +45,14 @@ class RemoteTask @Inject()(
 
     val message =
       TeletrackerTaskQueueMessageFactory.withJsonArgs(
-        clazz,
+        args.classToRun,
         jsonArgs,
         Some(tags)
       )
 
     println(message.asJson)
 
-    (0 until instances).foreach(_ => {
+    (0 until args.instances).foreach(_ => {
       taskScheduler.schedule(message).await()
     })
   }

@@ -30,11 +30,6 @@ abstract class LocatePopularityDeltas[T <: UpdatePopularities[_]: ClassTag](
       s3Client,
       teletrackerConfig
     ) {
-
-  override protected def postParseArgs(
-    halfParsed: DeltaLocatorJobArgs
-  ): DeltaLocatorJobArgs = identity(halfParsed)
-
   override protected def getKey(today: LocalDate): String = {
     val typeString = itemType match {
       case ItemType.Movie  => "movie"
