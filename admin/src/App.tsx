@@ -23,6 +23,7 @@ import { Link, Redirect, Router } from '@reach/router';
 import Matching from './features/matching/Matching';
 import MatchInspector from './features/match_inspector/MatchInspector';
 import Tasks from './features/tasks/Tasks';
+import TaskDetail from './features/tasks/TaskDetail';
 
 const drawerWidth = 240;
 
@@ -169,6 +170,7 @@ function App() {
           <Matching path="/matching/:filterType/:networkScraper" />
           <MatchInspector path="/match_inspector/" />
           <Tasks path="/tasks/" />
+          <TaskDetail path="/tasks/:taskId" />
         </Router>
       </main>
     </div>

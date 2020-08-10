@@ -48,16 +48,44 @@ export type SearchMatchResponse = DeepReadonlyObject<{
   }>;
 }>;
 
+export type GetTaskRequest = DeepReadonly<{
+  id: string;
+}>;
+
 export type SearchTasksRequest = DeepReadonly<{
+  sort?: string;
+  desc?: boolean;
   limit?: number;
+  taskName?: string;
+  status?: TaskStatus[];
 }>;
 
 export type SearchTaskResponse = DeepReadonly<{
   data: Task[];
 }>;
 
+export type GetTaskResponse = DeepReadonly<{
+  data: Task;
+}>;
+
+export enum TaskStatus {
+  Waiting = 'waiting',
+  Scheduled = 'scheduled',
+  Executing = 'executing',
+  Completed = 'completed',
+  Failed = 'failed',
+  Canceled = 'canceled',
+}
+
 export type Task = {
+  id: string;
   taskName: string;
+  status: TaskStatus;
+  createdAt?: string;
+  startedAt?: string;
+  finishedAt?: string;
+  hostname?: string;
+  args?: object;
 };
 
 export const getPotentialMatches = async (request: SearchMatchRequest) => {
@@ -89,6 +117,18 @@ export const getTasks = async (request: SearchTasksRequest) => {
     params: {
       admin_key: process.env.REACT_APP_ADMIN_KEY,
       ...request,
+      status:
+        request.status && request.status.length > 0
+          ? request.status.join(',')
+          : undefined,
+    },
+  });
+};
+
+export const getTask = async (request: GetTaskRequest) => {
+  return instance.get<GetTaskResponse>('/tasks/' + request.id, {
+    params: {
+      admin_key: process.env.REACT_APP_ADMIN_KEY,
     },
   });
 };

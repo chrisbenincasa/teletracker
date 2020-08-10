@@ -11,6 +11,10 @@ export const store = configureStore({
   },
 });
 
+declare module 'react-redux' {
+  export interface DefaultRootState extends RootState {}
+}
+
 export type RootState = ReturnType<typeof store.getState>;
 export type AppThunk<ReturnType = void> = ThunkAction<
   ReturnType,
