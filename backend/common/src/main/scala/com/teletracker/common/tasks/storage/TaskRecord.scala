@@ -1,6 +1,7 @@
 package com.teletracker.common.tasks.storage
 
 import com.teletracker.common.db.dynamo.util.syntax._
+import com.teletracker.common.util.HasId
 import com.teletracker.common.util.json.circe._
 import io.circe.Json
 import io.circe.generic.JsonCodec
@@ -17,6 +18,7 @@ case class TaskRecord(
   fullTaskName: Option[String],
   args: Json,
   status: TaskStatus,
+  createdAt: Option[Instant],
   startedAt: Option[Instant],
   finishedAt: Option[Instant],
   teletrackerVersion: Option[String],
@@ -32,6 +34,7 @@ case class TaskRecord(
       "args" -> args.noSpaces.toAttributeValue
     ) ++ Map(
       "fullTaskName" -> fullTaskName.map(_.toAttributeValue),
+      "createdAt" -> createdAt.map(_.toAttributeValue),
       "startedAt" -> startedAt.map(_.toAttributeValue),
       "finishedAt" -> finishedAt.map(_.toAttributeValue),
       "teletrackerVersion" -> teletrackerVersion.map(_.toAttributeValue),
@@ -40,4 +43,9 @@ case class TaskRecord(
     ).collect {
       case (k, Some(v)) => k -> v
     }).asJava
+}
+
+object TaskRecord {
+  implicit final val hasId: HasId.Aux[TaskRecord, UUID] =
+    HasId.instance[TaskRecord, UUID](_.id)
 }

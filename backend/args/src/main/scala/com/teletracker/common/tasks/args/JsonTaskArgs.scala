@@ -10,11 +10,11 @@ object JsonTaskArgs {
   private def extractValue(j: Json): Any = {
     j.fold(
       None,
-      Some(_),
-      x => Some(x.toDouble),
-      Some(_),
-      v => Some(v.map(extractValue)),
-      o => Some(o.toMap.mapValues(extractValue))
+      identity,
+      x => x.toDouble,
+      identity,
+      v => v.map(extractValue),
+      o => o.toMap.mapValues(extractValue)
     )
   }
 }

@@ -158,7 +158,7 @@ class TaskQueueWorker @Inject()(
     try {
       taskRecordStore
         .setTaskSuccess(
-          taskRecord.copy(status = TaskStatus.Completed)
+          taskRecord.id
         )
         .await()
     } catch {
@@ -171,7 +171,7 @@ class TaskQueueWorker @Inject()(
     try {
       taskRecordStore
         .setTaskFailed(
-          taskRecord.copy(status = TaskStatus.Failed)
+          taskRecord.id
         )
         .await()
     } catch {

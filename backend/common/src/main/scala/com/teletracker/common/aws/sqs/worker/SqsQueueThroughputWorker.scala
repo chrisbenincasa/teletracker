@@ -205,6 +205,10 @@ abstract class SqsQueueThroughputWorker[T <: EventBase](
       return Future.successful({})
     }
 
+    logger.info(
+      s"There are ${outstanding.get()} messages left at shutdown. Attempting to flush."
+    )
+
     val latch = new CountDownLatch(outstanding.get())
 
     val flusher = Future {

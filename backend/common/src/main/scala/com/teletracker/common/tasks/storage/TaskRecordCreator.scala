@@ -19,13 +19,14 @@ class TaskRecordCreator @Inject()() {
     id: UUID,
     task: String,
     args: Map[String, Json]
-  ) = {
+  ): TaskRecord = {
     TaskRecord(
       id = id,
       taskName = task,
       fullTaskName = None,
       args = args.asJson,
       status = TaskStatus.Scheduled,
+      createdAt = Some(Instant.now()),
       startedAt = None,
       finishedAt = None,
       teletrackerVersion = versionMetadata.flatMap(_.version),
@@ -71,6 +72,7 @@ class TaskRecordCreator @Inject()() {
       fullTaskName = Some(clazz.getName),
       args = typedArgs.asJson(args),
       status = status,
+      createdAt = Some(Instant.now()),
       startedAt = None,
       finishedAt = None,
       teletrackerVersion = versionMetadata.flatMap(_.version),
@@ -78,7 +80,7 @@ class TaskRecordCreator @Inject()() {
       logUri = Some(task.remoteLogLocation),
       hostname = Option(System.getenv("HOSTNAME"))
         .filter(_.nonEmpty)
-        .orElse(Try(InetAddress.getLocalHost.getHostAddress).toOption)
+        .orElse(Try(InetAddress.getLocalHost.getHostName).toOption)
     )
   }
 

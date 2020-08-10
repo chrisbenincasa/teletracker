@@ -149,10 +149,10 @@ lazy val consumer = project
         .getOrElse("")
     ),
     javaOptions in reStart ++= Seq(
-      "-Dregular_logging=true",
-      "-Dlog.level=DEBUG"
+      "-Dregular_logging=true"
+//      "-Dlog.level=DEBUG"
     ),
-    Revolver.enableDebugging(port = 5005, suspend = false),
+//    Revolver.enableDebugging(port = 5005, suspend = false),
     dockerfile in docker := {
       // The assembly task generates a fat JAR file
       val artifact: File = assembly.value
@@ -273,7 +273,7 @@ lazy val server = project
       "com.teletracker.service.TeletrackerServerMain"
     ),
     reStartArgs ++= Seq("-https.port=:3002"),
-    Revolver.enableDebugging(port = 5005, suspend = false),
+//    Revolver.enableDebugging(port = 5005, suspend = false),
     envVars in reStart := Map(
       "TMDB_API_KEY" -> System.getenv("TMDB_API_KEY"),
       "JWT_SECRET" -> System.getenv("JWT_SECRET"),

@@ -72,9 +72,9 @@ object TeletrackerTaskRunner extends TeletrackerTaskApp[NoopTeletrackerTask] {
 
     _instance.runFromString(clazzToRun, collectArgs) match {
       case TeletrackerTask.SuccessResult =>
-        recordStore.setTaskSuccess(record).await()
+        recordStore.setTaskSuccess(record.id).await()
       case TeletrackerTask.FailureResult(_) =>
-        recordStore.setTaskFailed(record).await()
+        recordStore.setTaskFailed(record.id).await()
     }
 
     System.exit(0)
