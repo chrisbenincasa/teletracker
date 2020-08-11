@@ -129,7 +129,7 @@ class UpdatePeoplePopularities @Inject()(
       )
       .map(results => {
         results.map {
-          case (EsExternalId(id, _), item) => id.toInt -> item.id
+          case (EsExternalId(_, id), item) => id.toInt -> item.id
         }
       })
   }

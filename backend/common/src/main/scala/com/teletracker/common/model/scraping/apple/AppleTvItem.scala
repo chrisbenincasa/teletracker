@@ -1,10 +1,16 @@
 package com.teletracker.common.model.scraping.apple
 
-import com.teletracker.common.db.model.{ItemType, OfferType, PresentationType}
+import com.teletracker.common.db.model.{
+  ExternalSource,
+  ItemType,
+  OfferType,
+  PresentationType
+}
 import com.teletracker.common.model.scraping.{
   ScrapedCastMember,
   ScrapedCrewMember,
   ScrapedItem,
+  ScrapedItemAvailabilityDetails,
   ScrapedOffer
 }
 import com.teletracker.common.util.json.circe._
@@ -31,6 +37,23 @@ case class AppleTvItem(
   override def category: Option[String] = None
 
   override def status: String = ""
+}
+
+object AppleTvItem {
+  implicit final val availabilityDetails
+    : ScrapedItemAvailabilityDetails[AppleTvItem] =
+    new ScrapedItemAvailabilityDetails[AppleTvItem] {
+      override def offerType(t: AppleTvItem): OfferType = ???
+
+      override def uniqueKey(t: AppleTvItem): Option[String] = t.externalId
+
+      override def externalIds(t: AppleTvItem): Map[ExternalSource, String] =
+        t.externalId
+          .map(eid => {
+            Map(ExternalSource.AppleTv -> eid)
+          })
+          .getOrElse(Map.empty)
+    }
 }
 
 @JsonCodec

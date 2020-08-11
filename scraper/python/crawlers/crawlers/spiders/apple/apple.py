@@ -26,8 +26,8 @@ PRICE_RE = r'\$(\d+\.\d+)'
 
 
 class AppleTvSpider(BaseCrawlSpider):
-    name = 'itunes'
-    store_name = 'itunes'
+    name = 'appletv'
+    store_name = 'appletv'
     allowed_domains = ['apple.com']
 
     start_urls = [

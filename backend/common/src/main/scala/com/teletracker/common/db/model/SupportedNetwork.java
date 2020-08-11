@@ -11,7 +11,8 @@ public enum SupportedNetwork {
     HboMax(ExternalSource.HboMax, null, 4),
     DisneyPlus(ExternalSource.DisneyPlus, null, 5),
     AmazonPrimeVideo(ExternalSource.AmazonPrimeVideo, null, 6),
-    AmazonVideo(ExternalSource.AmazonVideo, null, 7);
+    AmazonVideo(ExternalSource.AmazonVideo, null, 7),
+    AppleTv(ExternalSource.AppleTv, null, 8);
 
     private final int value;
     private final String name;

@@ -47,6 +47,7 @@ object CrawlStore {
   final val HuluChanges = new CrawlerName("hulu_changes")
   final val DisneyPlusCatalog = new CrawlerName("disneyplus")
   final val AmazonCatalog = new CrawlerName("amazon")
+  final val AppleTvCatalog = new CrawlerName("appletv")
 }
 
 class CrawlerName(val name: String) extends AnyVal {

@@ -1,7 +1,10 @@
 package com.teletracker.common.db.dynamo.model
 
 import com.teletracker.common.db.dynamo.util.syntax._
-import com.teletracker.common.db.model.SupportedNetwork
+import com.teletracker.common.db.model.{
+  SupportedNetwork,
+  SupportedNetworkLookup
+}
 import com.teletracker.common.util.Slug
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 import java.util
@@ -53,7 +56,9 @@ case class StoredNetwork(
 
   lazy val supportedNetwork: Option[SupportedNetwork] = Try(
     SupportedNetwork.fromString(slug.value)
-  ).toOption
+  ).toOption.orElse {
+    SupportedNetworkLookup.SpecialCaseMap.get(slug.value)
+  }
 
   lazy val isSupported: Boolean = supportedNetwork.isDefined
 

@@ -41,21 +41,14 @@ class TaskQueueWorker @Inject()(
   taskRecordCreator: TaskRecordCreator
 )(implicit executionContext: ExecutionContext)
     extends SqsQueueThroughputWorker[TeletrackerTaskQueueMessage](queue, config) {
-
-  private val needsTmdbPool =
-    new JobPool(
-      "TmdbJobs",
-      () => consumerConfig.currentValue().max_tmdb_concurrent_jobs
-    )
-
   private val normalPool =
     new JobPool(
-      "NormalJobs",
+      "JobPool",
       () => consumerConfig.currentValue().max_regular_concurrent_jobs
     )
 
   def getUnexecutedTasks: Iterable[TeletrackerTaskQueueMessage] = {
-    (needsTmdbPool.getPending ++ normalPool.getPending).map(_.originalMessage)
+    normalPool.getPending.map(_.originalMessage)
   }
 
   def requeueUnfinishedTasks(): Future[List[TeletrackerTaskQueueMessage]] = {
@@ -75,14 +68,11 @@ class TaskQueueWorker @Inject()(
       task.taskId = taskId
 
       val extractedArgs = JsonTaskArgs.extractArgs(message.args)
-      val stringifiedArgs = extractedArgs.collect {
-        case (str, x) => str -> x.toString
-      }
 
-      val taskRecord = taskRecordCreator.create(
+      val taskRecord = taskRecordCreator.createGen(
         taskId,
         task,
-        stringifiedArgs,
+        message.args,
         TaskStatus.Executing
       )
 
@@ -109,7 +99,13 @@ class TaskQueueWorker @Inject()(
         // Send non-retryables to the DLQ if there is one and ack
         case (_, FailureResult(_)) =>
           setTaskFailedInStore(taskRecord)
-          queue.dlq.foreach(_.queue(message, message.messageGroupId))
+          queue.dlq.foreach(
+            dlq =>
+              dlq.queue(
+                message,
+                message.messageGroupId.getOrElse(dlq.defaultGroupId)
+              )
+          )
           completionPromise.success(message.receiptHandle)
         // Ack everything else
         case _ =>
@@ -119,14 +115,7 @@ class TaskQueueWorker @Inject()(
 
       logger.info(s"Attempting to schedule ${message.clazz}")
 
-      val submitted =
-        if (message.jobTags
-              .getOrElse(Set.empty)
-              .contains(TaskTag.RequiresTmdbApi)) {
-          needsTmdbPool.submit(runnable)
-        } else {
-          normalPool.submit(runnable)
-        }
+      val submitted = normalPool.submit(runnable)
 
       if (!submitted) {
         Future.successful(

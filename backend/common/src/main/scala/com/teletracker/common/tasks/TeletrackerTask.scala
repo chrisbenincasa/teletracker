@@ -14,7 +14,6 @@ import io.circe.syntax._
 import io.circe.{Encoder, Json}
 import javax.inject.Inject
 import org.slf4j.{Logger, LoggerFactory}
-import shapeless.ops.product.ToMap
 import software.amazon.awssdk.services.s3.S3Client
 import java.net.URI
 import java.time.{LocalDate, OffsetDateTime}
@@ -63,6 +62,12 @@ object TeletrackerTask {
           case Left(value)  => l.asJson(value)
           case Right(value) => r.asJson(value)
         }
+      }
+
+    implicit val mapJsonJsonableArgs: JsonableArgs[Map[String, Json]] =
+      new JsonableArgs[Map[String, Json]] {
+        override def asJson(a: Map[String, Json]): Json =
+          implicitly[Encoder[Map[String, Json]]].apply(a)
       }
 
     implicit val mapJsonableArgs: JsonableArgs[Map[String, String]] =

@@ -67,7 +67,7 @@ class Heartbeat[T <: EventBase](
               val invalidMessage =
                 failedEntries
                   .exists(
-                    _.code().toInt == Heartbeat.INVALID_PARAMETER_ERROR_CODE
+                    _.code() == "ReceiptHandleIsInvalid"
                   )
 
               if (invalidMessage) {

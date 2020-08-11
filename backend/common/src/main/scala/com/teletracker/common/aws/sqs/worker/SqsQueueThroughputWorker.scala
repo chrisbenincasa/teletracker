@@ -124,6 +124,9 @@ abstract class SqsQueueThroughputWorker[T <: EventBase](
           items.foreach(createProcessingFuture)
         }
       } else {
+        logger.debug(
+          s"Queue full, taking a ${config.sleepDurationWhenQueueFull} nap"
+        )
         sleep(config.sleepDurationWhenQueueFull)
       }
 

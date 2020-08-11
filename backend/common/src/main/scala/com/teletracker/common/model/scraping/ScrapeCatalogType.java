@@ -8,7 +8,8 @@ public enum ScrapeCatalogType {
     HboMaxCatalog("HboMaxCatalog", ScrapeItemType.HboItem),
     HboChanges("HboChanges", ScrapeItemType.HboChangeItem),
     NetflixOriginalsArriving("NetflixOriginalsArriving", ScrapeItemType.NetflixOriginalsArriving),
-    AmazonVideo("AmazonVideo", ScrapeItemType.AmazonItem);
+    AmazonVideo("AmazonVideo", ScrapeItemType.AmazonItem),
+    AppleTvCatalog("AppleTv", ScrapeItemType.AppleTvItem);
 
     private final String type;
     private final ScrapeItemType scrapeItemType;
