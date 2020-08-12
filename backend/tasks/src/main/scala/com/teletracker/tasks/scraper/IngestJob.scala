@@ -276,7 +276,7 @@ abstract class IngestJob[T <: ScrapedItem: ScrapedItemAvailabilityDetails](
           } else {
             if (args.dryRun && esItem != newItem) {
               logger.info(
-                s"Would've updated id = ${newItem.id}:\n ${diff(esItem.asJson, newItem.asJson).asJson.spaces2}"
+                s"Would've updated id = ${newItem.id}:\n ${diff(esItem.asJson, newItem.asJson).asJson.deepDropNullValues.spaces2}"
               )
             }
 
@@ -408,7 +408,7 @@ abstract class IngestJob[T <: ScrapedItem: ScrapedItemAvailabilityDetails](
 
           if (args.dryRun) {
             logger.info(
-              s"Would've updated incorrect item (${item.id}):\n${diff(item.asJson, updatedItem.asJson).asJson.spaces2}"
+              s"Would've updated incorrect item (${item.id}):\n${diff(item.asJson, updatedItem.asJson).asJson.deepDropNullValues.spaces2}"
             )
           }
 
@@ -418,7 +418,7 @@ abstract class IngestJob[T <: ScrapedItem: ScrapedItemAvailabilityDetails](
         AsyncItemUpdateRequest(
           id = item.id,
           itemType = item.`type`,
-          doc = item.asJson,
+          doc = item.asJson.deepDropNullValues,
           denorm = Some(
             EsIngestItemDenormArgs(
               needsDenorm = true,
@@ -487,7 +487,7 @@ abstract class IngestJob[T <: ScrapedItem: ScrapedItemAvailabilityDetails](
           scraped = EsGenericScrapedItem(
             scrapeItemType,
             EsScrapedItem.fromAnyScrapedItem(t),
-            t.asJson
+            t.asJson.deepDropNullValues
           ),
           availability = Some(createAvailabilities(networks, item, t).toList)
         )
