@@ -43,7 +43,6 @@ object AppleTvItem {
   implicit final val availabilityDetails
     : ScrapedItemAvailabilityDetails[AppleTvItem] =
     new ScrapedItemAvailabilityDetails[AppleTvItem] {
-      override def offerType(t: AppleTvItem): OfferType = ???
 
       override def uniqueKey(t: AppleTvItem): Option[String] = t.externalId
 

@@ -92,16 +92,8 @@ abstract class IngestJob[T <: ScrapedItem: ScrapedItemAvailabilityDetails](
   @Inject
   protected var crawlStore: CrawlStore = _
 
-  protected val matchChangesFile = new File(
+  protected val (matchChangesWriter, matchChangesFile) = newPrintStream(
     s"${today}_${getClass.getSimpleName}-change-matches.json"
-  )
-
-  protected val matchChangesWriter = new PrintStream(
-    new BufferedOutputStream(
-      new FileOutputStream(
-        matchChangesFile
-      )
-    )
   )
 
   protected def lookupMethod(): LookupMethod[T] = {
@@ -123,7 +115,6 @@ abstract class IngestJob[T <: ScrapedItem: ScrapedItemAvailabilityDetails](
   protected def getAdditionalOutputFiles: Seq[(File, String)] = Seq()
 
   override def runInternal(): Unit = {
-    registerArtifact(Artifact(potentialMatchesWriter, potentialMatchFile))
     registerArtifact(Artifact(matchChangesWriter, matchChangesFile))
 
     val networks = getNetworksOrExit()

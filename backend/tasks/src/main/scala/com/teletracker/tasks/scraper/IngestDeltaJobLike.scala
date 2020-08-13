@@ -34,7 +34,8 @@ import com.teletracker.common.model.scraping.{
   MatchResult,
   PartialEsItem,
   ScrapedItem,
-  ScrapedItemAvailabilityDetails
+  ScrapedItemAvailabilityDetails,
+  ScrapedItemAvailabilityDetailsSyntax
 }
 import com.teletracker.common.pubsub.EsIngestItemDenormArgs
 import com.teletracker.common.tasks.TeletrackerTask.JsonableArgs

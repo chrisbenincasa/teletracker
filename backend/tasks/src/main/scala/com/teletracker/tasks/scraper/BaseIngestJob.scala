@@ -35,9 +35,12 @@ import java.io.{
 }
 import java.time.{LocalDate, OffsetDateTime, ZoneOffset}
 import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Success
+import scala.util.control.NonFatal
 
 // Base class for processing a bunch of items
 abstract class BaseIngestJob[
@@ -75,27 +78,34 @@ abstract class BaseIngestJob[
   // The type of items scraped from this data source.
   protected def scrapeItemType: ScrapeCatalogType
 
-  protected val missingItemsFile = new File(
+  protected val (missingItemsWriter, missingItemsFile) = newPrintStream(
     s"${today}_${getClass.getSimpleName}-missing-items.json"
   )
-  protected val matchItemsFile = new File(
+
+  protected val (matchingItemsWriter, matchItemsFile) = newPrintStream(
     s"${today}_${getClass.getSimpleName}-match-items.json"
   )
-  protected val potentialMatchFile = new File(
+
+  protected val (potentialMatchesWriter, potentialMatchFile) = newPrintStream(
     s"${today}_${getClass.getSimpleName}-potential-matches.json"
   )
 
-  protected val missingItemsWriter: PrintStream = newPrintStream(
-    missingItemsFile
-  )
-  protected val matchingItemsWriter: PrintStream = newPrintStream(
-    matchItemsFile
-  )
-  protected val potentialMatchesWriter: PrintStream = newPrintStream(
-    potentialMatchFile
+  protected val (errorFileWriter, errorFile) = newPrintStream(
+    s"${today}_${getClass.getSimpleName}-process-errors.json"
   )
 
-  private def newPrintStream(file: File): PrintStream =
+  private val totalItemsCounter = new AtomicInteger()
+
+  protected def newArtifact(filePath: String): Artifact = {
+    Artifact.tupled.apply(newPrintStream(filePath))
+  }
+
+  protected def newPrintStream(filePath: String): (PrintStream, File) = {
+    val f = new File(filePath)
+    (newPrintStream(f), f)
+  }
+
+  protected def newPrintStream(file: File): PrintStream =
     new PrintStream(
       new BufferedOutputStream(
         new FileOutputStream(
@@ -109,7 +119,8 @@ abstract class BaseIngestJob[
     a ++= List(
       Artifact(matchingItemsWriter, matchItemsFile),
       Artifact(missingItemsWriter, missingItemsFile),
-      Artifact(potentialMatchesWriter, potentialMatchFile)
+      Artifact(potentialMatchesWriter, potentialMatchFile),
+      Artifact(errorFileWriter, errorFile)
     )
     a
   }
@@ -239,8 +250,29 @@ abstract class BaseIngestJob[
               }
             )
         }
+        .andThen {
+          case Success(_) =>
+            logger.info(
+              s"Processed ${totalItemsCounter.addAndGet(items.size)} items, so far."
+            )
+        }
+        .recoverWith {
+          case NonFatal(e) =>
+            logger.error(
+              "Got fatal error when processing batch. Calling handler",
+              e
+            )
+
+            onProcessBatchError(items).map(_ => Nil -> Nil)
+        }
     } else {
       Future.successful(Nil -> Nil)
+    }
+  }
+
+  protected def onProcessBatchError(items: List[T]): Future[Unit] = {
+    Future {
+      items.map(_.asJson.noSpaces).foreach(errorFileWriter.println)
     }
   }
 

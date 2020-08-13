@@ -14,8 +14,6 @@ object HuluScrapeCatalogItem {
   implicit final val availabilityDetails
     : ScrapedItemAvailabilityDetails[HuluScrapeCatalogItem] =
     new ScrapedItemAvailabilityDetails[HuluScrapeCatalogItem] {
-      override def offerType(t: HuluScrapeCatalogItem): OfferType =
-        OfferType.Subscription
 
       override def uniqueKey(t: HuluScrapeCatalogItem): Option[String] =
         t.externalId

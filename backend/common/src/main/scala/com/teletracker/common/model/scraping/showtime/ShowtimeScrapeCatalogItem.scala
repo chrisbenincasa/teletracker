@@ -12,8 +12,6 @@ object ShowtimeScrapeCatalogItem {
   implicit final val availabilityDetails
     : ScrapedItemAvailabilityDetails[ShowtimeScrapeCatalogItem] =
     new ScrapedItemAvailabilityDetails[ShowtimeScrapeCatalogItem] {
-      override def offerType(t: ShowtimeScrapeCatalogItem): OfferType =
-        OfferType.Subscription
 
       override def uniqueKey(t: ShowtimeScrapeCatalogItem): Option[String] =
         t.externalId

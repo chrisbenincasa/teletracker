@@ -1,6 +1,7 @@
 package com.teletracker.tasks.scraper
 
 import com.teletracker.common.model.scraping.amazon.AmazonItem
+import com.teletracker.common.model.scraping.apple.AppleTvItem
 import com.teletracker.common.model.scraping.{
   MatchResult,
   PotentialMatch,
@@ -51,6 +52,8 @@ object ScrapeItemStreams {
           .stream[MatchResult[NetflixOriginalScrapeItem]](source.getLines())
       case ScrapeCatalogType.AmazonVideo =>
         parser.stream[MatchResult[AmazonItem]](source.getLines())
+      case ScrapeCatalogType.AppleTvCatalog =>
+        parser.stream[MatchResult[AppleTvItem]](source.getLines())
 
     }
   }
@@ -83,6 +86,8 @@ object ScrapeItemStreams {
           .stream[PotentialMatch[NetflixOriginalScrapeItem]](source.getLines())
       case ScrapeCatalogType.AmazonVideo =>
         parser.stream[PotentialMatch[AmazonItem]](source.getLines())
+      case ScrapeCatalogType.AppleTvCatalog =>
+        parser.stream[PotentialMatch[AppleTvItem]](source.getLines())
     }
   }
 
@@ -130,6 +135,8 @@ object ScrapeItemStreams {
           )
       case ScrapeCatalogType.AmazonVideo =>
         parser.streamWithParsed[PotentialMatch[AmazonItem]](source.getLines())
+      case ScrapeCatalogType.AppleTvCatalog =>
+        parser.streamWithParsed[PotentialMatch[AppleTvItem]](source.getLines())
     }
   }
 }

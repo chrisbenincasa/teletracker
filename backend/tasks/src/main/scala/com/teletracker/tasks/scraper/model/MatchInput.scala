@@ -19,8 +19,6 @@ object MatchInput {
     implicit underlyingAvailabilityDetails: ScrapedItemAvailabilityDetails[T]
   ): ScrapedItemAvailabilityDetails[MatchInput[T]] =
     new ScrapedItemAvailabilityDetails[MatchInput[T]] {
-      override def offerType(t: MatchInput[T]): OfferType =
-        underlyingAvailabilityDetails.offerType(t.scrapedItem)
       override def uniqueKey(t: MatchInput[T]): Option[String] =
         underlyingAvailabilityDetails.uniqueKey(t.scrapedItem)
       override def externalIds(t: MatchInput[T]): Map[ExternalSource, String] =

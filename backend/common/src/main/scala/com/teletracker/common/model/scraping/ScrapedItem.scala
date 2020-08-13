@@ -63,16 +63,17 @@ trait ScrapedOffer {
 }
 
 object ScrapedItemAvailabilityDetails {
-  object syntax {
-    implicit def toDetailOps[T <: ScrapedItem](
-      t: T
-    ): ScrapedItemAvailabilityDetailsOps[T] =
-      new ScrapedItemAvailabilityDetailsOps[T](t)
-  }
+  object syntax extends ScrapedItemAvailabilityDetailsSyntax
+}
+
+trait ScrapedItemAvailabilityDetailsSyntax {
+  implicit def toDetailOps[T <: ScrapedItem](
+    t: T
+  ): ScrapedItemAvailabilityDetailsOps[T] =
+    new ScrapedItemAvailabilityDetailsOps[T](t)
 }
 
 trait ScrapedItemAvailabilityDetails[T <: ScrapedItem] {
-  def offerType(t: T): OfferType
   def uniqueKey(t: T): Option[String]
   def externalIds(t: T): Map[ExternalSource, String]
 }

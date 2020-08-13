@@ -15,8 +15,6 @@ object DisneyPlusCatalogItem {
   implicit final val availabilityDetails
     : ScrapedItemAvailabilityDetails[DisneyPlusCatalogItem] =
     new ScrapedItemAvailabilityDetails[DisneyPlusCatalogItem] {
-      override def offerType(t: DisneyPlusCatalogItem): OfferType =
-        OfferType.Subscription
 
       override def uniqueKey(t: DisneyPlusCatalogItem): Option[String] =
         t.externalId

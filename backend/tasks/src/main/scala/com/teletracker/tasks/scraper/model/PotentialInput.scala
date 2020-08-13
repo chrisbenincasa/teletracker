@@ -19,8 +19,6 @@ object PotentialInput {
     implicit underlyingAvailabilityDetails: ScrapedItemAvailabilityDetails[T]
   ): ScrapedItemAvailabilityDetails[PotentialInput[T]] =
     new ScrapedItemAvailabilityDetails[PotentialInput[T]] {
-      override def offerType(t: PotentialInput[T]): OfferType =
-        underlyingAvailabilityDetails.offerType(t.scraped)
       override def uniqueKey(t: PotentialInput[T]): Option[String] =
         underlyingAvailabilityDetails.uniqueKey(t.scraped)
       override def externalIds(

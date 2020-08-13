@@ -21,7 +21,6 @@ import java.util.UUID
 object AmazonItem {
   implicit val availabilityDetails: ScrapedItemAvailabilityDetails[AmazonItem] =
     new ScrapedItemAvailabilityDetails[AmazonItem] {
-      override def offerType(t: AmazonItem): OfferType = ???
       override def uniqueKey(t: AmazonItem): Option[String] = t.externalId
       override def externalIds(t: AmazonItem): Map[ExternalSource, String] =
         t.externalId
