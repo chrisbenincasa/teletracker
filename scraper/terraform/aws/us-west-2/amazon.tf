@@ -24,7 +24,7 @@ module "amazon_crawler" {
   ]
 
   dynamodb_output_table = aws_dynamodb_table.crawls.name
-  redis_host            = length(aws_elasticache_cluster.crawl_store) == 1 ? aws_route53_record.crawl_store_dns_record.name : ""
+  redis_host            = "crawl_store.cache.internal.qa.teletracker.tv"
 
   schedule = []
 

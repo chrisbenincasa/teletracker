@@ -8,8 +8,8 @@ module "hulu_crawler" {
   crawler_image = var.crawler_image
   image_version = var.hulu_catalog_crawler_version
 
-  name        = "hulu_catalog_crawler"
-  spider_name = "hulu"
+  name         = "hulu_catalog_crawler"
+  spider_name  = "hulu"
   cluster_name = data.aws_ecs_cluster.ecs-cluster.cluster_name
 
   outputs = [

@@ -8,8 +8,8 @@ module "netflix_crawler" {
   crawler_image = var.crawler_image
   image_version = var.netflix_catalog_crawler_version
 
-  name        = "netflix_catalog_crawler"
-  spider_name = "netflix"
+  name         = "netflix_catalog_crawler"
+  spider_name  = "netflix"
   cluster_name = data.aws_ecs_cluster.ecs-cluster.cluster_name
 
   outputs = [

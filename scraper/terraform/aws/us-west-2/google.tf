@@ -8,8 +8,8 @@ module "google_play_store_crawler" {
   crawler_image = var.crawler_image
   image_version = var.google_play_store_catalog_crawler_version
 
-  name        = "google_crawler"
-  spider_name = "google_play_store"
+  name         = "google_crawler"
+  spider_name  = "google_play_store"
   cluster_name = data.aws_ecs_cluster.ecs-cluster.cluster_name
 
   outputs = [

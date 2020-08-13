@@ -1,18 +1,14 @@
-// TODO: Import this later
-# data "aws_launch_template" "teletracker-ecs-launch-template" {
-#   name = "Teletracker-QA-t3a"
-# }
-
-# data "aws_launch_template" "teletracker-ecs-launch-template-t2" {
-# name = "teletracker-ecs-t2"
-# }
-
 data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
 
 data "aws_subnet_ids" "teletracker-subnet-ids" {
   vpc_id = "vpc-09a64ee30f2e3e82e"
+}
+
+data "aws_subnet" "us_west_2b" {
+  vpc_id            = data.aws_vpc.teletracker-qa-vpc.id
+  availability_zone = "us-west-2b"
 }
 
 data "aws_iam_role" "ecs-service-role" {
@@ -54,4 +50,8 @@ data "aws_ssm_parameter" "datadog_api_key" {
 
 data "aws_dynamodb_table" "crawls_table" {
   name = "teletracker.qa.crawls"
+}
+
+data "aws_route53_zone" "teletracker-tv-zone" {
+  name = "teletracker.tv"
 }

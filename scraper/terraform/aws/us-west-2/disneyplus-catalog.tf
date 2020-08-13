@@ -8,8 +8,8 @@ module "disneyplus_catalog_crawler" {
   crawler_image = var.crawler_image
   image_version = var.disneyplus_catalog_crawler_version
 
-  name        = "disneyplus_catalog_crawler"
-  spider_name = "disneyplus"
+  name         = "disneyplus_catalog_crawler"
+  spider_name  = "disneyplus"
   cluster_name = data.aws_ecs_cluster.ecs-cluster.cluster_name
 
   outputs = [

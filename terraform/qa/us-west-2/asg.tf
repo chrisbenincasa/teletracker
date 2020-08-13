@@ -75,14 +75,6 @@ data "template_file" "ecs-t3a-user-data" {
   }
 }
 
-module "service_container_instance" {
-  source               = "../modules/one-off-container-instance"
-  iam_instance_profile = data.aws_iam_instance_profile.ecs-instance-profile.arn
-  user_data            = data.template_file.ecs-t3a-user-data.rendered
-  snapshot_id          = "snap-0f6cf4b4deae5f20a"
-  network_interface_id = "eni-0294d89e1dc9b5f49"
-}
-
 resource "aws_launch_template" "ecs-t3a-launch-template" {
   key_name      = "teletracker-qa"
   image_id      = "ami-0cc2d77951f6af376"

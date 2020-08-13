@@ -34,3 +34,7 @@ data "aws_caller_identity" "current" {}
 data "aws_s3_bucket" "teletracker-artifacts-us-west-2" {
   bucket = "us-west-2-teletracker-artifacts"
 }
+
+data "aws_security_group" "all_crawlers" {
+  id = "sg-0e8a76ce422567bdd"
+}

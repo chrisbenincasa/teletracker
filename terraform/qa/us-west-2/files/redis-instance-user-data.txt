@@ -1,0 +1,3 @@
+#!/bin/bash
+echo ECS_CLUSTER=${cluster} >> /etc/ecs/ecs.config
+echo ECS_INSTANCE_ATTRIBUTES={\"purpose\":\"redis\"} >> /etc/ecs/ecs.config

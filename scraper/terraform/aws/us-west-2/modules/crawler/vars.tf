@@ -78,6 +78,6 @@ variable "memory" {
 }
 
 variable "fargate" {
-  type = bool
+  type    = bool
   default = true
 }

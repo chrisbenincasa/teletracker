@@ -88,14 +88,14 @@ resource "aws_lambda_function" "crawl_trigger_function" {
   environment {
     variables = {
       TASK_QUEUE_URL = module.task-consumer.queue_id
-      CONFIG_BUCKET = data.aws_s3_bucket.teletracker_config_bucket.id
-      CONFIG_KEY = "crawl_triggers/mappings.json"
+      CONFIG_BUCKET  = data.aws_s3_bucket.teletracker_config_bucket.id
+      CONFIG_KEY     = "crawl_triggers/mappings.json"
     }
   }
 }
 
 resource "aws_lambda_event_source_mapping" "crawl_trigger_dynamodb_mapping" {
-  event_source_arn = data.aws_dynamodb_table.crawls_table.stream_arn
-  function_name = aws_lambda_function.crawl_trigger_function.arn
+  event_source_arn  = data.aws_dynamodb_table.crawls_table.stream_arn
+  function_name     = aws_lambda_function.crawl_trigger_function.arn
   starting_position = "LATEST"
 }

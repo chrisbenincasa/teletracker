@@ -70,7 +70,7 @@ resource "aws_cloudwatch_event_target" "cw_scheduled_task" {
     network_configuration {
       subnets          = data.aws_subnet_ids.teletracker-subnet-ids.ids
       assign_public_ip = true
-      security_groups  = toset([aws_security_group.crawler_sg.id])
+      security_groups  = toset([aws_security_group.crawler_sg.id, data.aws_security_group.all_crawlers.id])
     }
   }
 }

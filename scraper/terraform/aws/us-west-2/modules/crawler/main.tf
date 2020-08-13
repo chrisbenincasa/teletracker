@@ -28,12 +28,12 @@ resource "aws_ecs_task_definition" "crawler_task_def" {
           name : "REDIS_HOST",
           value : var.redis_host
         }
-      ],
-      [
-        {
-          name: "AWS_DEFAULT_REGION",
-          value: data.aws_region.current.name
-        }
+        ],
+        [
+          {
+            name : "AWS_DEFAULT_REGION",
+            value : data.aws_region.current.name
+          }
       ]),
       portMappings : var.fargate ? [] : [{ containerPort : 6023 }],
       command : concat([
@@ -89,7 +89,7 @@ resource "aws_ecs_service" "crawler_ecs_fargate_service" {
     subnets          = data.aws_subnet_ids.teletracker-subnet-ids.ids
     assign_public_ip = true
     security_groups = [
-    aws_security_group.crawler_sg.id]
+    aws_security_group.crawler_sg.id, data.aws_security_group.all_crawlers.id]
   }
 
   lifecycle {
@@ -99,7 +99,7 @@ resource "aws_ecs_service" "crawler_ecs_fargate_service" {
 }
 
 resource "aws_ecs_service" "crawler_ecs_ec2_service" {
-  count = var.gen_service && !var.fargate ? 1 : 0
+  count = var.gen_service && ! var.fargate ? 1 : 0
 
   name            = var.name
   cluster         = data.aws_ecs_cluster.main_cluster.cluster_name
@@ -112,6 +112,6 @@ resource "aws_ecs_service" "crawler_ecs_ec2_service" {
 
   lifecycle {
     ignore_changes = [
-      "desired_count"]
+    "desired_count"]
   }
 }

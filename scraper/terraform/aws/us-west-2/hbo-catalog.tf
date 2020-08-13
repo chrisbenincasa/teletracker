@@ -12,8 +12,8 @@ module "hbo_crawler" {
   crawler_image = var.crawler_image
   image_version = var.hbo_catalog_crawler_version
 
-  name        = "hbo_catalog_crawler"
-  spider_name = "hbo_go_catalog"
+  name         = "hbo_catalog_crawler"
+  spider_name  = "hbo_go_catalog"
   cluster_name = data.aws_ecs_cluster.ecs-cluster.cluster_name
 
   outputs = [
@@ -37,8 +37,8 @@ module "hbo_changes_crawler" {
   crawler_image = var.crawler_image
   image_version = var.hbo_catalog_crawler_version
 
-  name        = "hbo_changes_crawler"
-  spider_name = "hbo_changes"
+  name         = "hbo_changes_crawler"
+  spider_name  = "hbo_changes"
   cluster_name = data.aws_ecs_cluster.ecs-cluster.cluster_name
 
   outputs = [
@@ -60,8 +60,8 @@ module "hbo_max_crawler" {
   crawler_image = var.crawler_image
   image_version = var.hbo_max_crawler_version
 
-  name        = "hbo_max_crawler"
-  spider_name = "hbo_max_authenticated"
+  name         = "hbo_max_crawler"
+  spider_name  = "hbo_max_authenticated"
   cluster_name = data.aws_ecs_cluster.ecs-cluster.cluster_name
 
   outputs = [
