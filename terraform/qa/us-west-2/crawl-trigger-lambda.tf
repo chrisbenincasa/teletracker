@@ -57,6 +57,16 @@ data "aws_iam_policy_document" "crawl_trigger_policy_doc" {
       module.task-consumer.queue_arn
     ]
   }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "s3:Get*"
+    ]
+    resources = [
+      data.aws_s3_bucket.teletracker-data-bucket.arn
+    ]
+  }
 }
 
 resource "aws_iam_policy" "crawl_trigger_policy" {
