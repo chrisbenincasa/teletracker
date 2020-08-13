@@ -64,7 +64,7 @@ data "aws_iam_policy_document" "crawl_trigger_policy_doc" {
       "s3:Get*"
     ]
     resources = [
-      data.aws_s3_bucket.teletracker-data-bucket.arn
+      data.aws_s3_bucket.teletracker_config_bucket.arn
     ]
   }
 }
