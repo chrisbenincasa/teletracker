@@ -72,6 +72,7 @@ data "template_file" "ecs-t3a-user-data" {
   template = file("${path.module}/files/t3a-template-user-data.txt")
   vars = {
     cluster = aws_ecs_cluster.teletracker-qa.name
+    purpose = "server"
   }
 }
 
@@ -132,6 +133,7 @@ data "template_file" "crawl_cluster_template" {
   template = file("${path.module}/files/t3a-template-user-data.txt")
   vars = {
     cluster = aws_ecs_cluster.teletracker_crawlers.name
+    purpose = "crawls"
   }
 }
 

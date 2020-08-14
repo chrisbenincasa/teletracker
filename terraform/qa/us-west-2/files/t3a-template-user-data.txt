@@ -1,2 +1,3 @@
 #!/bin/bash
 echo ECS_CLUSTER=${cluster} >> /etc/ecs/ecs.config
+echo ECS_INSTANCE_ATTRIBUTES={\"purpose\":\"${purpose}\"} >> /etc/ecs/ecs.config

@@ -53,7 +53,7 @@ data "aws_iam_policy_document" "main_es_policy" {
     actions = ["es:*"]
     effect  = "Allow"
     principals {
-      identifiers = [data.aws_iam_role.ecs-fargate-task-role.arn]
+      identifiers = [data.aws_iam_role.ecs-fargate-task-role.arn, data.aws_iam_role.ecs-instance-role.arn]
       type        = "AWS"
     }
     resources = ["${aws_elasticsearch_domain.teletracker-qa-es.arn}/*"]

@@ -1,0 +1,51 @@
+[
+  {
+    "name": "${service_name}",
+    "image": "${image}",
+    "cpu": ${cpu},
+    "memory": ${memory},
+    "essential": true,
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "${service_name}",
+        "awslogs-region": "us-west-2",
+        "awslogs-stream-prefix": "consumer",
+        "awslogs-create-group": "true"
+      }
+    },
+    "entrypoint": ["/app/main.sh", "-mode=${mode}"],
+    "environment": [
+      {
+        "name": "ES_SCHEME",
+        "value": "https"
+      },
+      {
+        "name": "ES_PORT",
+        "value": "443"
+      },
+      {
+        "name": "ES_HOST",
+        "value": "search-teletracker-qa-igmliq26kf3wlgxlrihy2bqfuu.us-west-2.es.amazonaws.com"
+      },
+      {
+        "name": "ADMINISTRATOR_KEY",
+        "value": "+pxK@ZNxp/XOlws1%Ga)vqfcvqmBh/"
+      },
+      {
+        "name": "JVM_ARGS",
+        "value": "-Xmx1g"
+      }
+    ],
+    "secrets": [
+      {
+        "name": "TMDB_API_KEY",
+        "valueFrom": "arn:aws:ssm:us-west-2:302782651551:parameter/tmdb-api-key-qa"
+      },
+      {
+        "name": "ES_PASSWORD",
+        "valueFrom": "arn:aws:ssm:us-west-2:302782651551:parameter/teletracker-qa-elasticsearch-password"
+      }
+    ]
+  }
+]

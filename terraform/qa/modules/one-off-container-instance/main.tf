@@ -59,20 +59,29 @@ resource "aws_launch_template" "launch_template" {
 }
 
 data "aws_network_interface" "network_interface" {
-  id = var.network_interface_id
+  count = var.network_interface_id == "" ? 0 : 1
+  id    = var.network_interface_id
 }
 
 resource "aws_autoscaling_group" "autoscaling_group" {
-  availability_zones = [data.aws_network_interface.network_interface.availability_zone]
-  max_size         = var.max
-  min_size         = var.min
-  desired_capacity = var.desired
+  availability_zones = var.network_interface_id == "" ? data.aws_subnet_ids.teletracker-subnet-ids.ids : [data.aws_network_interface.network_interface[0].availability_zone]
+  max_size           = var.max
+  min_size           = var.min
+  desired_capacity   = var.desired
 
   vpc_zone_identifier = null
-//  vpc_zone_identifier = var.network_interface_id == "" ? [data.aws_network_interface.network_interface.subnet_id] : null
+  //  vpc_zone_identifier = var.network_interface_id == "" ? [data.aws_network_interface.network_interface.subnet_id] : null
 
   launch_template {
     id      = aws_launch_template.launch_template.id
     version = aws_launch_template.launch_template.latest_version
   }
+
+  lifecycle {
+    ignore_changes = [desired_capacity]
+  }
+}
+
+output "autoscaling_group_id" {
+  value = aws_autoscaling_group.autoscaling_group.id
 }

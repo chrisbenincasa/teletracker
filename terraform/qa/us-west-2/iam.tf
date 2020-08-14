@@ -178,8 +178,3 @@ resource "aws_iam_role" "datadog-collect-role" {
 }
 EOF
 }
-
-//resource "aws_iam_role_policy_attachment" "cloudbuild-terraform-s3-policy" {
-//  policy_arn = data.aws_iam_policy.sqs_full_access_policy.arn
-//  role       = aws_iam_role.cloudbuild-terraform-role.name
-//}

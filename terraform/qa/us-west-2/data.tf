@@ -55,3 +55,7 @@ data "aws_dynamodb_table" "crawls_table" {
 data "aws_route53_zone" "teletracker-tv-zone" {
   name = "teletracker.tv"
 }
+
+data "aws_availability_zones" "availability_zones" {
+  state = "available"
+}
