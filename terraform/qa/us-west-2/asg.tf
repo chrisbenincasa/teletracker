@@ -1,8 +1,8 @@
 resource "aws_autoscaling_group" "teletracker-ecs-asg" {
   availability_zones = data.aws_availability_zones.availability_zones.names
-  max_size           = 1
-  min_size           = 1
-  desired_capacity   = 1
+  max_size           = 2
+  min_size           = 2
+  desired_capacity   = 2
 
   vpc_zone_identifier = data.aws_subnet_ids.teletracker-subnet-ids.ids
 
@@ -44,8 +44,6 @@ resource "aws_launch_template" "ecs-t3a-launch-template" {
   ebs_optimized                        = false
 
   user_data = base64encode(data.template_file.ecs-t3a-user-data.rendered)
-
-//  vpc_security_group_ids = [aws_security_group.ssh_access.id, aws_security_group.load_balancer_access.id]
 
   block_device_mappings {
     device_name = "/dev/xvda"

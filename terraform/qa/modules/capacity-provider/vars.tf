@@ -31,7 +31,7 @@ variable "tags" {
 
 variable "min" {
   type = number
-  default = 1
+  default = 0
 }
 
 variable "max" {

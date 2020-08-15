@@ -72,16 +72,15 @@ module.exports = (phase, { defaultConfig }) => {
 
         return config;
       },
-      target: 'serverless',
       poweredByHeader: false,
-      generateBuildId: async () => {
-        const secondsSinceEpoch = Math.round(new Date().getTime() / 1000);
-        const { stdout } = await exec('git rev-parse --short HEAD');
-        const buildId = `${secondsSinceEpoch}.${stdout.trim()}`;
+      generateBuildId: () => {
+        // const secondsSinceEpoch = Math.round(new Date().getTime() / 1000);
+        // const { stdout } = await exec('git rev-parse --short HEAD');
+        // const buildId = `${secondsSinceEpoch}.${stdout.trim()}`;
 
-        console.log(`Generating build with ID = ${buildId}`);
+        // console.log(`Generating build with ID = ${buildId}`);
 
-        return buildId;
+        return process.env.VERSION;
       },
     }),
   );

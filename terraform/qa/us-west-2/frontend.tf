@@ -90,6 +90,86 @@ resource "aws_s3_bucket" "teletracker-frontend-artifacts" {
   }
 }
 
+resource "aws_lb_target_group" "teletracker_qa_frontend" {
+  name     = "teletracker-qa-frontend"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = data.aws_vpc.teletracker-qa-vpc.id
+
+  health_check {
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 5
+    unhealthy_threshold = 5
+    path                = "/health"
+    protocol            = "HTTP"
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  depends_on = [aws_lb.teletracker_qa]
+}
+
+resource "aws_ecs_task_definition" "frontend" {
+  family             = "frontend"
+  execution_role_arn = data.aws_iam_role.ecs-task-execution-role.arn
+  container_definitions = jsonencode([
+    {
+      name : "teletracker-frontend",
+      image : var.frontend_image,
+      essential : true,
+      portMappings : [
+        {
+          containerPort : 3000,
+          hostPort : 0,
+          protocol : "tcp"
+        }
+      ]
+    }
+  ])
+
+  cpu          = 1024
+  memory       = 800
+  network_mode = "bridge"
+}
+
+resource "aws_ecs_service" "teletracker_qa_frontend" {
+  name            = "teletracker-qa-frontend_v2"
+  cluster         = aws_ecs_cluster.teletracker-qa.id
+  task_definition = aws_ecs_task_definition.frontend.arn
+  desired_count   = 1
+
+  deployment_minimum_healthy_percent = 0
+  deployment_maximum_percent         = 100
+
+  ordered_placement_strategy {
+    field = "attribute:ecs.availability-zone"
+    type  = "spread"
+  }
+
+  ordered_placement_strategy {
+    field = "instanceId"
+    type  = "spread"
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.teletracker_qa_frontend.arn
+    container_name   = "teletracker-frontend"
+    container_port   = 3000
+  }
+
+  lifecycle {
+    ignore_changes = [desired_count]
+  }
+
+  placement_constraints {
+    expression = "attribute:purpose == server"
+    type       = "memberOf"
+  }
+}
+
 resource "aws_cloudfront_distribution" "teletracker-frontend" {
   provider = aws.us-east-1
 
@@ -100,6 +180,20 @@ resource "aws_cloudfront_distribution" "teletracker-frontend" {
     origin_id   = "staticAssets"
     s3_origin_config {
       origin_access_identity = aws_cloudfront_origin_access_identity.teletracker-frontend.cloudfront_access_identity_path
+    }
+  }
+
+  origin {
+    domain_name = "lb.qa.teletracker.tv"
+    origin_id   = "ELB-teletracker-qa-765186208/app"
+
+    custom_origin_config {
+      http_port                = 80
+      https_port               = 443
+      origin_keepalive_timeout = 5
+      origin_read_timeout      = 30
+      origin_protocol_policy   = "https-only"
+      origin_ssl_protocols     = ["TLSv1", "TLSv1.1", "TLSv1.2"]
     }
   }
 
@@ -135,13 +229,7 @@ resource "aws_cloudfront_distribution" "teletracker-frontend" {
       }
     }
 
-    lambda_function_association {
-      lambda_arn   = aws_lambda_function.teletracker-frontend-lambda.qualified_arn
-      event_type   = "origin-request"
-      include_body = false
-    }
-
-    target_origin_id = "staticAssets"
+    target_origin_id = "ELB-teletracker-qa-765186208/app"
   }
 
   ordered_cache_behavior {

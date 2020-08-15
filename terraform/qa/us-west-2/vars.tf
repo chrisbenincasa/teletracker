@@ -2,6 +2,10 @@ variable "server_image" {
   type = string
 }
 
+variable "frontend_image" {
+  type = string
+}
+
 variable "task_consumer_image" {
   type = string
 }

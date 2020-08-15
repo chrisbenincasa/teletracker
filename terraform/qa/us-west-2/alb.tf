@@ -31,7 +31,7 @@ resource "aws_lb_listener" "https_forward" {
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.teletracker_qa_server.arn
+    target_group_arn = aws_lb_target_group.teletracker_qa_frontend.arn
   }
 }
 

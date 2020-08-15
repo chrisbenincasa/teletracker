@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, CSSProperties } from 'react';
 import {
   Chip,
   createStyles,
@@ -6,6 +6,7 @@ import {
   Theme,
   Typography,
 } from '@material-ui/core';
+import clsx from 'clsx';
 import { networkToColor, networkToPrettyName, NetworkType } from '../../types';
 import { FilterContext } from './FilterContext';
 import { getLogoUrl } from '../../utils/image-helper';
@@ -19,16 +20,20 @@ import FilterSectionTitle from './FilterSectionTitle';
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     chip: {
-      margin: theme.spacing(0.25),
-      flexBasis: '48%',
+      // margin: theme.spacing(0.25),
+      // flexBasis: '48%',
       justifyContent: 'flex-start',
-      flexGrow: 1,
+      // flexGrow: 1,
     },
     chipContainer: {
-      display: 'flex',
-      flexDirection: 'row',
-      width: '100%',
-      flexWrap: 'wrap',
+      display: 'grid',
+      gridTemplateColumns: 'repeat(2, 1fr)',
+      // columnGap: theme.spacing(0.5) + 'px',
+      // rowGap: theme.spacing(0.5) + 'px',
+      gap: theme.spacing(0.5) + 'px',
+      // flexDirection: 'row',
+      // width: '100%',
+      // flexWrap: 'wrap',
     },
     filterLabel: {
       padding: theme.spacing(0.5),
@@ -106,7 +111,10 @@ export default function NetworkSelect(props: Props) {
     return networks && networks.includes(networkType);
   };
 
-  const makeNetworkChip = (networkType: NetworkType) => {
+  const makeNetworkChip = (
+    networkType: NetworkType,
+    extraStyles?: CSSProperties,
+  ) => {
     const prettyName = networkToPrettyName[networkType];
 
     return (
@@ -121,15 +129,24 @@ export default function NetworkSelect(props: Props) {
           <div
             className={classes.networkIconWrapper}
             style={{
-              padding: '3px 6px',
-              backgroundColor: networkToColor[networkType],
+              // padding: '3px 6px',
+              // backgroundColor: networkToColor[networkType],
+              // paddingTop: '9.5%',
+              height: 25,
+              overflow: 'hidden',
+              background: `${networkToColor[networkType]} url(${getLogoUrl(
+                networkType,
+              )}) no-repeat 50%`,
+              backgroundSize: 'contain',
+              backgroundOrigin: 'content-box',
+              ...extraStyles,
             }}
           >
-            <img
-              className={classes.networkIcon}
+            {/* <img
+              className={clsx(classes.networkIcon)}
               src={getLogoUrl(networkType)}
               alt={`${prettyName} logo`}
-            />
+            /> */}
           </div>
         }
       />
@@ -149,13 +166,17 @@ export default function NetworkSelect(props: Props) {
           style={{ justifyContent: 'center' }}
           className={classes.chip}
         />
-        {makeNetworkChip(allNetworks.Netflix)}
+        {makeNetworkChip(allNetworks.Netflix, {
+          backgroundPosition: '62% 59%',
+          backgroundSize: '95%',
+        })}
         {makeNetworkChip(allNetworks.Hulu)}
-        {makeNetworkChip(allNetworks.DisneyPlus)}
+        {makeNetworkChip(allNetworks.DisneyPlus, { backgroundSize: '100%' })}
         {makeNetworkChip('hbo-now')}
         {makeNetworkChip(allNetworks.HboMax)}
         {makeNetworkChip(allNetworks.AmazonVideo)}
         {makeNetworkChip(allNetworks.PrimeVideo)}
+        {makeNetworkChip(allNetworks.AppleTv, { backgroundSize: '66%' })}
       </div>
     </div>
   );
