@@ -1,5 +1,5 @@
 data "template_file" "teletracker-qa-server-task-definition-template" {
-  template = file("${path.module}/task-definitions/teletracker-qa-server-task-definition.json")
+  template = file("${path.module}/task-definitions/teletracker-qa-server-only-task-definition.json")
   vars = {
     image = var.server_image
   }
@@ -25,8 +25,6 @@ resource "aws_ecs_service" "teletracker-qa-server" {
   cluster         = aws_ecs_cluster.teletracker-qa.id
   task_definition = aws_ecs_task_definition.teletracker-qa-server.arn
   desired_count   = 1
-  # iam_role        = data.aws_iam_role.ecs-service-role.name
-  #   depends_on = ["${data.}"]
 
   deployment_minimum_healthy_percent = 0
   deployment_maximum_percent         = 100
@@ -41,18 +39,18 @@ resource "aws_ecs_service" "teletracker-qa-server" {
     type  = "spread"
   }
 
-  # load_balancer {
-  #   target_group_arn = aws_lb_target_group.teletracker-qa-server.arn
-  #   container_name   = "teletracker-server"
-  #   container_port   = 3001
-  # }
+  load_balancer {
+    target_group_arn = aws_lb_target_group.teletracker_qa_server.arn
+    container_name   = "teletracker-server"
+    container_port   = 3001
+  }
 
   lifecycle {
     ignore_changes = [desired_count]
   }
 
   placement_constraints {
-    expression = "attribute:ecs.instance-type =~ t3a.*"
+    expression = "attribute:purpose == server"
     type       = "memberOf"
   }
 }

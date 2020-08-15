@@ -1,12 +1,10 @@
 resource "aws_autoscaling_group" "teletracker-ecs-asg" {
-  # availability_zones = ["us-west-2a", "us-west-2b", "us-west-2c", "us-west-2d"]
-  availability_zones = ["us-west-2c"]
+  availability_zones = data.aws_availability_zones.availability_zones.names
   max_size           = 1
   min_size           = 1
   desired_capacity   = 1
 
-  # vpc_zone_identifier = data.aws_subnet_ids.teletracker-subnet-ids.ids
-  # vpc_zone_identifier = ["subnet-0866af572b483b24c"]
+  vpc_zone_identifier = data.aws_subnet_ids.teletracker-subnet-ids.ids
 
   launch_template {
     id      = aws_launch_template.ecs-t3a-launch-template.id
@@ -29,45 +27,6 @@ resource "aws_autoscaling_group" "crawl_ecs_asg" {
   }
 }
 
-resource "aws_security_group" "ecs-instance-sg" {
-  name        = "ECS-Public-Services"
-  description = "Allows incoming traffic for HTTP based services"
-
-  vpc_id = data.aws_vpc.teletracker-qa-vpc.id
-
-  ingress {
-    from_port        = 80
-    to_port          = 80
-    protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
-  }
-
-  ingress {
-    from_port        = 443
-    to_port          = 443
-    protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
-  }
-
-  ingress {
-    from_port        = 22
-    to_port          = 22
-    protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
-  }
-
-  egress {
-    from_port        = 0
-    to_port          = 0
-    protocol         = "-1"
-    cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
-  }
-}
-
 data "template_file" "ecs-t3a-user-data" {
   template = file("${path.module}/files/t3a-template-user-data.txt")
   vars = {
@@ -85,6 +44,8 @@ resource "aws_launch_template" "ecs-t3a-launch-template" {
   ebs_optimized                        = false
 
   user_data = base64encode(data.template_file.ecs-t3a-user-data.rendered)
+
+//  vpc_security_group_ids = [aws_security_group.ssh_access.id, aws_security_group.load_balancer_access.id]
 
   block_device_mappings {
     device_name = "/dev/xvda"
@@ -111,8 +72,8 @@ resource "aws_launch_template" "ecs-t3a-launch-template" {
   }
 
   network_interfaces {
-    delete_on_termination = false
-    network_interface_id  = "eni-0294d89e1dc9b5f49"
+    delete_on_termination = true
+    security_groups = [aws_security_group.ssh_access.id, aws_security_group.load_balancer_access.id]
   }
 
   placement {
