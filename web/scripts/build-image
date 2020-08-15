@@ -1,19 +1,8 @@
 #!/usr/bin/env bash
 
-echo "Cleaning staging area"
-
-if [ -d "out/" ]; then rm -rf "out/"; fi
-
-mkdir out
-
-if [ -d ".next/" ]; then rm -rf ".next/"; fi
-
 VERSION=${1:-"$(date +%s).${SHORT_SHA:-$(git rev-parse --short HEAD)}"}
 
-VERSION=${VERSION} yarn run next-build || exit
-
 docker build \
-    -f Dockerfile.prebuilt \
     --build-arg version="$VERSION" \
     --tag 302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/frontend:latest \
     --tag 302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/frontend:${VERSION} \

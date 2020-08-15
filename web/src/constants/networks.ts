@@ -5,6 +5,7 @@ export const PrimeVideo = 'amazon-prime-video';
 export const DisneyPlus = 'disney-plus';
 export const HboMax = 'hbo-max';
 export const Hbo = 'hbo-go';
+export const AppleTv = 'apple-tv';
 
 export const AllNetworks = [
   Netflix,
@@ -13,4 +14,5 @@ export const AllNetworks = [
   PrimeVideo,
   DisneyPlus,
   HboMax,
+  AppleTv,
 ];

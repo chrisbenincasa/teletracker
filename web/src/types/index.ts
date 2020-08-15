@@ -95,7 +95,8 @@ export type NetworkType =
   | typeof networks.AmazonVideo
   | typeof networks.Hulu
   | typeof networks.DisneyPlus
-  | typeof networks.HboMax;
+  | typeof networks.HboMax
+  | typeof networks.AppleTv;
 
 export function isNetworkType(s: string): s is NetworkType {
   const allowed = [
@@ -127,6 +128,7 @@ export const networkToPrettyName: { readonly [K in NetworkType]: string } = {
   hulu: 'Hulu',
   'disney-plus': 'Disney Plus',
   'hbo-max': 'HBO Max',
+  'apple-tv': 'Apple TV',
 };
 
 export const networkToColor: { readonly [K in NetworkType]?: string } = {
@@ -138,6 +140,7 @@ export const networkToColor: { readonly [K in NetworkType]?: string } = {
   'disney-plus': '#1a1d29',
   'hbo-max': '#fff',
   'hbo-go': '#fff',
+  'apple-tv': '#fff',
 };
 
 export interface ListConfiguration {

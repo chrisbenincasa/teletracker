@@ -1,0 +1,16 @@
+FROM node:12 as build
+
+WORKDIR /usr/src/app
+
+ADD yarn.lock .
+ADD package.json .
+RUN yarn --production
+
+ADD .next/ .next/
+ADD server.js .
+
+FROM gcr.io/distroless/nodejs:12
+COPY --from=build /usr/src/app /
+
+ENV NODE_ENV production
+CMD ["server.js"]

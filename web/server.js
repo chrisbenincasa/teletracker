@@ -12,13 +12,13 @@ const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
 const handle = app.getRequestHandler();
 
-const httpsOptions = {
+const httpsOptions = () => ({
   key: fs.readFileSync('../localcerts/privkey.pem'),
   cert: fs.readFileSync('../localcerts/fullchain.pem'),
-};
+});
 
 if (process.env.NODE_ENV !== 'production') {
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 }
 
 const createServer = enableHttps ? createHttpsServer : createHttpServer;
@@ -28,7 +28,7 @@ if (enableHttps) {
 }
 
 app.prepare().then(() => {
-  createServer(enableHttps ? httpsOptions : {}, (req, res) => {
+  createServer(enableHttps ? httpsOptions() : {}, (req, res) => {
     const start = performance.now();
 
     let cookies = req.headers.cookie || '';
@@ -56,7 +56,9 @@ app.prepare().then(() => {
     const parsedUrl = parse(req.url, true);
     // console.log('Serving ' + req.url);
     handle(req, res, parsedUrl).finally(() => {
-      console.log(`${req.url} (${res.statusCode}) - ${performance.now() - start}ms`);
+      console.log(
+        `${req.url} (${res.statusCode}) - ${performance.now() - start}ms`,
+      );
     });
   }).listen(3000, err => {
     if (err) throw err;
