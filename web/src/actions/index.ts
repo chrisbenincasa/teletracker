@@ -39,7 +39,7 @@ import {
   updateUserPreferencesSaga,
   updateUserSaga,
 } from './user';
-import { createBasicAction } from './utils';
+import { createBasicAction, isServer } from './utils';
 import { fetchItemRecsSaga } from './item-detail/get_item_recommendations';
 import { retrieveListItemsSaga } from './lists/get_list_items';
 
@@ -66,25 +66,20 @@ function* captureAll() {
       events.push(event);
     }
   }
-
-  // while (events.length > 0) {
-  //   yield put(events.pop());
-  // }
 }
 
 export function* root() {
-  // Wait for any storage state rehydration to complete
-  // yield take(REHYDRATE);
-  // yield fork(captureAll);
+  // Start watching for auth state changes if we're on the client
+  // Until we have a more elegant way of prepopulating state on SSR,
+  // we must keep this disabled because it creates event handlers that never
+  // get released, which is a memory leak.
+  if (!isServer()) {
+    yield fork(initialAuthState);
+    yield fork(authStateWatcher);
 
-  // Start watching for auth state changes
-  // if (!isServer()) {
-  yield fork(initialAuthState);
-  yield fork(authStateWatcher);
-
-  // Wait for a user state change (determine whether we're logged in or out)
-  yield take(USER_STATE_CHANGE);
-  // }
+    // Wait for a user state change (determine whether we're logged in or out)
+    yield take(USER_STATE_CHANGE);
+  }
 
   // Instruct the app we're finished booting
   yield put({ type: BOOT_DONE });

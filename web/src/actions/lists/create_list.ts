@@ -60,7 +60,7 @@ export const createNewListSaga = function*() {
           // TODO: ERROR
         }
       } catch (e) {
-        call(logException, `${e}`, false);
+        yield call(logException, `${e}`, false);
       }
     } else {
       // TODO: Fail
