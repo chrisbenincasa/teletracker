@@ -42,11 +42,11 @@ export const authWithGoogleSaga = function*() {
         });
 
         // todo:  separate each
-        call(logEvent, 'Login and Signup', 'Login/Signup', 'Google');
+        yield call(logEvent, 'Login and Signup', 'Login/Signup', 'Google');
         console.log(creds);
       } catch (e) {
         console.error(e);
-        call(logException, `${e}`, false);
+        yield call(logException, `${e}`, false);
       }
     },
   );

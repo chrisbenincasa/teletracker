@@ -12,6 +12,13 @@ const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
 const handle = app.getRequestHandler();
 
+if (process.env.ENABLE_HEAP_DUMPS === 'true') {
+  let path = require('path');
+  require('node-oom-heapdump')({
+    path: path.resolve(__dirname, 'heapdump'),
+  });
+}
+
 const httpsOptions = () => ({
   key: fs.readFileSync('../localcerts/privkey.pem'),
   cert: fs.readFileSync('../localcerts/fullchain.pem'),

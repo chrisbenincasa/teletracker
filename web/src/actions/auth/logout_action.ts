@@ -26,7 +26,7 @@ export const logoutSaga = function*() {
       ]);
     } catch (e) {
       console.error(e);
-      call(logException, `${e}`, false);
+      yield call(logException, `${e}`, false);
     }
   });
 };

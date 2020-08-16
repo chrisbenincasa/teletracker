@@ -62,7 +62,7 @@ export const updateNetworksForUserSaga = function*() {
           ]);
         }
       } catch (e) {
-        call(logException, `${e}`, false);
+        yield call(logException, `${e}`, false);
       }
     }
   });

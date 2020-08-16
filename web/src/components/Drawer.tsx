@@ -370,7 +370,7 @@ export default function Drawer(props: Props) {
                 primary="Explore"
                 icon={<TrendingUp />}
                 ListItemProps={{
-                  selected: location.pathname.toLowerCase() === '/popular',
+                  selected: router.pathname.toLowerCase() === '/popular',
                   button: true,
                 }}
               />
@@ -379,7 +379,7 @@ export default function Drawer(props: Props) {
                 primary="What's New?"
                 icon={<FiberNew />}
                 ListItemProps={{
-                  selected: location.pathname.toLowerCase() === '/new',
+                  selected: router.pathname.toLowerCase() === '/new',
                   button: true,
                 }}
               />

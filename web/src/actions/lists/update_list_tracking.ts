@@ -61,7 +61,7 @@ export const updateListTrackingSaga = function*() {
           yield put(retrieveAllLists({}));
 
           yield all([
-            payload.addToLists.map(listId => {
+            ...payload.addToLists.map(listId => {
               return put(
                 updateUserItemTagsSuccess({
                   itemId: payload.itemId,
@@ -83,7 +83,7 @@ export const updateListTrackingSaga = function*() {
           ]);
 
           yield all([
-            payload.removeFromLists.map(listId => {
+            ...payload.removeFromLists.map(listId => {
               return put(
                 removeUserItemTagsSuccess({
                   itemId: payload.itemId,
