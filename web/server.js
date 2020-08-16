@@ -54,8 +54,17 @@ app.prepare().then(() => {
     });
 
     const parsedUrl = parse(req.url, true);
-    // console.log('Serving ' + req.url);
-    handle(req, res, parsedUrl).finally(() => {
+
+    let responsePromise;
+    if (req.url === '/health') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ status: 'OK' }));
+      responsePromise = Promise.resolve();
+    } else {
+      responsePromise = handle(req, res, parsedUrl);
+    }
+
+    responsePromise.finally(() => {
       console.log(
         `${req.url} (${res.statusCode}) - ${performance.now() - start}ms`,
       );
