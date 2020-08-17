@@ -29,6 +29,7 @@ import { FilterContext } from './FilterContext';
 import { useGenres } from '../../hooks/useStateMetadata';
 import produce from 'immer';
 import { getLogoUrl } from '../../utils/image-helper';
+import NetworkChip, { NetworkChipIcon } from './NetworkChip';
 
 const useStyles = makeStyles((theme: Theme) => ({
   activeFiltersContainer: {
@@ -319,18 +320,9 @@ export default function ActiveFilters(props: Props) {
         <Chip
           key={network}
           icon={
-            <div
-              style={{
-                padding: '1px 5px',
-                backgroundColor: networkToColor[network],
-                borderRadius: 8,
-              }}
-            >
-              <img
-                className={classes.networkIcon}
-                src={getLogoUrl(network)}
-                alt={network}
-              />
+            // Dumpy hack to get MUI to apply the right class name to the icon
+            <div>
+              <NetworkChipIcon networkType={network} />
             </div>
           }
           className={classes.chip}

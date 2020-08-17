@@ -65,8 +65,9 @@ class AdminController @Inject()(
                 Set(ScrapeCatalogType.DisneyPlusCatalog)
               case SupportedNetwork.AmazonPrimeVideo |
                   SupportedNetwork.AmazonVideo =>
-                // TODO Support amazon filtering
-                Set.empty[ScrapeCatalogType]
+                Set(ScrapeCatalogType.AmazonVideo)
+              case SupportedNetwork.AppleTv =>
+                Set(ScrapeCatalogType.AppleTvCatalog)
             }
 
           Some(scrapeItemTypes)

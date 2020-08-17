@@ -6,6 +6,8 @@ import com.teletracker.common.db.model.{
   OfferType,
   PersonAssociationType,
   PresentationType,
+  SupportedNetwork,
+  SupportedNetworkLookup,
   UserThingTagType
 }
 import com.teletracker.common.db.{Bookmark, SortMode}
@@ -17,6 +19,7 @@ import javax.inject.Inject
 import java.time.Instant
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 class ItemApi @Inject()(
   genreCache: GenreCache,
@@ -24,7 +27,8 @@ class ItemApi @Inject()(
   itemSearch: ItemSearch,
   itemLookup: ItemLookup,
   itemUpdater: ItemUpdater,
-  personLookup: PersonLookup
+  personLookup: PersonLookup,
+  supportedNetworkLookup: SupportedNetworkLookup
 )(implicit executionContext: ExecutionContext) {
   def getThingViaSearch(
     userId: Option[String],
@@ -252,21 +256,13 @@ class ItemApi @Inject()(
     }
   }
 
-  private def resolveNetworks(itemSearchRequest: ItemSearchRequest) = {
-    if (itemSearchRequest.networks.exists(_.nonEmpty)) {
-      networkCache
-        .getAllNetworks()
-        .map(cachedNetworks => {
-          cachedNetworks
-            .filter(
-              network =>
-                itemSearchRequest.networks.get.contains(network.slug.value)
-            )
-            .toSet
-        })
-    } else {
-      Future.successful(Set.empty[StoredNetwork])
-    }
+  private def resolveNetworks(
+    itemSearchRequest: ItemSearchRequest
+  ): Future[Set[StoredNetwork]] = {
+    itemSearchRequest.networks
+      .filter(_.nonEmpty)
+      .map(supportedNetworkLookup.resolveSupportedNetworks)
+      .getOrElse(Future.successful(Set.empty))
   }
 }
 

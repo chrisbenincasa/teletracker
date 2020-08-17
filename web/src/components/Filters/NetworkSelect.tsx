@@ -16,6 +16,7 @@ import {
   selectableNetworksEqual,
 } from '../../utils/searchFilters';
 import FilterSectionTitle from './FilterSectionTitle';
+import NetworkChip from './NetworkChip';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -115,40 +116,12 @@ export default function NetworkSelect(props: Props) {
     networkType: NetworkType,
     extraStyles?: CSSProperties,
   ) => {
-    const prettyName = networkToPrettyName[networkType];
-
     return (
-      <Chip
-        key={networkType}
+      <NetworkChip
+        networkType={networkType}
+        extraStyles={extraStyles}
+        isSelected={isNetworkSelected(networkType)}
         onClick={() => updateNetworks(networkType)}
-        size="medium"
-        color={isNetworkSelected(networkType) ? 'primary' : 'secondary'}
-        label={prettyName}
-        className={classes.chip}
-        icon={
-          <div
-            className={classes.networkIconWrapper}
-            style={{
-              // padding: '3px 6px',
-              // backgroundColor: networkToColor[networkType],
-              // paddingTop: '9.5%',
-              height: 25,
-              overflow: 'hidden',
-              background: `${networkToColor[networkType]} url(${getLogoUrl(
-                networkType,
-              )}) no-repeat 50%`,
-              backgroundSize: 'contain',
-              backgroundOrigin: 'content-box',
-              ...extraStyles,
-            }}
-          >
-            {/* <img
-              className={clsx(classes.networkIcon)}
-              src={getLogoUrl(networkType)}
-              alt={`${prettyName} logo`}
-            /> */}
-          </div>
-        }
       />
     );
   };
@@ -166,17 +139,14 @@ export default function NetworkSelect(props: Props) {
           style={{ justifyContent: 'center' }}
           className={classes.chip}
         />
-        {makeNetworkChip(allNetworks.Netflix, {
-          backgroundPosition: '62% 59%',
-          backgroundSize: '95%',
-        })}
+        {makeNetworkChip(allNetworks.Netflix)}
         {makeNetworkChip(allNetworks.Hulu)}
-        {makeNetworkChip(allNetworks.DisneyPlus, { backgroundSize: '100%' })}
+        {makeNetworkChip(allNetworks.DisneyPlus)}
         {makeNetworkChip('hbo-now')}
         {makeNetworkChip(allNetworks.HboMax)}
         {makeNetworkChip(allNetworks.AmazonVideo)}
         {makeNetworkChip(allNetworks.PrimeVideo)}
-        {makeNetworkChip(allNetworks.AppleTv, { backgroundSize: '66%' })}
+        {makeNetworkChip(allNetworks.AppleTv)}
       </div>
     </div>
   );
