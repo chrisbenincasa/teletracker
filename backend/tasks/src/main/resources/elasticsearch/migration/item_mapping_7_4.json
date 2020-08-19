@@ -2,15 +2,42 @@
   "settings": {
     "analysis": {
       "analyzer": {
-        "quotes": {
+        "title_search": {
           "filter": [
-            "lowercase",
-            "stop"
+            "lowercase"
           ],
           "char_filter": [
             "quotes"
           ],
           "tokenizer": "standard"
+        },
+        "title_search_ascii": {
+          "filter": [
+            "lowercase",
+            "asciifolding"
+          ],
+          "char_filter": [
+            "quotes"
+          ],
+          "tokenizer": "standard"
+        },
+        "english_title_search": {
+          "filter": [
+            "lowercase",
+            "classic"
+          ],
+          "char_filter": [
+            "quotes"
+          ],
+          "tokenizer": "classic"
+        },
+        "english_title_search_ascii": {
+          "filter": [
+            "lowercase",
+            "classic",
+            "asciifolding"
+          ],
+          "tokenizer": "classic"
         }
       },
       "char_filter": {
@@ -36,7 +63,14 @@
       "alternative_titles": {
         "properties": {
           "title" : {
-            "type" : "search_as_you_type"
+            "type" : "search_as_you_type",
+            "analyzer": "title_search",
+            "fields": {
+              "ascii": {
+                "type": "search_as_you_type",
+                "analyzer": "title_search_ascii"
+              }
+            }
           },
           "country_code" : {
             "type" : "keyword"
@@ -178,7 +212,14 @@
         "type": "date"
       },
       "original_title" : {
-        "type" : "search_as_you_type"
+        "type" : "search_as_you_type",
+        "analyzer": "title_search",
+        "fields": {
+          "ascii": {
+            "type": "search_as_you_type",
+            "analyzer": "title_search_ascii"
+          }
+        }
       },
       "overview" : {
         "type" : "text"
@@ -259,7 +300,14 @@
         }
       },
       "title" : {
-        "type" : "search_as_you_type"
+        "type" : "search_as_you_type",
+        "analyzer": "english_title_search",
+        "fields": {
+          "ascii": {
+            "type": "search_as_you_type",
+            "analyzer": "english_title_search_ascii"
+          }
+        }
       },
       "type" : {
         "type" : "keyword"
@@ -300,4 +348,4 @@
       }
     }
   }
-},
+}
