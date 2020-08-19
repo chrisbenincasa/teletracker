@@ -37,6 +37,7 @@ import { RootState } from '../../app/store';
 import { DeepReadonly } from '../../types';
 import { SearchTasksRequest, Task, TaskStatus } from '../../util/apiClient';
 import { fetchTasksAsync } from './tasksSlice';
+import TasksTable from './TasksTable';
 
 type Props = DeepReadonly<{} & RouteComponentProps>;
 
@@ -165,116 +166,7 @@ export default function Tasks(props: Props) {
 
   return (
     <>
-      <div>
-        <TextField
-          placeholder="Filter Task Name"
-          id="standard-start-adornment"
-          // className={clsx(classes.margin, classes.textField)}
-          size="small"
-          value={taskNameFilter}
-          onChange={(ev) => setTaskNameFilter(ev.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <FilterList />
-              </InputAdornment>
-            ),
-          }}
-        />
-        <ButtonGroup
-          variant="contained"
-          color="primary"
-          ref={anchorRef}
-          aria-label="split button"
-        >
-          <Button>
-            {selectedStatus ? `Status: ${selectedStatus}` : 'Filter By Status'}
-          </Button>
-          <Button
-            color="primary"
-            size="small"
-            aria-controls={statusSelectOpen ? 'split-button-menu' : undefined}
-            aria-expanded={statusSelectOpen ? 'true' : undefined}
-            aria-label="select merge strategy"
-            aria-haspopup="menu"
-            onClick={handleToggle}
-          >
-            <ArrowDropDown />
-          </Button>
-        </ButtonGroup>
-        <Popper
-          open={statusSelectOpen}
-          anchorEl={anchorRef.current}
-          role={undefined}
-          transition
-          disablePortal
-          placement="bottom-end"
-        >
-          {({ TransitionProps, placement }) => (
-            <Grow
-              {...TransitionProps}
-              style={{
-                transformOrigin:
-                  placement === 'bottom' ? 'center top' : 'center bottom',
-              }}
-            >
-              <Paper>
-                <ClickAwayListener onClickAway={handleClose}>
-                  <MenuList id="split-button-menu">
-                    <MenuItem
-                      selected={selectedStatus === null}
-                      onClick={(event) => handleMenuItemClick(event, null)}
-                    >
-                      None
-                    </MenuItem>
-                    {Object.entries(TaskStatus).map(([status, value]) => (
-                      <MenuItem
-                        key={status}
-                        selected={status === selectedStatus}
-                        onClick={(event) => handleMenuItemClick(event, value)}
-                      >
-                        {status}
-                      </MenuItem>
-                    ))}
-                  </MenuList>
-                </ClickAwayListener>
-              </Paper>
-            </Grow>
-          )}
-        </Popper>
-      </div>
-      <Paper>
-        <TableContainer>
-          <Table {...getTableProps()}>
-            <TableHead>
-              {headerGroups.map((group) => (
-                <TableRow {...group.getHeaderGroupProps()}>
-                  {group.headers.map(renderColumn)}
-                </TableRow>
-              ))}
-              <TableRow></TableRow>
-            </TableHead>
-            <TableBody {...getTableBodyProps()}>
-              {rows.map((row) => {
-                prepareRow(row);
-                return (
-                  <TableRow
-                    {...row.getRowProps()}
-                    hover
-                    onClick={() => handleRowClick(row)}
-                  >
-                    {row.cells.map((cell) => (
-                      <TableCell {...cell.getCellProps()}>
-                        {cell.render('Cell')}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Paper>
+      <TasksTable />
     </>
   );
 }
