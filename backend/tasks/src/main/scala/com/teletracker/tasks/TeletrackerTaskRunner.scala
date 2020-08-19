@@ -74,7 +74,7 @@ object TeletrackerTaskRunner extends TeletrackerTaskApp[NoopTeletrackerTask] {
       )
 
       val record = recordCreator
-        .create(task.taskId, task, strigifiedArgs, TaskStatus.Scheduled)
+        .create(task.taskId, task, strigifiedArgs, TaskStatus.Scheduled, None)
 
       recordStore
         .recordNewTask(record)
@@ -82,7 +82,7 @@ object TeletrackerTaskRunner extends TeletrackerTaskApp[NoopTeletrackerTask] {
 
     } else {
       val record = recordCreator
-        .create(task.taskId, task, strigifiedArgs, TaskStatus.Executing)
+        .create(task.taskId, task, strigifiedArgs, TaskStatus.Executing, None)
         .copy(
           startedAt = Some(Instant.now())
         )

@@ -51,6 +51,9 @@
         },
         "logUri": {
           "type": "keyword"
+        },
+        "triggerJob": {
+          "type": "keyword"
         }
       }
     }

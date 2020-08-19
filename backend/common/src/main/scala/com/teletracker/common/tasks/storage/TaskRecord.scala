@@ -24,7 +24,8 @@ case class TaskRecord(
   teletrackerVersion: Option[String],
   gitSha: Option[String],
   logUri: Option[URI],
-  hostname: Option[String]) {
+  hostname: Option[String],
+  triggerJob: Option[UUID]) {
 
   def toDynamoItem: java.util.Map[String, AttributeValue] =
     (Map(

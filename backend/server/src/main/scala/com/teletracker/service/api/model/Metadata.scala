@@ -18,7 +18,10 @@ object Network {
     Network(
       id = storedNetwork.id,
       name = storedNetwork.name,
-      slug = storedNetwork.slug,
+      slug = storedNetwork.supportedNetwork
+        .map(_.getName)
+        .map(Slug.raw)
+        .getOrElse(storedNetwork.slug),
       shortname = storedNetwork.shortname,
       homepage = storedNetwork.homepage,
       origin = storedNetwork.origin

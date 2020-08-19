@@ -1,5 +1,6 @@
 package com.teletracker.common.tasks.storage
 
+import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
 import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.tasks.TeletrackerTask.JsonableArgs
 import io.circe.Json
@@ -18,7 +19,8 @@ class TaskRecordCreator @Inject()() {
   def createScheduled(
     id: UUID,
     task: String,
-    args: Map[String, Json]
+    args: Map[String, Json],
+    triggerJob: Option[UUID]
   ): TaskRecord = {
     TaskRecord(
       id = id,
@@ -34,7 +36,8 @@ class TaskRecordCreator @Inject()() {
       logUri = None,
       hostname = Option(System.getenv("HOSTNAME"))
         .filter(_.nonEmpty)
-        .orElse(Try(InetAddress.getLocalHost.getHostAddress).toOption)
+        .orElse(Try(InetAddress.getLocalHost.getHostAddress).toOption),
+      triggerJob = triggerJob
     )
   }
 
@@ -42,27 +45,30 @@ class TaskRecordCreator @Inject()() {
     id: UUID,
     task: T,
     args: T#ArgsType,
-    status: TaskStatus
+    status: TaskStatus,
+    triggerJob: Option[UUID]
   )(implicit typedArgs: JsonableArgs[T#ArgsType]
   ): TaskRecord = {
-    createGen(id, task, args, status)
+    createGen(id, task, args, status, triggerJob)
   }
 
   def create[T <: TeletrackerTask](
     id: UUID,
     task: T,
     args: Map[String, String],
-    status: TaskStatus
+    status: TaskStatus,
+    triggerJob: Option[UUID]
   )(implicit typedArgs: JsonableArgs[Map[String, String]]
   ): TaskRecord = {
-    createGen(id, task, args, status)
+    createGen(id, task, args, status, triggerJob)
   }
 
   def createGen[T <: TeletrackerTask, U](
     id: UUID,
     task: T,
     args: U,
-    status: TaskStatus
+    status: TaskStatus,
+    triggerJob: Option[UUID]
   )(implicit typedArgs: JsonableArgs[U]
   ): TaskRecord = {
     val clazz = task.getClass
@@ -80,7 +86,8 @@ class TaskRecordCreator @Inject()() {
       logUri = Some(task.remoteLogLocation),
       hostname = Option(System.getenv("HOSTNAME"))
         .filter(_.nonEmpty)
-        .orElse(Try(InetAddress.getLocalHost.getHostName).toOption)
+        .orElse(Try(InetAddress.getLocalHost.getHostName).toOption),
+      triggerJob = triggerJob
     )
   }
 

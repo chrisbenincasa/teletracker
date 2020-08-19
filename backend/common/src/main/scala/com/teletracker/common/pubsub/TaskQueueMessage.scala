@@ -54,7 +54,8 @@ case class TeletrackerTaskQueueMessage(
   id: Option[UUID],
   clazz: String,
   args: Map[String, Json],
-  jobTags: Option[Set[String]] = Some(Set.empty))
+  jobTags: Option[Set[String]] = Some(Set.empty),
+  triggerJob: Option[UUID] = None)
     extends EventBase
 
 object TeletrackerTaskQueueMessageFactory {

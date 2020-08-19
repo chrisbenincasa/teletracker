@@ -38,7 +38,12 @@ class SqsTaskScheduler @Inject()(
       }
       .map(message => {
         taskRecordCreator
-          .createScheduled(message.id.get, message.clazz, message.args)
+          .createScheduled(
+            message.id.get,
+            message.clazz,
+            message.args,
+            message.triggerJob
+          )
       })
 
     taskRecordStore
