@@ -57,21 +57,16 @@ data "aws_iam_policy_document" "crawl_trigger_policy_doc" {
       module.task-consumer.queue_arn
     ]
   }
-
-  statement {
-    effect = "Allow"
-    actions = [
-      "s3:Get*"
-    ]
-    resources = [
-      data.aws_s3_bucket.teletracker_config_bucket.arn
-    ]
-  }
 }
 
 resource "aws_iam_policy" "crawl_trigger_policy" {
   name   = "CrawlTriggerLambdaPolicy"
   policy = data.aws_iam_policy_document.crawl_trigger_policy_doc.json
+}
+
+resource "aws_iam_role_policy_attachment" "crawl_trigger_s3_policy_attachment" {
+  policy_arn = data.aws_iam_policy.s3_full_access_policy.arn
+  role = aws_iam_role.crawl_trigger_role.name
 }
 
 resource "aws_iam_role_policy_attachment" "crawl_trigger_policy_attachment" {
