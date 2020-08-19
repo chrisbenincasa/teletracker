@@ -59,7 +59,16 @@ export async function loadMappingsFromS3(): Promise<Mappings> {
     Key: process.env.CONFIG_KEY!,
   });
 
-  const result = await client.send(request);
+  let result;
+  try {
+    result = await client.send(request);
+  } catch (e) {
+    console.error(
+      `Error while getting s3 item: ${process.env.CONFIG_BUCKET}/${process.env.CONFIG_KEY}`,
+    );
+    console.error(e);
+    throw e;
+  }
   const chunks: any[] = [];
   for await (let chunk of result.Body!) {
     chunks.push(chunk);
