@@ -1,5 +1,5 @@
 import Amplify from '@aws-amplify/core';
-import { MuiThemeProvider } from '@material-ui/core';
+import { MuiThemeProvider, NoSsr } from '@material-ui/core';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import cookie from 'cookie';
 import _ from 'lodash';
@@ -186,7 +186,9 @@ export default class TeletrackerApp extends App {
           <MuiThemeProvider theme={theme}>
             <div>
               <CssBaseline />
-              <Component {...pageProps} store={this.store} />
+              <NoSsr>
+                <Component {...pageProps} store={this.store} />
+              </NoSsr>
             </div>
           </MuiThemeProvider>
         </Provider>
