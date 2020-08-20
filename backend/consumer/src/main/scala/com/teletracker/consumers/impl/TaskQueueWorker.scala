@@ -73,7 +73,8 @@ class TaskQueueWorker @Inject()(
         taskId,
         task,
         message.args,
-        TaskStatus.Executing
+        TaskStatus.Executing,
+        message.triggerJob
       )
 
       try {

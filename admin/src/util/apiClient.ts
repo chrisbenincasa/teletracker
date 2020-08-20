@@ -86,6 +86,7 @@ export type Task = {
   finishedAt?: string;
   hostname?: string;
   args?: object;
+  logUri?: string;
 };
 
 export const getPotentialMatches = async (request: SearchMatchRequest) => {

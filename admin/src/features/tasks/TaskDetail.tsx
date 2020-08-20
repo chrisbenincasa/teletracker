@@ -11,7 +11,8 @@ import {
   Snackbar,
 } from '@material-ui/core';
 import TasksTable from './TasksTable';
-import { FileCopy, Close } from '@material-ui/icons';
+import { FileCopy, Close, Storage } from '@material-ui/icons';
+import CopyToClipboard from '../../components/CopyToClipboard';
 
 interface OwnProps {
   taskId?: string;
@@ -24,54 +25,66 @@ export default function TaskDetail(props: Props) {
   const isLoading = useSelector((state) => state.tasks.isLoadingTaskDetail);
   const task = useSelector((state) => state.tasks.taskDetail);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const idField = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     dispatch(fetchTaskAsync({ id: props.taskId! }));
   }, [props.taskId]);
-
-  const copyToClipboard = useCallback(() => {
-    idField.current?.focus();
-    idField.current?.select();
-    document.execCommand('copy');
-    idField.current?.blur();
-    setSnackbarOpen(true);
-  }, []);
 
   return (
     <>
       {isLoading || !task ? (
         <CircularProgress />
       ) : (
-        <>
-          <div>
-            <Typography variant="h3">{task?.taskName}</Typography>
+        <main>
+          <section>
             <div>
-              <Typography variant="h4">
-                {task?.id}
-                <Tooltip title="Copy to Clipboard" placement="top">
-                  <IconButton onClick={copyToClipboard}>
-                    <FileCopy />
-                  </IconButton>
-                </Tooltip>
-              </Typography>
-              <textarea
-                ref={idField}
-                readOnly
-                style={{ top: 0, left: 0, position: 'fixed', display: 'none' }}
-                value={task?.id}
-              ></textarea>
+              <Typography variant="h3">{task?.taskName}</Typography>
+              <div>
+                <Typography variant="h4">
+                  {task?.id}
+                  <CopyToClipboard
+                    value={task!.id}
+                    onCopy={() => setSnackbarOpen(true)}
+                  />
+                  <Tooltip title="Raw Storage" placement="top">
+                    <IconButton
+                      component="a"
+                      href={`https://search.internal.qa.teletracker.tv/tasks/_doc/${
+                        task!.id
+                      }`}
+                      target="_blank"
+                    >
+                      <Storage />
+                    </IconButton>
+                  </Tooltip>
+                </Typography>
+              </div>
+              <pre>{JSON.stringify(task?.args, null, 4)}</pre>
+              <div>
+                <Typography variant="h5">Logs location</Typography>
+                <div style={{ display: 'flex' }}>
+                  <pre>{task!.logUri}</pre>
+                  <CopyToClipboard
+                    value={task!.logUri ? task.logUri + '/' : ''}
+                  />
+                </div>
+              </div>
             </div>
-            <pre>{JSON.stringify(task?.args, null, 4)}</pre>
-          </div>
-          <Typography variant="h4">
-            Other instances of {task?.taskName}
-          </Typography>
-          <TasksTable
-            showTaskFilter={false}
-            initialTaskName={task.taskName}
-            initialLimit={5}
-          />
+          </section>
+          <section>
+            <Typography variant="h4">Reschedule job</Typography>
+            <textarea style={{ fontFamily: 'monospace' }}></textarea>
+          </section>
+          <section>
+            <Typography variant="h4">
+              Other instances of {task?.taskName}
+            </Typography>
+            <TasksTable
+              showTaskFilter={false}
+              initialTaskName={task.taskName}
+              initialLimit={5}
+            />
+          </section>
           <Snackbar
             anchorOrigin={{
               vertical: 'bottom',
@@ -96,7 +109,7 @@ export default function TaskDetail(props: Props) {
               </React.Fragment>
             }
           />
-        </>
+        </main>
       )}
     </>
   );

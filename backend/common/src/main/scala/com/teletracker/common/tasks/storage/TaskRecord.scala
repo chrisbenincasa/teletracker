@@ -1,6 +1,7 @@
 package com.teletracker.common.tasks.storage
 
 import com.teletracker.common.db.dynamo.util.syntax._
+import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
 import com.teletracker.common.util.HasId
 import com.teletracker.common.util.json.circe._
 import io.circe.Json
@@ -44,6 +45,24 @@ case class TaskRecord(
     ).collect {
       case (k, Some(v)) => k -> v
     }).asJava
+
+  def asMessage(
+    argOverrides: Option[Json] = None
+  ): TeletrackerTaskQueueMessage = {
+    require(fullTaskName.isDefined)
+    TeletrackerTaskQueueMessage(
+      id = Some(UUID.randomUUID()),
+      clazz = fullTaskName.get,
+      args = argOverrides
+        .map(args.deepMerge)
+        .getOrElse(args)
+        .as[Map[String, Json]]
+        .right
+        .get,
+      jobTags = None, // TODO: Set tags,
+      triggerJob = Some(id)
+    )
+  }
 }
 
 object TaskRecord {

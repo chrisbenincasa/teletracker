@@ -1,27 +1,19 @@
-import React, { useCallback, useState, useRef } from 'react';
-import { Task } from '../../util/apiClient';
-import { CellProps } from 'react-table';
-import { navigate } from '@reach/router';
 import { IconButton, Snackbar } from '@material-ui/core';
-import { Search, FileCopy, Close } from '@material-ui/icons';
+import { Close, Search } from '@material-ui/icons';
+import { navigate } from '@reach/router';
+import React, { useCallback, useRef, useState } from 'react';
+import { CellProps } from 'react-table';
+import CopyToClipboard from '../../components/CopyToClipboard';
+import { Task } from '../../util/apiClient';
 
 export default function TaskNameCell(props: CellProps<Task, string>) {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const idField = useRef<HTMLTextAreaElement>(null);
 
   const handleRowClick = useCallback(() => {
     navigate(`/tasks/${props.row.original.id}`).finally(() => {
       console.log('what happened');
     });
   }, [props.row.original.id]);
-
-  const copyToClipboard = useCallback(() => {
-    idField.current?.focus();
-    idField.current?.select();
-    document.execCommand('copy');
-    idField.current?.blur();
-    setSnackbarOpen(true);
-  }, [props.row.original.taskName]);
 
   return (
     <div>
@@ -30,15 +22,10 @@ export default function TaskNameCell(props: CellProps<Task, string>) {
         <IconButton size="small" onClick={handleRowClick}>
           <Search />
         </IconButton>
-        <IconButton size="small" onClick={copyToClipboard}>
-          <FileCopy />
-        </IconButton>
-        <textarea
-          ref={idField}
-          readOnly
-          style={{ top: 0, left: 0, position: 'fixed', display: 'none' }}
+        <CopyToClipboard
           value={props.row.original.taskName}
-        ></textarea>
+          onCopy={() => setSnackbarOpen(true)}
+        />
       </>
       <Snackbar
         anchorOrigin={{
