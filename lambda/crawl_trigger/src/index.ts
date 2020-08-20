@@ -100,7 +100,9 @@ export async function handler(event: GetRecordsOutput) {
             await scheduleTask({
               id: uuidv4(),
               clazz: mappings[crawlerName].jobClass,
-              args: {},
+              args: {
+                dryRun: false,
+              },
             });
           } catch (e) {
             console.error(e);
