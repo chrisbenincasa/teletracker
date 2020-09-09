@@ -42,7 +42,7 @@ class NoMatch404 extends Component<Props> {
     return (
       <React.Fragment>
         <Head>
-          <title>{`404 | Teletracker`}</title>
+          <title>{`404 | Telescope`}</title>
         </Head>
         <div className={classes.wrapper}>
           <Typography variant="h1">404</Typography>
