@@ -136,13 +136,13 @@ function Explore() {
   // Logic
   //
 
-  const getNumberFeaturedItems = () => {
+  const getNumberFeaturedItems = useCallback(() => {
     if (['xs', 'sm'].includes(width)) {
       return 1;
     } else {
       return 2;
     }
-  };
+  }, [width]);
 
   const loadPopular = (passBookmark: boolean, compensate?: number) => {
     if (!loading) {
