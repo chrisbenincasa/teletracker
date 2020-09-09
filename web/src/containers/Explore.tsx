@@ -131,24 +131,21 @@ function Explore() {
   const [loading, wasLoading] = useStateSelectorWithPrevious(
     state => state.popular.loadingPopular,
   );
-  const isFirstLoad = useStateSelector(state => state.popular.isFirstLoad);
 
   //
   // Logic
   //
 
-  const getNumberFeaturedItems = useCallback(() => {
-    if (isMobile) {
+  const getNumberFeaturedItems = () => {
+    if (['xs', 'sm'].includes(width)) {
       return 1;
     } else {
       return 2;
     }
-  }, [isMobile]);
+  };
 
   const loadPopular = (passBookmark: boolean, compensate?: number) => {
     if (!loading) {
-      let numberFeaturedItems: number = getNumberFeaturedItems();
-
       retrievePopularFromServer({
         bookmark: passBookmark ? popularBookmark : undefined,
         limit: calculateLimit(width, DEFAULT_ROWS) + (compensate || 0),
@@ -191,8 +188,8 @@ function Explore() {
     [popular, thingsById, width],
   );
 
-  const updateFeaturedItems = useCallback(() => {
-    let numberFeaturedItems = getNumberFeaturedItems();
+  const updateFeaturedItems = () => {
+    const numberFeaturedItems = getNumberFeaturedItems();
     const featuredItems = getFeaturedItems(numberFeaturedItems);
 
     // Require that there be at least 2 full rows before displaying Featured items.
@@ -231,7 +228,7 @@ function Explore() {
     if (popular?.length === DEFAULT_POPULAR_LIMIT && missingItems > 0) {
       loadPopular(true, missingItems);
     }
-  }, [popular, thingsById, width, theme, featuredItemsIndex]);
+  };
 
   const toggleFilters = () => {
     setShowFilter(prev => !prev);
@@ -276,13 +273,12 @@ function Explore() {
   );
 
   useEffect(() => {
-    let numberFeaturedItems = getNumberFeaturedItems();
     const isInitialFetch = popular && !previousPopular && !loading;
     const isNewFetch =
       popular &&
       wasLoading &&
       !loading &&
-      popular?.length - numberFeaturedItems <= DEFAULT_POPULAR_LIMIT;
+      popular?.length <= DEFAULT_POPULAR_LIMIT;
     const didScreenResize =
       popular &&
       !_.isUndefined(previousWidth) &&
