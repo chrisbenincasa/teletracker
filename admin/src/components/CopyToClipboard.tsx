@@ -34,8 +34,7 @@ export default function CopyToClipboard(props: Props) {
           top: 0,
           left: 0,
           position: 'fixed',
-          // display: 'none',
-          zIndex: 100000000,
+          display: 'none',
         }}
         value={props.value}
       ></textarea>

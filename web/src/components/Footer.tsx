@@ -46,7 +46,7 @@ const Footer = () => {
   return (
     <footer className={classes.wrapper}>
       <Hidden only={['xs', 'sm']}>
-        <div className={classes.section}>Teletracker &copy; {year}</div>
+        <div className={classes.section}>Telescope &copy; {year}</div>
         <div className={classes.section}>
           <Typography variant="h6">Networks</Typography>
           <RouterLink href="/popular?networks=hbo-now" passHref>
@@ -90,7 +90,7 @@ const Footer = () => {
         </div>
       </Hidden>
       <Hidden mdUp>
-        <div className={classes.mobileFooter}>Teletracker &copy; {year}</div>
+        <div className={classes.mobileFooter}>Telescope &copy; {year}</div>
       </Hidden>
     </footer>
   );

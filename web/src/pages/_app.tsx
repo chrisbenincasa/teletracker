@@ -167,7 +167,7 @@ export default class TeletrackerApp extends App {
     return (
       <React.Fragment>
         <Head>
-          <title>Teletracker</title>
+          <title>Telescope</title>
           <meta
             name="viewport"
             content="minimum-scale=1, initial-scale=1, width=device-width"

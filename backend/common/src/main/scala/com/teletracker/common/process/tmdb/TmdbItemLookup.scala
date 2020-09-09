@@ -147,6 +147,19 @@ class TmdbItemLookup @Inject()(
     )
   }
 
+  def expandTvShowRaw(
+    id: Int,
+    extraExpandFields: List[String] = Nil
+  ): Future[Json] = {
+    tmdbClient.makeRequest[Json](
+      s"tv/$id",
+      Seq(
+        "append_to_response" -> (extraExpandFields ++ DefaultTvShowAppendFields).distinct
+          .mkString(",")
+      )
+    )
+  }
+
   def expandPerson(id: Int): Future[TmdbPerson] = {
     tmdbClient.makeRequest[TmdbPerson](
       s"person/$id",

@@ -37,6 +37,7 @@ import useIsMobile, { useIsSmallScreen } from '../../hooks/useIsMobile';
 import useStateSelector from '../../hooks/useStateSelector';
 import { useWithUserContext } from '../../hooks/useWithUser';
 import { useGenres } from '../../hooks/useStateMetadata';
+import Telescope from '../../icons/Telescope';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -117,6 +118,9 @@ const useStyles = makeStyles((theme: Theme) =>
       // },
       marginRight: theme.spacing(2),
       width: '100%',
+    },
+    drawerButton: {
+      marginRight: theme.spacing(1),
     },
   }),
 );
@@ -440,17 +444,19 @@ export default function Toolbar(props: Props) {
             focusRipple={false}
             onClick={() => fireOnDrawerChange()}
             color="inherit"
+            className={classes.drawerButton}
           >
             {drawerOpen ? <MenuOpen /> : <MenuIcon />}
           </IconButton>
+          <Telescope htmlColor="white" viewBox="0 0 865.5 865.5" />
           <Link href="/" passHref>
             <Typography
               variant="h6"
               color="inherit"
               component="a"
-              style={{ textDecoration: 'none' }}
+              style={{ textDecoration: 'none', padding: '0 4px' }}
             >
-              Teletracker
+              Telescope
             </Typography>
           </Link>
           <div className={classes.grow}>
@@ -507,7 +513,7 @@ export default function Toolbar(props: Props) {
           {isSmallScreen && !mobileSearchBarOpen && showToolbarSearch && (
             <div className={classes.sectionMobile} ref={mobileSearchIcon}>
               <IconButton
-                aria-owns={'Search Teletracker'}
+                aria-owns={'Search Telescope'}
                 aria-haspopup="true"
                 onClick={handleMobileSearchDisplayOpen}
                 color="inherit"

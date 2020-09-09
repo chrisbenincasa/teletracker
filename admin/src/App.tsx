@@ -24,6 +24,7 @@ import Matching from './features/matching/Matching';
 import MatchInspector from './features/match_inspector/MatchInspector';
 import Tasks from './features/tasks/Tasks';
 import TaskDetail from './features/tasks/TaskDetail';
+import Crawls from './features/crawls/Crawls';
 
 const drawerWidth = 240;
 
@@ -68,6 +69,12 @@ const useStyles = makeStyles((theme: Theme) =>
       flexGrow: 1,
       padding: theme.spacing(3),
     },
+    sideLink: {
+      textDecoration: 'none',
+      '&:visited': {
+        color: 'inherit',
+      },
+    },
   }),
 );
 
@@ -85,7 +92,7 @@ function App() {
       <div className={classes.toolbar} />
       <Divider />
       <List>
-        <Link to="/matching/unmatched/all" style={{ textDecoration: 'none' }}>
+        <Link to="/matching/unmatched/all" className={classes.sideLink}>
           <ListItem button>
             <ListItemIcon>
               <LiveTv />
@@ -93,12 +100,20 @@ function App() {
             <ListItemText primary="Matching" className={classes.drawerItem} />
           </ListItem>
         </Link>
-        <Link to="/tasks/">
+        <Link to="/tasks/" className={classes.sideLink}>
           <ListItem button>
             <ListItemIcon>
               <Storage />
             </ListItemIcon>
             <ListItemText primary="Tasks" className={classes.drawerItem} />
+          </ListItem>
+        </Link>
+        <Link to="/crawls/" className={classes.sideLink}>
+          <ListItem button>
+            <ListItemIcon>
+              <Storage />
+            </ListItemIcon>
+            <ListItemText primary="Crawls" className={classes.drawerItem} />
           </ListItem>
         </Link>
       </List>
@@ -171,6 +186,7 @@ function App() {
           <MatchInspector path="/match_inspector/" />
           <Tasks path="/tasks/" />
           <TaskDetail path="/tasks/:taskId" />
+          <Crawls path="/crawls/" />
         </Router>
       </main>
     </div>

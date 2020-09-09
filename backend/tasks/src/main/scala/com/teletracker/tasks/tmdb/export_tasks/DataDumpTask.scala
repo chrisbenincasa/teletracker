@@ -1,6 +1,7 @@
 package com.teletracker.tasks.tmdb.export_tasks
 
 import com.teletracker.common.config.TeletrackerConfig
+import com.teletracker.common.inject.SingleThreaded
 import com.teletracker.common.tasks.{TeletrackerTask, TypedTeletrackerTask}
 import com.teletracker.common.tasks.TeletrackerTask.RawArgs
 import com.teletracker.common.tasks.args.GenArgParser
@@ -19,8 +20,11 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import java.io.File
 import java.net.URI
 import java.time.Instant
+import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.atomic.AtomicLong
 import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration._
+import scala.util.Success
 import scala.util.control.NonFatal
 
 trait DataDumpTaskApp[T <: DataDumpTask[_, _]] extends TeletrackerTaskApp[T] {
@@ -40,7 +44,8 @@ case class DataDumpTaskArgs(
   sleepMs: Int = 250,
   flushEvery: Int = 100,
   rotateEvery: Int = 1000,
-  baseOutputPath: Option[String] = None)
+  baseOutputPath: Option[String] = None,
+  uploadToS3: Boolean = true)
 
 object DataDumpTaskArgs
 
@@ -56,6 +61,10 @@ abstract class DataDumpTask[T: Decoder, Id](
   @Inject
   private[this] var s3: S3Client = _
 
+  @Inject
+  @SingleThreaded
+  private[this] var scheduledExecutorService: ScheduledExecutorService = _
+
   private val dumpTime = Instant.now().toString
 
   override def runInternal(): Unit = {
@@ -69,8 +78,6 @@ abstract class DataDumpTask[T: Decoder, Id](
       args.baseOutputPath
     )
 
-    val source = new SourceRetriever(s3).getSource(args.input)
-
     val processed = new AtomicLong(0)
 
     val parser = new IngestJobParser
@@ -80,8 +87,8 @@ abstract class DataDumpTask[T: Decoder, Id](
       .foreach(source => {
         try {
           parser
-            .stream[T](source.getLines())
-            .flatMap {
+            .asyncStream[T](source.getLines())
+            .flatMapOption {
               case Left(ex) =>
                 logger.error(s"Error decoding", ex)
                 None
@@ -89,28 +96,30 @@ abstract class DataDumpTask[T: Decoder, Id](
             }
             .drop(args.offset)
             .safeTake(args.limit)
-            .foreach(thing => {
-              getRawJson(getCurrentId(thing))
-                .map(
-                  json => rotater.writeLine(json)
-                )
-                .recover {
-                  case NonFatal(e) => {
-                    logger.info(
-                      s"Error retrieving ID: ${getCurrentId(thing)}\n${e.getMessage}"
-                    )
+            .delayedForeachF(args.sleepMs millis, scheduledExecutorService)(
+              thing => {
+                getRawJson(getCurrentId(thing))
+                  .map(
+                    json => rotater.writeLine(json)
+                  )
+                  .recover {
+                    case NonFatal(e) => {
+                      logger.info(
+                        s"Error retrieving ID: ${getCurrentId(thing)}\n${e.getMessage}"
+                      )
+                    }
                   }
-                }
-                .await()
+                  .andThen {
+                    case Success(_) =>
+                      val total = processed.incrementAndGet()
 
-              val total = processed.incrementAndGet()
-
-              if (total % args.flushEvery == 0) {
-                logger.info(s"Processed ${total} items so far.")
+                      if (total % args.flushEvery == 0) {
+                        logger.info(s"Processed ${total} items so far.")
+                      }
+                  }
               }
-
-              Thread.sleep(args.sleepMs)
-            })
+            )
+            .await()
         } finally {
           source.close()
         }
@@ -120,13 +129,14 @@ abstract class DataDumpTask[T: Decoder, Id](
 
     rotater.finish()
 
-    sourceRetriever
-      .getUriStream(rotater.baseUri)
-      .filter(uri => uri.toString.contains(baseFileName))
-      .map(new File(_))
-      .foreach(uploadToS3)
-
-    source.close()
+    if (args.uploadToS3) {
+      logger.info(s"Uploading results to: $s3Uri")
+      sourceRetriever
+        .getUriStream(rotater.baseUri)
+        .filter(uri => uri.toString.contains(baseFileName))
+        .map(new File(_))
+        .foreach(uploadToS3)
+    }
   }
 
   protected def getRawJson(currentId: Id): Future[String]

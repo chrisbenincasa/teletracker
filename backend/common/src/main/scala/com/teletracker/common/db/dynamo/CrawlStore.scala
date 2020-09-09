@@ -2,6 +2,7 @@ package com.teletracker.common.db.dynamo
 
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.config.core.api.ReloadableConfig
+import com.teletracker.common.db.dynamo.util.DynamoQueryUtil
 import com.teletracker.common.db.dynamo.util.syntax._
 import com.teletracker.common.inject.SingleThreaded
 import com.teletracker.common.util.{AsyncToken, Cancellable, FutureToken}
@@ -59,6 +60,32 @@ class CrawlStore @Inject()(
   dynamo: DynamoDbAsyncClient,
   @SingleThreaded scheduledExecutorService: ScheduledExecutorService
 )(implicit executionContext: ExecutionContext) {
+  def getAllCrawls(
+    crawlerName: CrawlerName,
+    startVersion: Option[Long] = None
+  ): Future[List[HistoricalCrawl]] = {
+    DynamoQueryUtil
+      .queryLoop(
+        dynamo,
+        teletrackerConfig.currentValue().dynamo.crawls.table_name,
+        _.keyConditions(
+          Map(
+            "spider" -> Condition
+              .builder()
+              .attributeValueList(crawlerName.name.toAttributeValue)
+              .comparisonOperator(ComparisonOperator.EQ)
+              .build()
+          ).asJava
+        ).scanIndexForward(false)
+          .applyOptional(startVersion)(
+            (builder, v) =>
+              builder
+                .exclusiveStartKey(Map("version" -> v.toAttributeValue).asJava)
+          )
+      )
+      .map(_.map(_.asScala.toMap).map(HistoricalCrawl.fromDynamoRow))
+  }
+
   def closeCrawl(
     crawlerName: CrawlerName,
     version: Long,
@@ -288,7 +315,8 @@ object HistoricalCrawl {
     HistoricalCrawl(
       spider = m("spider").fromAttributeValue[String],
       version = m("version").fromAttributeValue[Long],
-      timeOpened = m("time_opened").fromAttributeValue[Instant @@ EpochSeconds],
+      timeOpened =
+        m.get("time_opened").map(_.fromAttributeValue[Instant @@ EpochSeconds]),
       timeClosed =
         m.get("time_closed").map(_.fromAttributeValue[Instant @@ EpochSeconds]),
       totalItemsScraped =
@@ -305,7 +333,7 @@ object HistoricalCrawl {
 case class HistoricalCrawl(
   spider: String,
   version: Long,
-  timeOpened: Instant,
+  timeOpened: Option[Instant],
   timeClosed: Option[Instant],
   totalItemsScraped: Option[Long],
   metadata: Option[HistoricalCrawlMetadata],
@@ -337,9 +365,9 @@ case class HistoricalCrawl(
   def toDynamoItem: java.util.Map[String, AttributeValue] = {
     (Map(
       "spider" -> spider.toAttributeValue,
-      "version" -> version.toAttributeValue,
-      "time_opened" -> timeOpened.toAttributeValueTagged[EpochSeconds]
+      "version" -> version.toAttributeValue
     ) ++ Map(
+      "time_opened" -> timeOpened.map(_.toAttributeValueTagged[EpochSeconds]),
       "time_closed" -> timeClosed.map(_.toAttributeValueTagged[EpochSeconds]),
       "total_items_scraped" -> totalItemsScraped.map(_.toAttributeValue),
       "metadata" -> metadata.map(_.toAttributeValue),

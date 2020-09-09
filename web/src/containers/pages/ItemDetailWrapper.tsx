@@ -69,7 +69,7 @@ export default function makeItemDetailWrapper(type: ItemType) {
           <meta
             name="title"
             property="og:title"
-            content={`${item?.canonicalTitle} (${releaseDate}) | Where to stream, rent, or buy`}
+            content={`${item?.canonicalTitle} (${releaseDate}) - Where to stream, rent, or buy | Telescope`}
           />
           <meta
             name="description"

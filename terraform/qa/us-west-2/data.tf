@@ -59,3 +59,13 @@ data "aws_route53_zone" "teletracker-tv-zone" {
 data "aws_availability_zones" "availability_zones" {
   state = "available"
 }
+
+data "aws_route53_zone" "teletracker-tv" {
+  name         = "teletracker.tv."
+  private_zone = false
+}
+
+data "aws_route53_zone" "telescopetv" {
+  name         = "telescopetv.com."
+  private_zone = false
+}

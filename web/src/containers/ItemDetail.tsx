@@ -522,8 +522,9 @@ function ItemDetails(props: Props) {
         let tmdbId = collectFirst(itemDetail.external_ids || [], id =>
           id.provider === 'tmdb' ? id : undefined,
         );
+        let tmdbType = itemDetail.type === 'movie' ? 'movie' : 'tv';
         if (tmdbId) {
-          tmdbLink = `https://www.themoviedb.org/${itemDetail.type}/${tmdbId.id}`;
+          tmdbLink = `https://www.themoviedb.org/${tmdbType}/${tmdbId.id}`;
         }
 
         return (

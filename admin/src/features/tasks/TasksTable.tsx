@@ -134,7 +134,7 @@ export default function TasksTable(props: Props) {
           : undefined,
       status: selectedStatus ? [selectedStatus] : undefined,
     };
-  }, [sortBy, debouncedTaskNameFilter, selectedStatus]);
+  }, [props.initialLimit, sortBy, debouncedTaskNameFilter, selectedStatus]);
 
   useEffect(() => {
     console.log('querying....');
