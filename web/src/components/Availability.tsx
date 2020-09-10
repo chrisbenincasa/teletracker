@@ -241,7 +241,7 @@ const Availability = (props: Props) => {
               />
               <CardContent className={classes.cardContent}>
                 <Typography>{`${cleanOfferTitle} ${network!.name} ${
-                  offersOfType[index].cost
+                  ffersOfType[index] && offersOfType[index].cost
                     ? 'for $' + offersOfType[index].cost
                     : ''
                 }`}</Typography>
