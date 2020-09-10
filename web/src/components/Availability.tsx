@@ -93,7 +93,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   networkLogo: {
     width: 60,
     borderRadius: 4,
-    backgroundSize: '80%',
+    backgroundSize: '70%',
   },
   platform: {
     display: 'flex',
