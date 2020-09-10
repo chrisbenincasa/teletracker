@@ -62,7 +62,7 @@ class MetadataDbAccess @Inject()(
         if (response.item().isEmpty) {
           None
         } else {
-          Some(StoredNetwork.fromRow(response.item()))
+          Some(StoredNetwork.fromRow(response.item())).filterNot(_.isBlocked)
         }
       })
       .recover {
@@ -90,7 +90,7 @@ class MetadataDbAccess @Inject()(
             )
       )
       .map(networks => {
-        networks.map(StoredNetwork.fromRow)
+        networks.map(StoredNetwork.fromRow).filterNot(_.isBlocked)
       })
   }
 
@@ -129,8 +129,11 @@ class MetadataDbAccess @Inject()(
           val reference = StoredNetworkReference.fromRow(response.item())
 
           getNetworkById(reference.networkId).map {
-            case None          => None
-            case Some(network) => Some(reference -> network)
+            case None => None
+            case Some(network) =>
+              Some(reference -> network).filterNot {
+                case (_, network) => network.isBlocked
+              }
           }
         }
       })

@@ -42,6 +42,8 @@ object StoredNetwork {
       origin = rowMap.get("origin").map(_.fromAttributeValue[String])
     )
   }
+
+  final val BlockedNetworks = Set(Slug.raw("hbo-now"))
 }
 
 case class StoredNetwork(
@@ -61,6 +63,8 @@ case class StoredNetwork(
   }
 
   lazy val isSupported: Boolean = supportedNetwork.isDefined
+
+  lazy val isBlocked: Boolean = StoredNetwork.BlockedNetworks.contains(slug)
 
   def toDynamoItem: java.util.Map[String, AttributeValue] = {
     (Map(
