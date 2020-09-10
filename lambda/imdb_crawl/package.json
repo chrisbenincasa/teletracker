@@ -1,0 +1,25 @@
+{
+  "name": "imdb-crawler",
+  "version": "0.0.1",
+  "description": "Dumps IMDB ratings output files to S3 daily",
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-s3-node": "^0.1.0-preview.2",
+    "moment": "^2.27.0",
+    "node-fetch": "^2.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "^14.0.23",
+    "@types/node-fetch": "^2.5.7",
+    "@types/request": "^2.48.5",
+    "@types/request-promise": "^4.1.46",
+    "prettier": "2.0.2",
+    "ts-node": "^8.6.2",
+    "typescript": "^3.8.3",
+    "yargs": "^14.2.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "main": "ts-node src/runner.ts"
+  }
+}
