@@ -38,6 +38,7 @@ data "aws_iam_policy_document" "main_es_policy" {
     condition {
       test = "IpAddress"
       values = [
+        "98.110.114.151", # Christian Home
         "67.164.191.249",
         "54.193.107.226",
         "54.148.251.95",
@@ -63,7 +64,43 @@ data "aws_iam_policy_document" "main_es_policy" {
 resource "aws_elasticsearch_domain_policy" "main" {
   domain_name = aws_elasticsearch_domain.teletracker-qa-es.domain_name
 
-  access_policies = data.aws_iam_policy_document.main_es_policy.json
+  access_policies = <<POLICY
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "es:*",
+      "Resource": "arn:aws:es:us-west-2:302782651551:domain/teletracker-qa/*",
+      "Condition": {
+        "IpAddress": {
+          "aws:SourceIp": [
+            "98.110.114.151",
+            "67.164.191.249",
+            "54.193.107.226",
+            "54.148.251.95",
+            "73.243.144.208",
+            "71.185.54.20",
+            "52.24.141.158"
+          ]
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": [
+          "arn:aws:iam::302782651551:role/ecsInstanceRole",
+          "arn:aws:iam::302782651551:role/ecsFargateTaskRole"
+        ]
+      },
+      "Action": "es:*",
+      "Resource": "arn:aws:es:us-west-2:302782651551:domain/teletracker-qa/*"
+    }
+  ]
+}
+POLICY
 }
 
 data "template_file" "elasticdump-task-definition-template" {
