@@ -219,7 +219,7 @@ export default function Cast(props: Props) {
     </div>
   );
 
-  return (
+  return credits.length > 0 ? (
     <React.Fragment>
       <div className={classes.castWrapper}>
         <Typography color="inherit" variant="h5" className={classes.header}>
@@ -283,5 +283,5 @@ export default function Cast(props: Props) {
         </AutoSizer>
       </div>
     </React.Fragment>
-  );
+  ) : null;
 }
