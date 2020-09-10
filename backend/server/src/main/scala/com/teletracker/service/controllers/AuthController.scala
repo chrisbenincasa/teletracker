@@ -1,15 +1,20 @@
 package com.teletracker.service.controllers
 
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.service.auth.{AuthRequiredFilter, JwtAuthExtractor}
+import com.teletracker.service.auth.{
+  AuthRequiredFilter,
+  CurrentAuthenticatedUser,
+  JwtAuthExtractor
+}
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
-import javax.inject.Inject
+import javax.inject.{Inject, Provider}
 import scala.concurrent.ExecutionContext
 
 class AuthController @Inject()(
   config: TeletrackerConfig,
-  jwtAuthExtractor: JwtAuthExtractor
+  jwtAuthExtractor: JwtAuthExtractor,
+  currentUser: Provider[Option[CurrentAuthenticatedUser]]
 )(implicit executionContext: ExecutionContext)
     extends Controller {
 

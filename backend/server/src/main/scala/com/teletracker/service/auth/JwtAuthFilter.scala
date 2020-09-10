@@ -89,7 +89,14 @@ class JwtAuthFilter @Inject()(
           case Success(parsed) =>
             RequestContext.set(request, parsed.getBody.getSubject, t)
             finagleRequestScope.seed[Option[CurrentAuthenticatedUser]](
-              Some(CurrentAuthenticatedUser(parsed.getBody.getSubject))
+              Some(
+                CurrentAuthenticatedUser(
+                  parsed.getBody.getSubject,
+                  Option(
+                    parsed.getBody.get("cognito:groups", classOf[List[String]])
+                  ).map(_.map(_.toLowerCase()).toSet)
+                )
+              )
             )
             respPromise.become(service(request))
 
