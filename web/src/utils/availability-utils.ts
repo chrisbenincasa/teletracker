@@ -85,6 +85,9 @@ function webDeepLinkForId(
       } else {
         return baseUrl;
       }
+    case 'apple-tv':
+      typePart = itemType === 'movie' ? 'movie' : 'show';
+      return `https://itunes.apple.com/us/${typePart}/${id}`;
     case 'disney-plus':
       typePart = itemType === 'movie' ? 'movies' : 'series';
       const lastSepPos = id.lastIndexOf('_');
