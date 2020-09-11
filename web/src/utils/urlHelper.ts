@@ -172,7 +172,7 @@ export function parseFilterParams(params: Map<string, string>): FilterParams {
   let networkSetting: SelectableNetworks;
   if (rawNetworks.length === 1 && rawNetworks[0] === 'all') {
     networkSetting = 'all';
-  } else if (rawNetworks.length > 1) {
+  } else if (rawNetworks.length > 0) {
     // Not valid to have 'all' + other networks
     networkSetting = rawNetworks.filter(n => n !== 'all').filter(isNetworkType);
   }
