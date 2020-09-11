@@ -143,7 +143,6 @@ export default function NetworkSelect(props: Props) {
             size="medium"
             color={networks === 'all' ? 'primary' : 'secondary'}
             label="All"
-            // style={{ justifyContent: 'center' }}
             className={classes.chip}
           />
         </Tooltip>
