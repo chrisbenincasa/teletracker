@@ -49,7 +49,7 @@ const Footer = () => {
         <div className={classes.section}>Telescope &copy; {year}</div>
         <div className={classes.section}>
           <Typography variant="h6">Networks</Typography>
-          <RouterLink href="/popular?networks=hbo-now" passHref>
+          <RouterLink href="/popular?networks=hbo-go" passHref>
             <a className={classes.link}>HBO</a>
           </RouterLink>
           <RouterLink href={'/popular?networks=hulu'}>

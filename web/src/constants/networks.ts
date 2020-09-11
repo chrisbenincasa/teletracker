@@ -20,5 +20,6 @@ export const AllNetworks = [
   PrimeVideo,
   DisneyPlus,
   HboMax,
+  Hbo,
   AppleTv,
 ];

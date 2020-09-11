@@ -15,6 +15,7 @@ import { GRID_ITEM_SIZE_IN_COLUMNS, TOTAL_COLUMNS } from '../constants/';
 import { FilterParams, normalizeFilterParams } from './searchFilters';
 import produce from 'immer';
 import { collect, collectFirst } from './collection-utils';
+import { storedNetworkTypeToNetworkType } from './availability-utils';
 
 export function isPersonRule(x: ListRule): x is ListPersonRule {
   return x.type === 'UserListPersonRule';
@@ -67,7 +68,9 @@ export function smartListRulesToFilters(
         draft.networks = collect(rules, rule =>
           isNetworkRule(rule)
             ? collectFirst(networks, n =>
-                n.id === rule.networkId ? n.slug : undefined,
+                n.id === rule.networkId
+                  ? storedNetworkTypeToNetworkType(n.slug)
+                  : undefined,
               )
             : undefined,
         );

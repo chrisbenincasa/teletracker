@@ -149,7 +149,7 @@ export default function NetworkSelect(props: Props) {
         {makeNetworkChip(allNetworks.Netflix)}
         {makeNetworkChip(allNetworks.Hulu)}
         {makeNetworkChip(allNetworks.DisneyPlus)}
-        {makeNetworkChip('hbo-now')}
+        {makeNetworkChip(allNetworks.Hbo)}
         {makeNetworkChip(allNetworks.HboMax)}
         {makeNetworkChip(allNetworks.AmazonVideo)}
         {makeNetworkChip(allNetworks.PrimeVideo)}
