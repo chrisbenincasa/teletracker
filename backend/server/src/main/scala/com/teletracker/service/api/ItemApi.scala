@@ -1,25 +1,16 @@
 package com.teletracker.service.api
 
 import com.teletracker.common.db.dynamo.model.{StoredGenre, StoredNetwork}
-import com.teletracker.common.db.model.{
-  ItemType,
-  OfferType,
-  PersonAssociationType,
-  PresentationType,
-  SupportedNetwork,
-  SupportedNetworkLookup,
-  UserThingTagType
-}
+import com.teletracker.common.db.model._
 import com.teletracker.common.db.{Bookmark, SortMode}
 import com.teletracker.common.elasticsearch._
 import com.teletracker.common.elasticsearch.model._
 import com.teletracker.common.util._
-import com.teletracker.service.api.model.Item
+import com.teletracker.service.api.model.{Item, Person}
 import javax.inject.Inject
 import java.time.Instant
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
 
 class ItemApi @Inject()(
   genreCache: GenreCache,
@@ -139,15 +130,24 @@ class ItemApi @Inject()(
   }
 
   def getPersonViaSearch(
+    requestingUserId: Option[String],
     idOrSlug: String,
     materializeCredits: Boolean,
     creditsLimit: Int
-  ): Future[Option[(EsPerson, ElasticsearchItemsResponse)]] = {
-    personLookup.lookupPerson(
-      HasThingIdOrSlug.parse(idOrSlug),
-      materializeCredits,
-      Some(creditsLimit)
-    )
+  ): Future[Option[Person]] = {
+    personLookup
+      .lookupPerson(
+        HasThingIdOrSlug.parse(idOrSlug),
+        materializeCredits,
+        Some(creditsLimit)
+      )
+      .map(_.map {
+        case (person, credits) =>
+          Person.fromEsPerson(
+            person,
+            Some(credits.scopeToUser(requestingUserId))
+          )
+      })
   }
 
   def getPeopleViaSearch(idOrSlugs: List[String]): Future[List[EsPerson]] = {
@@ -159,11 +159,13 @@ class ItemApi @Inject()(
   }
 
   def getPersonCredits(
+    requestingUserId: Option[String],
     idOrSlug: String,
     request: PersonCreditsRequest
   ): Future[ElasticsearchItemsResponse] = {
     search(
-      ItemSearchRequest(
+      requestingUserId = requestingUserId,
+      request = ItemSearchRequest(
         genres = request.genres,
         networks = request.networks,
         allNetworks = request.networks.map(_ == Set(ItemSearchRequest.All)),
@@ -186,16 +188,18 @@ class ItemApi @Inject()(
         imdbRating = None,
         availabilityFilters = request.availabilityFilters
       )
-    )
+    ).map(_.scopeToUser(requestingUserId))
   }
 
   def fullTextSearch(
+    requestingUserId: Option[String],
     query: String,
     request: ItemSearchRequest
   ): Future[ElasticsearchItemsResponse] = {
     toItemSearchParams(request)
       .map(_.copy(titleSearch = Some(query)))
       .flatMap(itemSearch.fullTextSearch)
+      .map(_.scopeToUser(requestingUserId))
   }
 
   def fullTextSearchPeople(
@@ -207,8 +211,13 @@ class ItemApi @Inject()(
       .flatMap(personLookup.fullTextSearch)
   }
 
-  def search(request: ItemSearchRequest): Future[ElasticsearchItemsResponse] = {
-    toItemSearchParams(request).flatMap(itemSearch.searchItems)
+  def search(
+    requestingUserId: Option[String],
+    request: ItemSearchRequest
+  ): Future[ElasticsearchItemsResponse] = {
+    toItemSearchParams(request)
+      .flatMap(itemSearch.searchItems)
+      .map(_.scopeToUser(requestingUserId))
   }
 
   def toItemSearchParams(

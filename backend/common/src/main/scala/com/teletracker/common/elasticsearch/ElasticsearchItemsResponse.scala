@@ -29,6 +29,12 @@ case class ElasticsearchItemsResponse(
     bookmark: Option[Bookmark]
   ): ElasticsearchItemsResponse =
     this.copy(bookmark = bookmark)
+
+  def scopeToUser(authedUser: Option[String]): ElasticsearchItemsResponse = {
+    copy(
+      items = items.map(_.scopeToUser(authedUser))
+    )
+  }
 }
 
 object ElasticsearchPeopleResponse {

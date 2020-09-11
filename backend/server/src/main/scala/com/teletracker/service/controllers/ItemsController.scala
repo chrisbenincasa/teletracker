@@ -25,6 +25,7 @@ import com.teletracker.service.api.{
   ItemSearchRequest
 }
 import com.teletracker.service.api.model.{Item, Person}
+import com.teletracker.service.auth.CurrentAuthenticatedUser
 import com.teletracker.service.controllers.annotations.{
   ItemReleaseYear,
   RatingRange
@@ -39,7 +40,7 @@ import com.twitter.finatra.validation.{
   ValidationResult
 }
 import io.circe.generic.JsonCodec
-import javax.inject.Inject
+import javax.inject.{Inject, Provider}
 import java.time.LocalDate
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
@@ -48,7 +49,8 @@ import scala.util.control.NonFatal
 
 class ItemsController @Inject()(
   itemApi: ItemApi,
-  personLookup: PersonLookup
+  personLookup: PersonLookup,
+  authedUser: Provider[Option[CurrentAuthenticatedUser]]
 )(implicit executionContext: ExecutionContext)
     extends BaseController
     with CanParseFieldFilter {
@@ -132,21 +134,17 @@ class ItemsController @Inject()(
     get("/:personId") { req: GetPersonRequest =>
       itemApi
         .getPersonViaSearch(
-          req.personId,
+          requestingUserId = authedUser.get().map(_.userId),
+          idOrSlug = req.personId,
           materializeCredits = req.materializeCredits,
           creditsLimit = req.creditsLimit.getOrElse(20)
         )
         .map {
           case None => response.notFound
-          case Some((person, credits)) =>
+          case Some(person) =>
             response
               .okCirceJsonResponse(
-                DataResponse(
-                  Person.fromEsPerson(
-                    person,
-                    Some(credits)
-                  )
-                )
+                DataResponse(person)
               )
         }
     }
@@ -181,7 +179,7 @@ class ItemsController @Inject()(
       )
 
       itemApi
-        .getPersonCredits(req.personId, request)
+        .getPersonCredits(authedUser.get().map(_.userId), req.personId, request)
         .map(result => {
           val items =
             result.items.map(_.scopeToUser(req.authenticatedUserId))
@@ -202,6 +200,7 @@ class ItemsController @Inject()(
   ) = {
     itemApi
       .search(
+        authedUser.get().map(_.userId),
         searchRequest
       )
       .map(popularItems => {

@@ -13,6 +13,7 @@ import com.teletracker.service.api.{
   ItemApi,
   ItemSearchRequest
 }
+import com.teletracker.service.auth.CurrentAuthenticatedUser
 import com.teletracker.service.controllers.annotations.{
   ItemReleaseYear,
   RatingRange
@@ -21,12 +22,13 @@ import com.teletracker.service.controllers.params.RangeParser
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.request.QueryParam
 import com.twitter.finatra.validation.{Max, Min}
-import javax.inject.Inject
+import javax.inject.{Inject, Provider}
 import scala.concurrent.ExecutionContext
 import scala.util.Try
 
 class SearchController @Inject()(
-  itemApi: ItemApi
+  itemApi: ItemApi,
+  authedUser: Provider[Option[CurrentAuthenticatedUser]]
 )(implicit executionContext: ExecutionContext)
     extends BaseController
     with CanParseFieldFilter {
@@ -37,6 +39,7 @@ class SearchController @Inject()(
 
       for {
         result <- itemApi.fullTextSearch(
+          authedUser.get().map(_.userId),
           query,
           makeSearchRequest(req)
         )
