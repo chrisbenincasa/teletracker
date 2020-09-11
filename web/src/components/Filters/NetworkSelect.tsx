@@ -4,8 +4,10 @@ import {
   createStyles,
   makeStyles,
   Theme,
+  Tooltip,
   Typography,
 } from '@material-ui/core';
+import { DoneAll } from '@material-ui/icons';
 import clsx from 'clsx';
 import { networkToColor, networkToPrettyName, NetworkType } from '../../types';
 import { FilterContext } from './FilterContext';
@@ -130,15 +132,21 @@ export default function NetworkSelect(props: Props) {
     <div className={classes.networkContainer}>
       {props.showTitle && <FilterSectionTitle title="Network" />}
       <div className={classes.chipContainer}>
-        <Chip
-          key={'all'}
-          onClick={() => updateNetworks('all')}
-          size="medium"
-          color={networks === 'all' ? 'primary' : 'secondary'}
-          label="All"
-          style={{ justifyContent: 'center' }}
-          className={classes.chip}
-        />
+        <Tooltip
+          title="Filter content from all listed networks"
+          placement="top"
+        >
+          <Chip
+            key={'all'}
+            icon={<DoneAll style={{ width: 60 }} />}
+            onClick={() => updateNetworks('all')}
+            size="medium"
+            color={networks === 'all' ? 'primary' : 'secondary'}
+            label="All"
+            // style={{ justifyContent: 'center' }}
+            className={classes.chip}
+          />
+        </Tooltip>
         {makeNetworkChip(allNetworks.Netflix)}
         {makeNetworkChip(allNetworks.Hulu)}
         {makeNetworkChip(allNetworks.DisneyPlus)}
