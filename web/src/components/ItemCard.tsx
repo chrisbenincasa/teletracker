@@ -313,43 +313,34 @@ function ItemCard(props: Props) {
   }, []);
 
   const renderPoster = (item: Item) => {
-    const WrappedCardMedia = React.forwardRef(({ onClick, href }: any, ref) => {
-      return (
-        <a
-          href={href}
-          onClick={onClick}
-          ref={ref as RefObject<HTMLAnchorElement>}
-          style={{ display: 'block', height: '100%', textDecoration: 'none' }}
-        >
-          <CardMedia
-            src={imagePlaceholder}
-            item={item}
-            component={ResponsiveImage}
-            imageType="poster"
-            imageStyle={{
-              width: '100%',
-              objectFit: 'cover',
-              height: '100%',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              bottom: 0,
-              right: 0,
-            }}
-            loadCallback={markImageLoadedCb}
-          />
-        </a>
-      );
-    });
-
     return (
-      <div>
+      <React.Fragment>
         {isHovering && hoverRating && renderRatingHover()}
         {renderStatusIcons()}
         <RouterLink href={item.canonicalUrl} as={item.relativeUrl} passHref>
-          <WrappedCardMedia />
+          <a
+            style={{ display: 'block', height: '100%', textDecoration: 'none' }}
+          >
+            <CardMedia
+              src={imagePlaceholder}
+              item={item}
+              component={ResponsiveImage}
+              imageType="poster"
+              imageStyle={{
+                width: '100%',
+                objectFit: 'cover',
+                height: '100%',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                bottom: 0,
+                right: 0,
+              }}
+              loadCallback={markImageLoadedCb}
+            />
+          </a>
         </RouterLink>
-      </div>
+      </React.Fragment>
     );
   };
 
