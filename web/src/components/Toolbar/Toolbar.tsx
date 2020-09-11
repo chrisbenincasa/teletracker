@@ -44,6 +44,7 @@ const useStyles = makeStyles((theme: Theme) =>
     appbar: {
       zIndex: theme.zIndex.drawer + 1,
       whiteSpace: 'nowrap',
+      padding: theme.spacing(0, 1),
     },
     root: {
       flexGrow: 1,
@@ -68,6 +69,9 @@ const useStyles = makeStyles((theme: Theme) =>
     grow: {
       flexGrow: 1,
       paddingLeft: theme.spacing(10), // forces search field to be true center
+    },
+    hideSearch: {
+      marginLeft: theme.spacing(1),
     },
     loginButton: {
       margin: theme.spacing(0, 1),
@@ -96,10 +100,6 @@ const useStyles = makeStyles((theme: Theme) =>
       left: 0,
       right: 0,
     },
-    mobileSearchIcon: {
-      padding: theme.spacing(0.5, 1),
-      marginLeft: theme.spacing(2),
-    },
     // searchClear: {
     //   color: theme.palette.common.white,
     //   opacity: 0.25,
@@ -116,7 +116,6 @@ const useStyles = makeStyles((theme: Theme) =>
       // '&:hover': {
       //   backgroundColor: fade(theme.palette.common.white, 0.25),
       // },
-      marginRight: theme.spacing(2),
       width: '100%',
     },
     drawerButton: {
@@ -293,14 +292,6 @@ export default function Toolbar(props: Props) {
         <div
           className={clsx(classes.sectionMobile, classes.mobileSearchContainer)}
         >
-          <IconButton
-            onClick={handleMobileSearchDisplayClose}
-            color="inherit"
-            size="small"
-            className={classes.mobileSearchIcon}
-          >
-            <KeyboardArrowUp />
-          </IconButton>
           <div className={classes.searchMobile}>
             <Search
               drawerOpen={drawerOpen}
@@ -308,6 +299,14 @@ export default function Toolbar(props: Props) {
               quickSearchEnabled={showQuickSearch}
             />
           </div>
+          <IconButton
+            onClick={handleMobileSearchDisplayClose}
+            color="inherit"
+            size="small"
+            className={classes.hideSearch}
+          >
+            <KeyboardArrowUp />
+          </IconButton>
         </div>
       </Slide>
     );
@@ -438,13 +437,14 @@ export default function Toolbar(props: Props) {
 
   return (
     <React.Fragment>
-      <AppBar position="sticky">
+      <AppBar position="sticky" className={classes.appbar}>
         <MUIToolbar variant="dense" disableGutters>
           <IconButton
             focusRipple={false}
             onClick={() => fireOnDrawerChange()}
             color="inherit"
             className={classes.drawerButton}
+            size="small"
           >
             {drawerOpen ? <MenuOpen /> : <MenuIcon />}
           </IconButton>
@@ -497,6 +497,7 @@ export default function Toolbar(props: Props) {
                 aria-owns={'Login'}
                 onClick={openAuthDialog}
                 color="inherit"
+                size="small"
                 disableRipple
               >
                 <AccountCircle />
@@ -517,6 +518,7 @@ export default function Toolbar(props: Props) {
                 aria-haspopup="true"
                 onClick={handleMobileSearchDisplayOpen}
                 color="inherit"
+                size="small"
                 disableRipple
               >
                 <SearchIcon />
