@@ -1,19 +1,39 @@
-import { ItemType, NetworkType, Network } from '../types';
-import { AmazonVideo, Hulu, Netflix, PrimeVideo } from '../constants/networks';
+import { ItemType, Network, NetworkType, StoredNetworkType } from '../types';
+import * as networks from '../constants/networks';
+import {
+  AmazonVideo,
+  AppleTv,
+  DisneyPlus,
+  Hbo,
+  HboMax,
+  Hulu,
+  Netflix,
+  PrimeVideo,
+} from '../constants/networks';
 import { Item } from '../types/v2/Item';
 import _ from 'lodash';
 import { ItemExternalId } from '../types/v2';
-import * as networks from '../constants/networks';
 
 export enum Platform {
   web = 'web',
 }
 
-export const networksToExclude: NetworkType[] = ['hbo-now'];
+export const networksToExclude: StoredNetworkType[] = [];
+
+export function storedNetworkTypeToNetworkType(
+  storedNetworkType: StoredNetworkType,
+): NetworkType {
+  if (storedNetworkType === 'hbo') {
+    return Hbo;
+  } else {
+    // All other types match.
+    return storedNetworkType as NetworkType;
+  }
+}
 
 export const sanitizeNetwork = (network: Network) => {
   switch (network.slug) {
-    case 'hbo-go':
+    case 'hbo':
       return { ...network, name: 'HBO' };
     default:
       return network;
@@ -22,8 +42,9 @@ export const sanitizeNetwork = (network: Network) => {
 
 function extractExternalId(
   item: Item,
-  networkType: NetworkType,
+  networkType: StoredNetworkType | NetworkType,
 ): ItemExternalId | undefined {
+  console.log(item.external_ids, networkType);
   return _.find(item.external_ids || [], {
     provider: networkType,
   });
@@ -31,12 +52,16 @@ function extractExternalId(
 
 export function extractExternalIdForDeepLink(
   item: Item,
-  networkType: NetworkType,
+  networkType: StoredNetworkType,
 ): ItemExternalId | undefined {
   switch (networkType) {
     // Prime uses the same external IDs as other Amazon items
-    case 'amazon-prime-video':
+    case PrimeVideo:
       return extractExternalId(item, networks.AmazonVideo);
+    // Temporary mapping from SupportedNetwork['hbo'] to 'hbo-go' that's stored
+    // on items
+    case 'hbo':
+      return extractExternalId(item, networks.Hbo);
     default:
       return extractExternalId(item, networkType);
   }
@@ -45,7 +70,7 @@ export function extractExternalIdForDeepLink(
 export function deepLinkForId(
   id: string,
   itemType: ItemType,
-  networkType: NetworkType,
+  networkType: StoredNetworkType | NetworkType,
   platform: Platform,
 ): string | undefined {
   switch (platform) {
@@ -59,7 +84,7 @@ export function deepLinkForId(
 function webDeepLinkForId(
   id: string,
   itemType: ItemType,
-  networkType: NetworkType,
+  networkType: StoredNetworkType | NetworkType,
 ): string | undefined {
   // TODO: We should route these thru a server so we can know when people clicked
   // Or maybe GA
@@ -71,10 +96,11 @@ function webDeepLinkForId(
     case Hulu:
       typePart = itemType === 'movie' ? 'movie' : 'series';
       return `https://www.hulu.com/${typePart}/${id}`;
-    case 'hbo-go':
+    case 'hbo':
+    case Hbo:
       typePart = itemType === 'movie' ? 'feature' : 'series';
       return `https://play.hbogo.com/${typePart}/${id}`;
-    case 'hbo-max':
+    case HboMax:
       typePart = itemType === 'movie' ? 'feature' : 'series';
       return `https://play.hbomax.com/${typePart}/${id}`;
     case AmazonVideo:
@@ -85,10 +111,10 @@ function webDeepLinkForId(
       } else {
         return baseUrl;
       }
-    case 'apple-tv':
+    case AppleTv:
       typePart = itemType === 'movie' ? 'movie' : 'show';
       return `https://itunes.apple.com/us/${typePart}/${id}`;
-    case 'disney-plus':
+    case DisneyPlus:
       typePart = itemType === 'movie' ? 'movies' : 'series';
       const lastSepPos = id.lastIndexOf('_');
       const path = id.substr(0, lastSepPos) + '/' + id.substr(lastSepPos + 1);

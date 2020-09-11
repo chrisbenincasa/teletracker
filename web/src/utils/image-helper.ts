@@ -2,8 +2,7 @@ import { ApiItem, ItemImage } from '../types/v2';
 import _ from 'lodash';
 import { ApiPerson, Person } from '../types/v2/Person';
 import { Item } from '../types/v2/Item';
-import { NetworkType, isNetworkType } from '../types';
-import { NetworkTranslation } from '../constants/networks';
+import { NetworkType, StoredNetworkType } from '../types';
 
 export function getTmdbPosterImage(
   item: ApiItem | Item,
@@ -34,11 +33,6 @@ export function getTmdbImage(
   );
 }
 
-// !exactMatch lets you bypass the 'hbo-now' logic so we can show both 'hbo-go' and 'hbo-now' on availability page but just 'hbo' on other screens
-export function getLogoUrl(network: NetworkType, exactMatch: boolean = false) {
-  if (network === 'hbo-now' && !exactMatch) {
-    return `/images/logos/hbo/hbo-full.svg`;
-  } else {
-    return `/images/logos/${network}/${network}-full.svg`;
-  }
+export function getLogoUrl(network: NetworkType | StoredNetworkType) {
+  return `/images/logos/${network}/${network}-full.svg`;
 }

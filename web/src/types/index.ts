@@ -89,8 +89,8 @@ export function toItemTypeEnum(itemType: ItemType): ItemTypeEnum {
 
 export type NetworkType =
   | typeof networks.Netflix
-  | 'hbo-go'
-  | 'hbo-now'
+  | typeof networks.Hbo
+  // | 'hbo-now'
   | typeof networks.PrimeVideo
   | typeof networks.AmazonVideo
   | typeof networks.Hulu
@@ -99,19 +99,7 @@ export type NetworkType =
   | typeof networks.AppleTv;
 
 export function isNetworkType(s: string): s is NetworkType {
-  const allowed = [
-    'netflix',
-    'netflix-kids',
-    'hbo-go',
-    'hbo-now',
-    'amazon-prime-video',
-    'amazon-video',
-    'hulu',
-    'disney-plus',
-    'hbo-max',
-  ];
-
-  return allowed.includes(s);
+  return networks.AllNetworks.includes(s);
 }
 
 export function isNetworkTypeOrAll(s: string): s is NetworkType | 'all' {
@@ -119,28 +107,27 @@ export function isNetworkTypeOrAll(s: string): s is NetworkType | 'all' {
 }
 
 export const networkToPrettyName: { readonly [K in NetworkType]: string } = {
-  netflix: 'Netflix',
-  // 'netflix-kids': 'Netflix Kids',
-  'hbo-go': 'HBO Go',
-  'hbo-now': 'HBO',
-  'amazon-prime-video': 'Prime Video',
-  'amazon-video': 'Amazon Video',
-  hulu: 'Hulu',
-  'disney-plus': 'Disney Plus',
-  'hbo-max': 'HBO Max',
-  'apple-tv': 'Apple TV',
+  [networks.Netflix]: 'Netflix',
+  [networks.Hbo]: 'HBO',
+  // 'hbo-now': 'HBO',
+  [networks.PrimeVideo]: 'Prime Video',
+  [networks.AmazonVideo]: 'Amazon Video',
+  [networks.Hulu]: 'Hulu',
+  [networks.DisneyPlus]: 'Disney Plus',
+  [networks.HboMax]: 'HBO Max',
+  [networks.AppleTv]: 'Apple TV',
 };
 
 export const networkToColor: { readonly [K in NetworkType]?: string } = {
-  netflix: '#000',
-  'hbo-now': '#fff',
-  'amazon-video': '#fff',
-  'amazon-prime-video': '#fff',
-  hulu: '#1ce783',
-  'disney-plus': '#1a1d29',
-  'hbo-max': '#fff',
-  'hbo-go': '#fff',
-  'apple-tv': '#fff',
+  [networks.Netflix]: '#000',
+  // 'hbo-now': '#fff',
+  [networks.AmazonVideo]: '#fff',
+  [networks.PrimeVideo]: '#fff',
+  [networks.Hulu]: '#1ce783',
+  [networks.DisneyPlus]: '#1a1d29',
+  [networks.HboMax]: '#fff',
+  [networks.Hbo]: '#fff',
+  [networks.AppleTv]: '#fff',
 };
 
 export interface ListConfiguration {
@@ -284,10 +271,14 @@ export interface UserPreferences {
   readonly showOnlyNetworkSubscriptions: boolean;
 }
 
+// Transition type while we remove hbo-go and hbo-now references
+// from the backend
+export type StoredNetworkType = Exclude<NetworkType, 'hbo-go'> | 'hbo';
+
 export interface Network {
   readonly id: number;
   readonly name: string;
-  readonly slug: NetworkType;
+  readonly slug: StoredNetworkType;
   readonly shortname?: string;
   readonly homepage?: string;
   readonly origin?: string;
