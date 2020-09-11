@@ -287,7 +287,7 @@ export default function Toolbar(props: Props) {
         direction="down"
         in={mobileSearchBarOpen}
         timeout={100}
-        mountOnEnter
+        unmountOnExit
       >
         <div
           className={clsx(classes.sectionMobile, classes.mobileSearchContainer)}
@@ -297,6 +297,7 @@ export default function Toolbar(props: Props) {
               drawerOpen={drawerOpen}
               onDrawerChange={fireOnDrawerChange}
               quickSearchEnabled={showQuickSearch}
+              forceFocus={true}
             />
           </div>
           <IconButton
