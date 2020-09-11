@@ -188,7 +188,7 @@ function Explore() {
     [popular, thingsById, width],
   );
 
-  const updateFeaturedItems = () => {
+  const updateFeaturedItems = useCallback(() => {
     const numberFeaturedItems = getNumberFeaturedItems();
     const featuredItems = getFeaturedItems(numberFeaturedItems);
 
@@ -228,7 +228,7 @@ function Explore() {
     if (popular?.length === DEFAULT_POPULAR_LIMIT && missingItems > 0) {
       loadPopular(true, missingItems);
     }
-  };
+  }, [popular, thingsById, width, theme, featuredItemsIndex]);
 
   const toggleFilters = () => {
     setShowFilter(prev => !prev);
