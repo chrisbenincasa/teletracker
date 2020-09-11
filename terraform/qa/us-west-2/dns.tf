@@ -22,24 +22,6 @@ resource "aws_acm_certificate" "telescopetv" {
   }
 }
 
-//resource "aws_route53_record" "telescopetv_cert_validation" {
-//  count = length(aws_acm_certificate.telescopetv.domain_validation_options)
-//  name     = aws_acm_certificate.telescopetv.domain_validation_options[count.index].resource_record_name
-//  type     = aws_acm_certificate.telescopetv.domain_validation_options[count.index].resource_record_type
-//  records  = [aws_acm_certificate.telescopetv.domain_validation_options[count.index].resource_record_value]
-//  zone_id  = data.aws_route53_zone.telescopetv.id
-//  ttl      = 60
-//
-//  depends_on = [aws_acm_certificate.telescopetv]
-//}
-//
-//resource "aws_acm_certificate_validation" "telescope_tv_cert_validation" {
-//  provider = "aws.us-east-1"
-//
-//  certificate_arn         = aws_acm_certificate.qa-teletracker-tv-cert-us-east-1.arn
-//  validation_record_fqdns = aws_route53_record.telescopetv_cert_validation.*.fqdn
-//}
-
 resource "aws_route53_record" "qa-teletracker-tv-cert-validation" {
   name    = aws_acm_certificate.qa-teletracker-tv-cert-us-east-1.domain_validation_options[0].resource_record_name
   type    = aws_acm_certificate.qa-teletracker-tv-cert-us-east-1.domain_validation_options[0].resource_record_type
@@ -75,4 +57,10 @@ resource "aws_acm_certificate_validation" "qa-teletracker-tv-cert-validation" {
     aws_route53_record.qa-teletracker-tv-cert-validation.fqdn,
     aws_route53_record.qa-teletracker-tv-cert-validation-alt1.fqdn,
   aws_route53_record.qa-teletracker-tv-cert-validation-alt2.fqdn]
+}
+
+resource "aws_route53_record" "" {
+  name = ""
+  type = ""
+  zone_id = ""
 }
