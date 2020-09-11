@@ -16,13 +16,53 @@ import { ApiPerson, PersonFactory } from '../../types/v2/Person';
 import { FilterParams } from '../../utils/searchFilters';
 import WithItemFilters from '../../components/Filters/FilterContext';
 import _ from 'lodash';
+import { useRouter } from 'next/router';
 
 export default function makeExploreWrapper(defaultFilters: FilterParams) {
   function ExploreWrapper() {
+    const router = useRouter();
+    const domain = process.env.REACT_APP_TELETRACKER_BASE_URL;
+
     return (
       <React.Fragment>
         <Head>
-          <title>Explore - Popular</title>
+          <title>🔭 Telescope | Explore</title>
+          <meta
+            name="title"
+            property="og:title"
+            content={`Telescope | Find where to stream, rent, or buy anything.`}
+          />
+          <meta
+            name="description"
+            property="og:description"
+            content={`Find out where to stream, rent, or buy anything on ${domain}.`}
+          />
+          <meta
+            name="image"
+            property="og:image"
+            content={`${domain}/images/unfurl_screen.jpg`}
+          />
+          <meta property="og:type" content="website" />
+          <meta property="og:image:type" content="image/jpg" />
+          <meta property="og:image:width" content={'3359'} />
+          <meta property="og:image:height" content={'1498'} />
+          <meta property="og:url" content={`${domain}${router.asPath}`} />
+          <meta name="twitter:card" content={'summary_large_image'} />
+          <meta name="twitter:title" content={`Telescope`} />
+          <meta
+            name="twitter:description"
+            content={`Find where to stream, rent, or buy anything on ${domain}.`}
+          />
+          <meta
+            name="twitter:image"
+            content={`${domain}/images/unfurl_screen.jpg`}
+          />
+          <meta name="twitter:domain" content={domain} />
+          <meta
+            name="keywords"
+            content={`Telescope, television, movie, stream, streaming, rent, buy, watch, track, netflix, hulu`}
+          />
+          <link rel="canonical" href={`${domain}${router.asPath}`} />
         </Head>
         <AppWrapper hideFooter>
           <WithItemFilters initialFilters={{ ...defaultFilters }}>
