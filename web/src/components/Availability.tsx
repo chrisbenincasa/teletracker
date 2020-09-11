@@ -192,7 +192,7 @@ const Availability = (props: Props) => {
 
         network = sanitizeNetwork(network);
 
-        const logoUri = getLogoUrl(network!.slug, true);
+        const logoUri = getLogoUrl(network!.slug);
         const offersOfType = _.filter(availability.offers, { offerType });
 
         if (offersOfType.length === 0) {
@@ -224,6 +224,7 @@ const Availability = (props: Props) => {
         }
 
         const link = getDeepLink(availability, offersOfType);
+        console.log(availability, offersOfType, link);
 
         return (
           <a
