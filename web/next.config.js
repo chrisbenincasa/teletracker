@@ -18,6 +18,7 @@ if (!NODE_ENV) {
 console.log('NODE_ENV=' + NODE_ENV);
 
 const dotenvFiles = [
+  process.env.ENV_FILE,
   `.env.${NODE_ENV}.local`,
   `.env.${NODE_ENV}`,
   // Don't include `.env.local` for `test` environment
@@ -26,6 +27,8 @@ const dotenvFiles = [
   NODE_ENV !== 'test' && `,env.local`,
   '.env',
 ].filter(Boolean);
+
+console.log(`Using env files: [${dotenvFiles.join(',')}]`);
 
 dotenvFiles.forEach(dotenvFile => {
   if (fs.existsSync(dotenvFile)) {
