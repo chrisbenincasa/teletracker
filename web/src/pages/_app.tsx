@@ -186,9 +186,7 @@ export default class TeletrackerApp extends App {
           <MuiThemeProvider theme={theme}>
             <div>
               <CssBaseline />
-              <NoSsr>
-                <Component {...pageProps} store={this.store} />
-              </NoSsr>
+              <Component {...pageProps} store={this.store} />
             </div>
           </MuiThemeProvider>
         </Provider>
