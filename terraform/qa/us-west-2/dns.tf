@@ -59,8 +59,8 @@ resource "aws_acm_certificate_validation" "qa-teletracker-tv-cert-validation" {
   aws_route53_record.qa-teletracker-tv-cert-validation-alt2.fqdn]
 }
 
-resource "aws_route53_record" "" {
-  name = ""
-  type = ""
-  zone_id = ""
-}
+//resource "aws_route53_record" "" {
+//  name = ""
+//  type = ""
+//  zone_id = ""
+//}

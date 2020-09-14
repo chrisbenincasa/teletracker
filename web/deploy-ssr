@@ -11,3 +11,5 @@ docker push 302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/frontend:la
 aws --region us-east-1 s3 sync --exclude "*development/*" .next/static/ s3://ssr.qa.teletracker.tv/_next/static
 aws --region us-east-1 s3 sync public/images s3://ssr.qa.teletracker.tv/images
 aws --region us-east-1 s3 cp public/favicon.ico s3://ssr.qa.teletracker.tv/favicon.ico
+
+echo "Successfully pushed artifacts for ${VERSION}"

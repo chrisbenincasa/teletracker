@@ -1,6 +1,6 @@
 {
   "server_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/server:0.1-1599840763.9a9c9c3",
-  "frontend_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/frontend:1599853295.1b6c75f8",
+  "frontend_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/frontend:1599863665.a0555d7b",
   "task_consumer_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/consumer:0.1-1597335219.87b1f90",
   "es_ingest_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/consumer:0.1-1597335219.87b1f90",
   "es_item_denorm_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/consumer:0.1-1597335219.87b1f90",
