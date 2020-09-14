@@ -109,7 +109,12 @@ class ElasticsearchExecutor @Inject()(
     )
 
     promise.future
-      .transform(identity, e => exception.copy(cause = e))
+      .transform(
+        identity,
+        e =>
+          exception
+            .copy(message = s"${exception.message}: ${e.getMessage}", cause = e)
+      )
   }
 
   protected def withRetryingListener[T](

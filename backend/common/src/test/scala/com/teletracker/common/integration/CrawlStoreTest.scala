@@ -168,7 +168,7 @@ class CrawlStoreTest
     val crawl: HistoricalCrawl = HistoricalCrawl(
       spiderName.name,
       version,
-      now,
+      Some(now),
       timeClosed = None,
       totalItemsScraped = None,
       metadata = None,

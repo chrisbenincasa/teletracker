@@ -44,7 +44,7 @@ object ItemUpdateApplier {
           .map(av => EsAvailability.getKey(av) -> av)
           .toMap
         val updatedAvailability = esItem.availabilityByKey
-          .filterKeys(removedAvailabilities.contains) ++ keyedUpdated
+          .filterKeys(!removedAvailabilities.contains(_)) ++ keyedUpdated
 
         updatedAvailability.values
 

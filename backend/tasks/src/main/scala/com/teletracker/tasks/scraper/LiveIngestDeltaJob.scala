@@ -25,6 +25,7 @@ import com.teletracker.tasks.scraper.loaders.{
   CrawlAvailabilityItemLoaderArgs,
   CrawlAvailabilityItemLoaderFactory
 }
+import com.twitter.util.Stopwatch
 import io.circe.Codec
 import io.circe.generic.JsonCodec
 import io.circe.syntax._
@@ -54,7 +55,8 @@ case class LiveIngestDeltaJobArgs(
   override val processBatchSleep: Option[FiniteDuration @@ Millis] =
     Some(tag[Millis](250 millis)),
   override val parallelism: Option[Int],
-  additionsOnly: Boolean = false)
+  additionsOnly: Boolean = false,
+  verboseDryRun: Boolean = false)
     extends IngestDeltaJobArgsLike
 
 object LiveIngestDeltaJobArgs
@@ -101,7 +103,7 @@ abstract class LiveIngestDeltaJob[
     val removedIds = beforeIds -- afterIds
     val matchingIds = afterIds.intersect(beforeIds)
 
-    if (!args.additionsOnly) {
+    if (!args.dryRun && !args.additionsOnly) {
       val pctChange = Math.abs(
         (beforeIds.size - afterIds.size) / beforeIds.size.toDouble
       ) * 100.0
@@ -201,6 +203,8 @@ abstract class LiveIngestDeltaJob[
           )
         })
         .await()
+    } else if (args.verboseDryRun) {
+      saveAvailabilities(allChanges, shouldRetry = false).await()
     }
   }
 
@@ -251,8 +255,11 @@ abstract class LiveIngestDeltaJob[
 
   private[this] val getAllBeforeItemsOnce = OnceT {
     val networks = getNetworksOrExit()
+    val stopwatch = Stopwatch.start()
 
-    itemsScroller
+    logger.info("Scrolling storage all existing availability items")
+
+    val result = itemsScroller
       .start(
         AvailabilityQueryBuilder.hasAvailabilityForNetworks(
           QueryBuilders.boolQuery(),
@@ -271,6 +278,12 @@ abstract class LiveIngestDeltaJob[
       })
       .toList
       .await()
+
+    logger.info(
+      s"Took ${stopwatch().inMillis} millis to gather ${result.size} existing availabilities"
+    )
+
+    result
   }
 
   override protected def getRemovedItems(): List[PendingAvailabilityRemove] = {

@@ -71,6 +71,7 @@ trait IngestDeltaJobArgsLike extends IngestJobArgsLike {
   val externalIdFilter: Option[String]
   val deltaSizeThreshold: Double
   val disableDeltaSizeCheck: Boolean
+  val verboseDryRun: Boolean
 }
 
 class IngestDeltaJobDependencies @Inject()(
@@ -132,6 +133,14 @@ abstract class IngestDeltaJobLike[
         deps.elasticsearchExactTitleLookup.create[IncomingItemType]
       )
     )
+
+  override def validateArgs(args: IngestJobArgs): Unit = {
+    if (args.verboseDryRun && !args.dryRun) {
+      throw new IllegalArgumentException(
+        "Cannot specify verbose dry run is dry run is false."
+      )
+    }
+  }
 
   protected def getAfterIds(): Set[String]
 
@@ -235,6 +244,16 @@ abstract class IngestDeltaJobLike[
         .groupBy(_.esItem.id)
         .mapValues(_.flatMap(_.removes).toSet)
 
+    if (args.dryRun) {
+      logger.info(
+        s"DRY RUN: Running through updates for ${availabilityUpdatesByItemId.keys.size} updates and ${availabilityRemovalsByItemId.keys.size} removals."
+      )
+    } else {
+      logger.info(
+        s"Applying ${availabilityUpdatesByItemId.keys.size} updates and ${availabilityRemovalsByItemId.keys.size} removals."
+      )
+    }
+
     val allItemIds = availabilityUpdatesByItemId.keySet ++ availabilityRemovalsByItemId.keySet
 
     AsyncStream
@@ -273,31 +292,41 @@ abstract class IngestDeltaJobLike[
                     .getOrElse(item.rawItem.externalIdsGrouped)
                 )
 
+                val newAvailabilities = ItemUpdateApplier
+                  .applyAvailabilityDelta(
+                    item.rawItem,
+                    updatedAvailabilities,
+                    removedAvailabilities
+                  )
                 val newItem = item.rawItem.copy(
                   availability = Some(
-                    ItemUpdateApplier
-                      .applyAvailabilityDelta(
-                        item.rawItem,
-                        updatedAvailabilities,
-                        removedAvailabilities
-                      )
-                      .toList
+                    newAvailabilities.toList
                   ),
                   external_ids = newExternalIds
                 )
 
-                deps.itemUpdateQueue.queueItemUpdate(
-                  id = item.rawItem.id,
-                  itemType = item.rawItem.`type`,
-                  doc = newItem.asJson,
-                  denorm = Some(
-                    EsIngestItemDenormArgs(
-                      needsDenorm = true,
-                      cast = false,
-                      crew = false
+                if (!args.dryRun) {
+                  deps.itemUpdateQueue.queueItemUpdate(
+                    id = item.rawItem.id,
+                    itemType = item.rawItem.`type`,
+                    doc = newItem.asJson,
+                    denorm = Some(
+                      EsIngestItemDenormArgs(
+                        needsDenorm = true,
+                        cast = false,
+                        crew = false
+                      )
                     )
                   )
-                )
+                } else if (args.verboseDryRun) {
+                  Future.successful {
+                    logger.info(
+                      s"Would've updated item: ${item.rawItem.id} with new:\n${newItem.asJson.spaces2}"
+                    )
+                  }
+                } else {
+                  Future.unit
+                }
             }
         })
 

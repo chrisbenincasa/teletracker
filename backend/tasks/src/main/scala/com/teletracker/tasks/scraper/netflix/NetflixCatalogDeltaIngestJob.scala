@@ -157,7 +157,7 @@ class IngestNetflixCatalogDelta @Inject()(
       .andThen {
         case Success(value) =>
           logger.info(
-            s"Found ${value.size} Netflix items that were not crawled but were still available."
+            s"Found ${value.size} actual removals from ${removals.size} potential removals."
           )
       }
   }

@@ -44,7 +44,8 @@ case class IngestDeltaJobArgs(
   disableDeltaSizeCheck: Boolean = false,
   override val sleepBetweenWriteMs: Option[Long] = None,
   crawlerName: Option[String],
-  crawlerVersion: Option[Long])
+  crawlerVersion: Option[Long],
+  override val verboseDryRun: Boolean = false)
     extends IngestDeltaJobArgsLike
 
 object IngestDeltaJobArgs

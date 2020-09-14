@@ -45,6 +45,7 @@ case class IngestPotentialMatchesDeltaArgs(
     with IngestDeltaJobArgsLike {
   override val deltaSizeThreshold: Double = 0.0
   override val disableDeltaSizeCheck: Boolean = true
+  override val verboseDryRun: Boolean = false
 }
 
 //abstract class IngestPotentialMatchesDelta[T <: ScrapedItem: Codec](
