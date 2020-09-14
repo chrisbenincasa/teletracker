@@ -60,44 +60,46 @@ export default function AppWrapper(props: Props) {
   }, []);
 
   return (
-    <div className={classes.root}>
-      <WithUser>
-        <NoSsr>
-          <Toolbar
-            drawerOpen={drawerOpen}
-            onDrawerChange={shouldClose =>
-              setDrawerOpen(
-                !_.isUndefined(shouldClose) ? !shouldClose : !drawerOpen,
-              )
-            }
-            showToolbarSearch={
-              _.isUndefined(props.showToolbarSearch)
-                ? true
-                : props.showToolbarSearch
-            }
-          />
-        </NoSsr>
-        {!isBooting ? (
-          <div style={{ flexGrow: 1 }}>
-            <Drawer
-              open={drawerOpen}
-              closeRequested={() => setDrawerOpen(false)}
+    <NoSsr>
+      <div className={classes.root}>
+        <WithUser>
+          <NoSsr>
+            <Toolbar
+              drawerOpen={drawerOpen}
+              onDrawerChange={shouldClose =>
+                setDrawerOpen(
+                  !_.isUndefined(shouldClose) ? !shouldClose : !drawerOpen,
+                )
+              }
+              showToolbarSearch={
+                _.isUndefined(props.showToolbarSearch)
+                  ? true
+                  : props.showToolbarSearch
+              }
             />
-            <main
-              style={{
-                display: 'flex',
-                flexDirection: 'column', // isAuthed ? 'row' : 'column',
-              }}
-              className={classes.mainContent}
-            >
-              {props.children}
-            </main>
-          </div>
-        ) : (
-          <LinearProgress />
-        )}
-        {props.hideFooter ? null : <Footer />}
-      </WithUser>
-    </div>
+          </NoSsr>
+          {!isBooting ? (
+            <div style={{ flexGrow: 1 }}>
+              <Drawer
+                open={drawerOpen}
+                closeRequested={() => setDrawerOpen(false)}
+              />
+              <main
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column', // isAuthed ? 'row' : 'column',
+                }}
+                className={classes.mainContent}
+              >
+                {props.children}
+              </main>
+            </div>
+          ) : (
+            <LinearProgress />
+          )}
+          {props.hideFooter ? null : <Footer />}
+        </WithUser>
+      </div>
+    </NoSsr>
   );
 }
