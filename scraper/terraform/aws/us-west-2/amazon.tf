@@ -28,6 +28,7 @@ module "amazon_crawler" {
 
   schedule = ["cron(0 7 ? * */3 *)",
   "cron(0 7 1 * ? *)"]
+  scheduled_task_count = 3
 
   max_spider_count = 3
 
