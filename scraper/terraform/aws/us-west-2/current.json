@@ -6,6 +6,7 @@
   "netflix_catalog_crawler_version": "1.0-1596833888.ea82c83c",
   "disneyplus_catalog_crawler_version": "1.0-1596833888.ea82c83c",
   "showtime_catalog_crawler_version": "1.0-1596833888.ea82c83c",
-  "amazon_catalog_crawler_version": "1.0-1596833888.ea82c83c",
-  "google_play_store_catalog_crawler_version": "1.0-1596833888.ea82c83c"
+  "amazon_catalog_crawler_version": "1.0-1600521806.21a60b74",
+  "google_play_store_catalog_crawler_version": "1.0-1600521806.21a60b74",
+  "apple_tv_catalog_crawler_version": "1.0-1600521806.21a60b74"
 }
