@@ -178,13 +178,8 @@ class DynamoCrawlRecorder:
             'version': info['version']
         }
 
-        finalize_expression_attrs = {
-            ':tc': int(time.time()),
-            ':tic': self.item_count_by_spider[
-                spider.name] if spider.name in self.item_count_by_spider else 0,
-        }
-
-        final_set_expr = 'SET time_closed = :tc, total_items_scraped = :tic'
+        total_items_scraped = self.item_count_by_spider[
+            spider.name] if spider.name in self.item_count_by_spider else 0
 
         if self.dry_mode:
             logger.info(
@@ -192,9 +187,10 @@ class DynamoCrawlRecorder:
         elif info['is_distributed']:
             response = self.dynamo_table.update_item(
                 Key=key,
-                UpdateExpression='SET num_open_spiders = num_open_spiders - :dec',
+                UpdateExpression='SET num_open_spiders = num_open_spiders - :dec, total_items_scraped = total_items_scraped + :t',
                 ExpressionAttributeValues={
-                    ':dec': 1
+                    ':dec': 1,
+                    ':t': total_items_scraped
                 },
                 ReturnValues='UPDATED_NEW'
             )
@@ -205,9 +201,11 @@ class DynamoCrawlRecorder:
                 try:
                     self.dynamo_table.update_item(
                         Key=key,
-                        UpdateExpression=final_set_expr,
+                        UpdateExpression='SET time_closed = :tc',
                         ConditionExpression=Attr('num_open_spiders').eq(0),
-                        ExpressionAttributeValues=finalize_expression_attrs
+                        ExpressionAttributeValues={
+                            ':tc': int(time.time())
+                        }
                     )
                 except ClientError as error:
                     if error.response['Error']['Code'] == 'ConditionalCheckFailedException':
@@ -219,8 +217,12 @@ class DynamoCrawlRecorder:
         else:
             self.dynamo_table.update_item(
                 Key=key,
-                UpdateExpression=final_set_expr,
-                ExpressionAttributeValues=finalize_expression_attrs
+                UpdateExpression='SET time_closed = :tc, total_items_scraped = :tic',
+                ExpressionAttributeValues={
+                    ':tc': int(time.time()),
+                    ':tic': self.item_count_by_spider[
+                        spider.name] if spider.name in self.item_count_by_spider else 0,
+                }
             )
 
         logger.info("closed spider!!! %s", spider.name)
