@@ -1,8 +1,9 @@
 package com.teletracker.common.util
 
 import java.time.LocalDate
-import scala.collection.TraversableLike
+import scala.collection.{mutable, TraversableLike}
 import scala.collection.generic.CanBuildFrom
+import scala.collection.mutable.ListBuffer
 import scala.math.Ordering.OptionOrdering
 
 object Lists {
@@ -49,6 +50,23 @@ class RichList[T](val l: List[T]) extends AnyVal {
 
   def distinctBy[U](f: T => U): Map[U, T] = {
     l.groupBy(f).mapValues(_.head).toMap
+  }
+
+  def removeDupesWhere[U](extract: PartialFunction[T, U]): List[T] = {
+    val seen = new mutable.HashSet[U]()
+    val buf = new ListBuffer[T]
+    for (t <- l) {
+      if (extract.isDefinedAt(t)) {
+        val u = extract.apply(t)
+        if (seen.add(u)) {
+          buf += t
+        }
+      } else {
+        buf += t
+      }
+    }
+
+    buf.toList
   }
 }
 

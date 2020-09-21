@@ -411,6 +411,8 @@ abstract class IngestDeltaJobLike[
   }
 
   protected def writeChangesFile(allChanges: List[PendingChange]): Unit = {
+    import com.teletracker.common.util.Lists._
+
     val header = List(
       "change_type",
       "es_item_id",
@@ -420,42 +422,51 @@ abstract class IngestDeltaJobLike[
 
     changesPrinter.println(header)
 
-    allChanges.foreach {
-      case update: PendingUpdate =>
-        val typ = update match {
-          case PendingAvailabilityAdd(_, _, _)    => "added"
-          case PendingAvailabilityUpdate(_, _, _) => "updated"
-        }
+    allChanges
+      .removeDupesWhere {
+        case t if t.externalId.isDefined => t.externalId.get
+      }
+      .sortBy(change => {
+        (change.changeType, change.externalId)
+      })
+      .foreach {
+        case update: PendingUpdate =>
+          val typ = update match {
+            case PendingAvailabilityAdd(_, _, _)    => "added"
+            case PendingAvailabilityUpdate(_, _, _) => "updated"
+          }
 
-        logger.debug(
-          s"Would've ${typ} availability (ID: ${update.esItem.id}, external: ${update.scrapedItem
-            .flatMap(uniqueKeyForIncoming)}, name: ${update.esItem.title.get.head}): ${update.availabilities}"
-        )
+          logger.debug(
+            s"Would've ${typ} availability (ID: ${update.esItem.id}, external: ${update.scrapedItem
+              .flatMap(uniqueKeyForIncoming)}, name: ${update.esItem.title.get.head}): ${update.availabilities}"
+          )
 
-        changesPrinter.println(
-          List(
-            typ,
-            update.esItem.id,
-            update.scrapedItem.flatMap(uniqueKeyForIncoming).getOrElse("\"\""),
-            "\"" + update.esItem.title.get.head + "\""
-          ).mkString(",")
-        )
+          changesPrinter.println(
+            List(
+              typ,
+              update.esItem.id,
+              update.scrapedItem
+                .flatMap(uniqueKeyForIncoming)
+                .getOrElse("\"\""),
+              "\"" + update.esItem.title.get.head + "\""
+            ).mkString(",")
+          )
 
-      case PendingAvailabilityRemove(esItem, removes, externalId) =>
-        logger.debug(
-          s"""Would've removed availability (ID: ${esItem.id}, external: ${externalId},
+        case PendingAvailabilityRemove(esItem, removes, externalId) =>
+          logger.debug(
+            s"""Would've removed availability (ID: ${esItem.id}, external: ${externalId},
             name: ${esItem.title.get.head}): ${removes}"""
-        )
+          )
 
-        changesPrinter.println(
-          List(
-            "remove",
-            esItem.id,
-            externalId.getOrElse("\"\""),
-            "\"" + esItem.title.get.head + "\""
-          ).mkString(",")
-        )
-    }
+          changesPrinter.println(
+            List(
+              "remove",
+              esItem.id,
+              externalId.getOrElse("\"\""),
+              "\"" + esItem.title.get.head + "\""
+            ).mkString(",")
+          )
+      }
 
     changesPrinter.flush()
     changesPrinter.close()
@@ -541,11 +552,28 @@ abstract class IngestDeltaJobLike[
     Seq.empty
   }
 
+  object PendingChangeType {
+    final private val orderMapping: Map[PendingChangeType, Int] =
+      Map(
+        PendingAddType -> 0,
+        PendingUpdateType -> 1,
+        PendingRemoveType -> 2
+      )
+
+    implicit final val ordering: Ordering[PendingChangeType] =
+      Ordering.by(orderMapping(_))
+  }
+  sealed trait PendingChangeType
+  case object PendingAddType extends PendingChangeType
+  case object PendingRemoveType extends PendingChangeType
+  case object PendingUpdateType extends PendingChangeType
+
   sealed trait PendingChange {
     def esItem: EsItem
     def scrapedItem: Option[IncomingItemType]
     def externalId
       : Option[String] // The unique network-specific item associated with the update
+    def changeType: PendingChangeType
   }
 
   sealed trait PendingUpdate extends PendingChange {
@@ -559,6 +587,8 @@ abstract class IngestDeltaJobLike[
       extends PendingUpdate {
     override val externalId: Option[String] =
       scrapedItem.flatMap(uniqueKeyForIncoming)
+
+    override val changeType: PendingChangeType = PendingAddType
   }
 
   case class PendingAvailabilityRemove(
@@ -566,7 +596,9 @@ abstract class IngestDeltaJobLike[
     removes: Set[AvailabilityKey],
     externalId: Option[String])
       extends PendingChange {
-    override def scrapedItem: Option[IncomingItemType] = None
+    override val scrapedItem: Option[IncomingItemType] = None
+
+    override val changeType: PendingChangeType = PendingRemoveType
   }
 
   case class PendingAvailabilityUpdate(
@@ -576,6 +608,8 @@ abstract class IngestDeltaJobLike[
       extends PendingUpdate {
     override val externalId: Option[String] =
       scrapedItem.flatMap(uniqueKeyForIncoming)
+
+    override val changeType: PendingChangeType = PendingRemoveType
   }
 
   case class ItemChange(
