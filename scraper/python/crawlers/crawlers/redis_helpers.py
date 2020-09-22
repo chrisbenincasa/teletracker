@@ -39,6 +39,7 @@ class CustomRedisMixin(Spider, RedisMixin):
 
         req_found = False
         for req in self.next_requests():
+            self.log('Found new request, continuing crawl')
             req_found = True
             self.crawler.engine.crawl(req, spider=self)
 
@@ -60,6 +61,8 @@ class CustomRedisMixin(Spider, RedisMixin):
                 timeout, reactor, onTimeoutCancel=close_self)
         elif not req_found and self.idle_df:
             self.log('No requests found. Timeout to close already started.')
+        else:
+            self.log('Found more requests and no timeout was set, continuing.')
 
         # Found more requests, keep going
         raise DontCloseSpider
