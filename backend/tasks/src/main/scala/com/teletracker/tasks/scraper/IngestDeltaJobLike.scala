@@ -44,6 +44,7 @@ import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.json.circe._
 import com.teletracker.common.util.{AsyncStream, Folds, NetworkCache}
+import com.teletracker.tasks.config.TasksConfig
 import com.teletracker.tasks.scraper.IngestJobParser.{JsonPerLine, ParseMode}
 import com.teletracker.tasks.scraper.matching._
 import com.teletracker.tasks.util.{SourceRetriever, SourceUtils}
@@ -82,6 +83,7 @@ class IngestDeltaJobDependencies @Inject()(
   val esPotentialMatchItemStore: EsPotentialMatchItemStore,
   val elasticsearchExactTitleLookup: ElasticsearchExactTitleLookup,
   val teletrackerConfig: TeletrackerConfig,
+  val tasksConfig: TasksConfig,
   val elasticsearchExecutor: ElasticsearchExecutor,
   val itemLookup: ItemLookup,
   val itemUpdater: ItemUpdater,

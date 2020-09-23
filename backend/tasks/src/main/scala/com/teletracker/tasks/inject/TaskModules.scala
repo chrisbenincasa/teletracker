@@ -2,6 +2,7 @@ package com.teletracker.tasks.inject
 
 import com.google.inject.Module
 import com.teletracker.common.inject.QueuesModule
+import com.teletracker.tasks.config.TasksConfigModule
 import scala.concurrent.ExecutionContext
 
 object TaskModules {
@@ -9,6 +10,7 @@ object TaskModules {
     Seq(
       new HttpClientModule,
       new FactoriesModule,
-      new QueuesModule
+      new QueuesModule,
+      new TasksConfigModule
     )
 }

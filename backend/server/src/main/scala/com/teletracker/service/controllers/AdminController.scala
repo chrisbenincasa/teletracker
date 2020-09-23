@@ -14,22 +14,51 @@ import com.teletracker.common.elasticsearch.{
   ItemLookupResponse,
   ItemUpdater
 }
-import com.teletracker.common.model.scraping.ScrapeCatalogType
+import com.teletracker.common.model.scraping.amazon.AmazonItem
+import com.teletracker.common.model.scraping.apple.AppleTvItem
+import com.teletracker.common.model.scraping.disney.DisneyPlusCatalogItem
+import com.teletracker.common.model.scraping.hbo.{
+  HboMaxScrapedCatalogItem,
+  HboScrapedCatalogItem
+}
+import com.teletracker.common.model.scraping.{
+  MatchResult,
+  ScrapeCatalogType,
+  ScrapedItem,
+  ScrapedItemAvailabilityDetails
+}
+import com.teletracker.common.model.scraping.hulu.HuluScrapeCatalogItem
+import com.teletracker.common.model.scraping.netflix.{
+  NetflixOriginalScrapeItem,
+  NetflixScrapedCatalogItem
+}
 import com.teletracker.common.model.{DataResponse, Paging}
 import com.teletracker.common.pubsub.EsDenormalizeItemMessage
 import com.teletracker.common.util.{HasThingIdOrSlug, NetworkCache}
+import com.teletracker.common.util.json.circe._
 import com.teletracker.service.auth.AdminFilter
+import com.teletracker.tasks.scraper.IngestJobArgsLike
+import com.teletracker.tasks.scraper.matching.{
+  ElasticsearchExactTitleLookup,
+  ElasticsearchExternalIdLookup
+}
 import com.twitter.finagle.http.Request
-import com.twitter.finatra.http.Controller
 import com.twitter.finatra.request.{QueryParam, RouteParam}
+import io.circe._
+import io.circe.syntax._
+import io.circe.parser._
+import io.circe.generic.JsonCodec
 import javax.inject.Inject
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
 class AdminController @Inject()(
   itemLookup: ItemLookup,
   esPotentialMatchItemStore: EsPotentialMatchItemStore,
   itemUpdater: ItemUpdater,
-  itemDenormQueue: SqsFifoQueue[EsDenormalizeItemMessage]
+  itemDenormQueue: SqsFifoQueue[EsDenormalizeItemMessage],
+  externalIdLookup: ElasticsearchExternalIdLookup.Factory,
+  elasticsearchExactTitleLookup: ElasticsearchExactTitleLookup
 )(implicit executionContext: ExecutionContext)
     extends BaseController {
 
@@ -42,6 +71,40 @@ class AdminController @Inject()(
 
   filter[AdminFilter].prefix("/api/v1/internal") {
     prefix("/potential_matches") {
+      post("/match") { req: Request =>
+        val request =
+          decode[PotentialMatchAdHocRequest](req.contentString) match {
+            case Left(value)  => throw new IllegalArgumentException(value)
+            case Right(value) => value
+          }
+
+        val jsonResponseFunc: Json => Future[String] =
+          request.scraperItemType match {
+            case ScrapeCatalogType.HuluCatalog =>
+              handleMatchRequest[HuluScrapeCatalogItem](_)
+            case ScrapeCatalogType.HboCatalog =>
+              handleMatchRequest[HboScrapedCatalogItem](_)
+            case ScrapeCatalogType.NetflixCatalog =>
+              handleMatchRequest[NetflixScrapedCatalogItem](_)
+            case ScrapeCatalogType.DisneyPlusCatalog =>
+              handleMatchRequest[DisneyPlusCatalogItem](_)
+            case ScrapeCatalogType.HboMaxCatalog =>
+              handleMatchRequest[HboMaxScrapedCatalogItem](_)
+            case ScrapeCatalogType.HboChanges =>
+              handleMatchRequest[HboScrapedCatalogItem](_)
+            case ScrapeCatalogType.NetflixOriginalsArriving =>
+              handleMatchRequest[NetflixOriginalScrapeItem](_)
+            case ScrapeCatalogType.AmazonVideo =>
+              handleMatchRequest[AmazonItem](_)
+            case ScrapeCatalogType.AppleTvCatalog =>
+              handleMatchRequest[AppleTvItem](_)
+          }
+
+        jsonResponseFunc(request.rawItem).map(jsonResponse => {
+          response.ok(jsonResponse).contentTypeJson()
+        })
+      }
+
       get("/search") { req: PotentialMatchSearchRequest =>
         val scrapeSources = if (req.networks.isEmpty) {
           None
@@ -181,7 +244,53 @@ class AdminController @Inject()(
         response.ok(DataResponse(thing)).contentTypeJson()
     }
   }
+
+  private def handleMatchRequest[
+    T <: ScrapedItem: ScrapedItemAvailabilityDetails: Codec
+  ](
+    raw: Json
+  ) = {
+    val decoded = raw.as[T].right.get
+
+    val externalIdResultsFut = externalIdLookup
+      .create[T]
+      .apply(decoded :: Nil, FakeIngestJobArgs)
+
+    val titleLookupResultsFut = elasticsearchExactTitleLookup
+      .create[T]
+      .apply(decoded :: Nil, FakeIngestJobArgs)
+
+    for {
+      (externalIdResults, _) <- externalIdResultsFut
+      (titleLookupResults, _) <- titleLookupResultsFut
+    } yield {
+      List(
+        LookupResults[T]("externalId", externalIdResults.headOption),
+        LookupResults[T]("fuzzyTitle", titleLookupResults.headOption)
+      ).asJson.noSpaces
+//      externalIdResults.headOption.map(_.toSerializable.asJson)
+    }
+  }
+
+  case object FakeIngestJobArgs extends IngestJobArgsLike {
+    override def parallelism: Option[Int] = None
+    override def processBatchSleep: Option[FiniteDuration] = None
+    override def dryRun: Boolean = true
+    override def sleepBetweenWriteMs: Option[Long] = None
+  }
 }
+
+@JsonCodec
+case class PotentialMatchAdHocRequest(
+  scraperItemType: ScrapeCatalogType,
+  rawItem: Json)
+
+@JsonCodec
+case class LookupResults[T <: ScrapedItem](
+  method: String,
+  result: Option[MatchResult[T]])
+
+object LookupResults
 
 case class PotentialMatchSearchRequest(
   @QueryParam scraperItemType: Option[ScrapeCatalogType],

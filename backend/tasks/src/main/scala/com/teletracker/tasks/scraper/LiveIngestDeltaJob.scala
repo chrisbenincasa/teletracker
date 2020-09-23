@@ -108,11 +108,14 @@ abstract class LiveIngestDeltaJob[
         (beforeIds.size - afterIds.size) / beforeIds.size.toDouble
       ) * 100.0
 
-      if (pctChange >= args.deltaSizeThreshold && !args.disableDeltaSizeCheck) {
+      val threshold = deps.tasksConfig.delta_thresholds
+        .getOrElse(crawlerName.name, args.deltaSizeThreshold)
+
+      if (pctChange >= threshold && !args.disableDeltaSizeCheck) {
         handleDiffEarlyExit(newIds = addedIds, removedIds = removedIds)
 
         throw new RuntimeException(
-          s"Delta $pctChange% exceeded configured threshold of ${args.deltaSizeThreshold}. Before: ${beforeIds.size}, After: ${afterIds.size}"
+          s"Delta $pctChange% exceeded configured threshold of ${threshold}. Before: ${beforeIds.size}, After: ${afterIds.size}"
         )
       }
 

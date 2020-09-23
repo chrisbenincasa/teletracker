@@ -14,6 +14,7 @@ import com.teletracker.common.inject.{
   Modules => CommonModules
 }
 import com.teletracker.consumers.config.ConsumerConfig
+import com.teletracker.tasks.config.TasksConfigModule
 import com.teletracker.tasks.inject.FactoriesModule
 import com.twitter.inject.TwitterModule
 import scala.concurrent.ExecutionContext
@@ -25,7 +26,8 @@ object Modules {
       new HttpClientModule,
       new ConsumerConfigModule(),
       new FactoriesModule,
-      new AmazonItemWriterModule
+      new AmazonItemWriterModule,
+      new TasksConfigModule
     )
   }
 }
