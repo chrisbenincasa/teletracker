@@ -8,8 +8,8 @@ docker push 302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/frontend:${
 docker push 302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/frontend:latest
 
 # aws --region=us-east-1 s3 cp out/frontend-lambda.zip s3://us-east-1-teletracker-artifacts/
-aws --region us-east-1 s3 sync --exclude "*development/*" .next/static/ s3://ssr.qa.teletracker.tv/_next/static
-aws --region us-east-1 s3 sync public/images s3://ssr.qa.teletracker.tv/images
+aws --region us-east-1 s3 sync --exclude "*development/*" .next/static/ "s3://ssr.qa.teletracker.tv/${VERSION}/_next/static"
+aws --region us-east-1 s3 sync public/images "s3://ssr.qa.teletracker.tv/${VERSION}/images"
 aws --region us-east-1 s3 cp public/favicon.ico s3://ssr.qa.teletracker.tv/favicon.ico
 
 echo "Successfully pushed artifacts for ${VERSION}"
