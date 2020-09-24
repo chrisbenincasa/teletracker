@@ -96,7 +96,7 @@ resource "aws_ecs_task_definition" "frontend" {
   container_definitions = jsonencode([
     {
       name : "teletracker-frontend",
-      image : var.frontend_image,
+      image : "${var.frontend_image}:${var.frontend_image_version}",
       essential : true,
       portMappings : [
         {
@@ -156,6 +156,7 @@ resource "aws_cloudfront_distribution" "teletracker-frontend" {
   origin {
     domain_name = aws_s3_bucket.teletracker-frontend-artifacts.bucket_regional_domain_name
     origin_id   = "staticAssets"
+    origin_path = "/${var.frontend_image_version}"
     s3_origin_config {
       origin_access_identity = aws_cloudfront_origin_access_identity.teletracker-frontend.cloudfront_access_identity_path
     }
@@ -307,6 +308,7 @@ resource "aws_cloudfront_distribution" "app" {
   origin {
     domain_name = aws_s3_bucket.teletracker-frontend-artifacts.bucket_regional_domain_name
     origin_id   = "staticAssets"
+    origin_path = "/${var.frontend_image_version}"
     s3_origin_config {
       origin_access_identity = aws_cloudfront_origin_access_identity.teletracker-frontend.cloudfront_access_identity_path
     }

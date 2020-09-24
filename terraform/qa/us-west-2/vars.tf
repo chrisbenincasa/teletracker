@@ -6,6 +6,10 @@ variable "frontend_image" {
   type = string
 }
 
+variable "frontend_image_version" {
+  type = string
+}
+
 variable "task_consumer_image" {
   type = string
 }
