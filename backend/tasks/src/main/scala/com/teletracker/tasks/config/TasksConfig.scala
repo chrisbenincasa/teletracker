@@ -7,4 +7,4 @@ object TasksConfig extends ConfigWithPath {
   override val path: String = "teletracker.tasks"
 }
 
-case class TasksConfig(delta_thresholds: Map[String, Float])
+case class TasksConfig(delta_thresholds: Map[String, Double])

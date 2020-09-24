@@ -273,7 +273,7 @@ lazy val server = project
       "com.teletracker.service.TeletrackerServerMain"
     ),
     reStartArgs ++= Seq("-https.port=:3002"),
-//    Revolver.enableDebugging(port = 5005, suspend = false),
+    Revolver.enableDebugging(port = 5005, suspend = false),
     envVars in reStart := Map(
       "TMDB_API_KEY" -> System.getenv("TMDB_API_KEY"),
       "JWT_SECRET" -> System.getenv("JWT_SECRET"),

@@ -109,7 +109,9 @@ abstract class LiveIngestDeltaJob[
       ) * 100.0
 
       val threshold = deps.tasksConfig.delta_thresholds
-        .getOrElse(crawlerName.name, args.deltaSizeThreshold)
+        .get(crawlerName.name)
+        .map(_.toDouble)
+        .getOrElse(args.deltaSizeThreshold)
 
       if (pctChange >= threshold && !args.disableDeltaSizeCheck) {
         handleDiffEarlyExit(newIds = addedIds, removedIds = removedIds)
