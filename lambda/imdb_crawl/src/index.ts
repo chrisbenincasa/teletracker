@@ -1,16 +1,23 @@
 import fetch from 'node-fetch';
-import { createWriteStream, createReadStream, statSync } from 'fs';
+import { createWriteStream, createReadStream, stat as statCb } from 'fs';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3-node';
 import moment from 'moment';
+import { promisify } from 'util';
+import * as stream from 'stream';
+
+const stat = promisify(statCb);
+const pipeline = promisify(stream.pipeline);
 
 export async function handler() {
+  const dryRun = process.env.DRY_RUN === 'true';
+
   await fetch('https://datasets.imdbws.com/title.ratings.tsv.gz').then(
-    (res) => {
-      const dest = createWriteStream('/tmp/imdb-ratings.tsv.gz');
-      res.body.pipe(dest);
-      return new Promise((fulfill) => {
-        res.body.on('finish', fulfill);
-      });
+    async (res) => {
+      console.log(
+        `Content-Length header reads: ${res.headers.get('content-length')}`,
+      );
+
+      await pipeline(res.body, createWriteStream('/tmp/imdb-ratings.tsv.gz'));
     },
   );
 
@@ -19,23 +26,33 @@ export async function handler() {
   const now = moment();
   const nowString = now.format('YYYY-MM-DD');
 
-  const length = statSync('/tmp/imdb-ratings.tsv.gz').size;
+  const statResult = await stat('/tmp/imdb-ratings.tsv.gz');
 
-  const request = new PutObjectCommand({
-    Bucket: process.env.BUCKET!,
-    Key: `scrape-results/imdb/${nowString}/ratings/ratings.tsv.gz`,
-    ContentEncoding: 'gzip',
-    ContentType: 'text/tab-separated-values',
-    Body: createReadStream('/tmp/imdb-ratings.tsv.gz'),
-    ContentLength: length,
-  });
+  const length = statResult.size;
 
-  const client = new S3Client({});
+  console.log(`Downloaded size is ${length} bytes`);
 
-  try {
-    const data = await client.send(request);
-    console.log(data);
-  } catch (e) {
-    console.error(e);
+  if (!dryRun) {
+    const key = `scrape-results/imdb/${nowString}/ratings/ratings.tsv.gz`;
+
+    console.log(`Uploading to ${key}`);
+
+    const request = new PutObjectCommand({
+      Bucket: process.env.BUCKET!,
+      Key: key,
+      ContentEncoding: 'gzip',
+      ContentType: 'text/tab-separated-values',
+      Body: createReadStream('/tmp/imdb-ratings.tsv.gz'),
+      ContentLength: length,
+    });
+
+    const client = new S3Client({});
+
+    try {
+      const data = await client.send(request);
+      console.log(data);
+    } catch (e) {
+      console.error(e);
+    }
   }
 }
