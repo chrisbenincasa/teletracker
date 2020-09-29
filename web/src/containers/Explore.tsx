@@ -263,9 +263,9 @@ function Explore() {
       setNeedsNewFeatured(true);
     }
 
-    return () => {
-      clearPopularState();
-    };
+    // return () => {
+    //   clearPopularState();
+    // };
   }, []);
 
   useFilterLoadEffect(

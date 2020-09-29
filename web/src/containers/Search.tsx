@@ -168,6 +168,7 @@ const Search = (props: Props) => {
 
   // Run callback when search enters/leaves viewport
   useEffect(() => {
+    console.log('search', isInViewport);
     props.inViewportChange(isInViewport);
   }, [isInViewport]);
 

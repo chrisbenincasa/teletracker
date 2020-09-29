@@ -44,7 +44,6 @@ function extractExternalId(
   item: Item,
   networkType: StoredNetworkType | NetworkType,
 ): ItemExternalId | undefined {
-  console.log(item.external_ids, networkType);
   return _.find(item.external_ids || [], {
     provider: networkType,
   });
