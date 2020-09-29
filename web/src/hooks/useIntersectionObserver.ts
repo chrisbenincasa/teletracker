@@ -1,17 +1,18 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import createIntersectionObserver from '../utils/createIntersectionObserver';
 import isIntersectionObserverSupported from '../utils/isIntersectionObserverSupported';
 
 interface IUseIntersectionObserver {
   lazyLoadOptions: IntersectionObserverInit;
   targetRef: React.RefObject<HTMLElement>;
-  useLazyLoad: boolean;
+  // If true, detaches the IO after the first time the target is deemed as intersecting
+  useLoadOnce: boolean;
 }
 
 export default function useIntersectionObserver({
   lazyLoadOptions,
   targetRef,
-  useLazyLoad = true,
+  useLoadOnce = true,
 }: IUseIntersectionObserver) {
   const [isIntersecting, setIntersecting] = useState(false);
   const intersectionObserverRef = useRef<IntersectionObserver | null>();
@@ -23,11 +24,9 @@ export default function useIntersectionObserver({
   };
 
   const handleIntersection = entry => {
-    if (useLazyLoad) {
-      setIntersecting(true);
+    setIntersecting(entry.isIntersecting);
+    if (useLoadOnce && entry.isIntersecting) {
       handleObserverDisconnect();
-    } else {
-      setIntersecting(entry.isIntersecting);
     }
   };
 
@@ -54,7 +53,7 @@ export default function useIntersectionObserver({
     lazyLoadOptions.root,
     lazyLoadOptions.rootMargin,
     lazyLoadOptions.threshold,
-    useLazyLoad,
+    useLoadOnce,
   ]);
 
   return isIntersecting;
