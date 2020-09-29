@@ -250,8 +250,8 @@ function ItemCard(props: Props) {
       rootMargin: '0px',
       threshold: 0,
     },
-    targetRef: loadWrapperRef,
-    useLazyLoad: true,
+    targetRef: itemRef,
+    useLoadOnce: true,
   });
 
   const isNearViewport = useIntersectionObserver({
@@ -261,7 +261,7 @@ function ItemCard(props: Props) {
       threshold: 0,
     },
     targetRef: loadWrapperRef,
-    useLazyLoad: true,
+    useLoadOnce: true,
   });
 
   const handleRemoveFromList = () => {
@@ -626,7 +626,7 @@ function ItemCard(props: Props) {
         entering the viewport & image has successfuly loaded in,
         ensuring the fade is visible to user.
       */
-          in={/*isInViewport && */ !_.isUndefined(item) && imageLoaded}
+          in={isInViewport && !_.isUndefined(item) && imageLoaded}
           timeout={1000}
           ref={loadWrapperRef}
         >
@@ -647,7 +647,7 @@ function ItemCard(props: Props) {
               ref={itemRef}
             >
               {/* No network call is made until container is entering the viewport. */}
-              {/*isNearViewport && */ renderPoster(item)}
+              {isNearViewport && renderPoster(item)}
             </Card>
           </Grid>
         </Fade>

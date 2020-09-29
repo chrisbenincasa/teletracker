@@ -114,7 +114,7 @@ const Search = (props: Props) => {
       threshold: 1.0,
     },
     targetRef: searchWrapperRef,
-    useLazyLoad: false,
+    useLoadOnce: false,
   });
 
   useEffect(() => {
