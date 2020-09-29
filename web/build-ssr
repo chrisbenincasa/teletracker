@@ -10,7 +10,7 @@ if [ -d ".next/" ]; then rm -rf ".next/"; fi
 
 VERSION=${1:-"$(date +%s).${SHORT_SHA:-$(git rev-parse --short HEAD)}"}
 
-VERSION=${VERSION} yarn run next-build || exit
+ENV_FILE=telescope.env VERSION=${VERSION} yarn run next-build || exit
 
 docker build \
     -f Dockerfile.prebuilt \
