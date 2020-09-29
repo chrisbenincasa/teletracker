@@ -42,7 +42,7 @@ dotenvFiles.forEach(dotenvFile => {
 
 module.exports = (phase, { defaultConfig }) => {
   const env = Object.keys(process.env)
-    .filter(key => key.startsWith('REACT_'))
+    .filter(key => key.startsWith('REACT_') || key.startsWith('TT_'))
     .reduce((obj, key) => {
       obj[key] = process.env[key];
       return obj;

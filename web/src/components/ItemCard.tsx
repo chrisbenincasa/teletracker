@@ -8,6 +8,7 @@ import React, {
 import {
   Button,
   Card,
+  CardContent,
   CardMedia,
   Dialog,
   DialogActions,
@@ -67,6 +68,7 @@ import { useWithUserContext } from '../hooks/useWithUser';
 import classNames from 'classnames';
 import selectItem from '../selectors/selectItem';
 import { collectFirst } from '../utils/collection-utils';
+import { ShowDevTools } from '../constants/env';
 
 const useStyles = makeStyles((theme: Theme) => ({
   title: {
@@ -402,7 +404,7 @@ function ItemCard(props: Props) {
 
     return (
       <div className={classes.statusIconContainer}>
-        {renderDevtools()}
+        {ShowDevTools && renderDevtools()}
 
         {showDelete && (
           <Tooltip title={deleteTitle} placement={'top'}>

@@ -323,7 +323,7 @@ function AddToListDialog(props: Props) {
         maxWidth="sm"
       >
         <DialogTitle id="update-tracking-dialog" className={classes.title}>
-          Add or Remove {itemDetail.canonicalTitle} from your lists
+          Track "{itemDetail.canonicalTitle}" in your lists
         </DialogTitle>
 
         <DialogContent className={classes.dialogContainer}>
@@ -367,7 +367,7 @@ function AddToListDialog(props: Props) {
             onClick={toggleCreateAList}
           >
             <PlaylistAdd className={classes.leftIcon} />
-            Create List
+            New
           </Button>
           <div className={classes.spacer} />
           <Button onClick={handleModalClose} className={classes.button}>
