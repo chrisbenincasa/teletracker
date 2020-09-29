@@ -70,6 +70,7 @@ interface Props {
   readonly onDrawerChange?: (close?: boolean) => void;
   readonly inputStyle?: object;
   readonly filters?: FilterParams;
+  readonly forceFocus?: boolean;
   readonly quickSearchColor?: string;
   readonly quickSearchEnabled?: boolean;
 }
@@ -242,6 +243,7 @@ function Search(props: Props) {
         onChange={handleSearchChange}
         onKeyDown={handleSearchForEnter}
         onFocus={handleSearchFocus}
+        autoFocus={props.forceFocus}
         style={props.inputStyle || undefined}
       />
       {searchText.length > 0 ||
