@@ -15,13 +15,13 @@ import software.amazon.awssdk.services.s3.model.{
 import software.amazon.awssdk.utils.IoUtils
 import java.io.{File, FileInputStream, FileOutputStream}
 import java.net.URI
-import java.nio.file.{Files, Paths}
+import java.nio.file.{Files, Path, Paths}
 import java.util.concurrent.ConcurrentHashMap
 import java.util.zip.GZIPInputStream
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.compat.java8.StreamConverters._
-import scala.io.Source
+import scala.io.{BufferedSource, Source}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 import scala.compat.java8.StreamConverters._
@@ -53,7 +53,7 @@ class SourceRetriever @Inject()(s3: S3Client) {
     key: String,
     consultCache: Boolean = false
   ): Source = {
-    def getS3ObjectInner() = {
+    def getS3ObjectInner(): BufferedSource = {
       logger.info(
         s"Pulling s3://$bucket/${key.stripPrefix("/")}"
       )
@@ -270,7 +270,7 @@ class SourceRetriever @Inject()(s3: S3Client) {
     filter: URI => Boolean,
     offset: Int,
     limit: Int
-  ) = {
+  ): Stream[Path] = {
     Files
       .find(
         Paths.get(baseUri),

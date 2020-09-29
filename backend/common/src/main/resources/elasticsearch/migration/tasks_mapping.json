@@ -1,0 +1,61 @@
+{
+  "tasks": {
+    "settings": {
+      "analysis": {
+        "analyzer": {
+          "camel": {
+            "type": "pattern",
+            "pattern": "([^\\p{L}\\d]+)|(?<=\\D)(?=\\d)|(?<=\\d)(?=\\D)|(?<=[\\p{L}&&[^\\p{Lu}]])(?=\\p{Lu})|(?<=\\p{Lu})(?=\\p{Lu}[\\p{L}&&[^\\p{Lu}]])"
+          }
+        }
+      }
+    },
+    "mappings": {
+      "dynamic": false,
+      "properties": {
+        "id": {
+          "type": "keyword"
+        },
+        "taskName": {
+          "type": "keyword",
+          "fields": {
+            "search": {
+              "type": "text",
+              "analyzer": "camel"
+            }
+          }
+        },
+        "fullTaskName": {
+          "type": "keyword"
+        },
+        "args": {
+          "type": "object"
+        },
+        "status": {
+          "type": "keyword"
+        },
+        "createdAt": {
+          "type": "date"
+        },
+        "startedAt": {
+          "type": "date"
+        },
+        "finishedAt": {
+          "type": "date"
+        },
+        "teletrackerVersion": {
+          "type": "keyword"
+        },
+        "gitSha": {
+          "type": "keyword"
+        },
+        "logUri": {
+          "type": "keyword"
+        },
+        "triggerJob": {
+          "type": "keyword"
+        }
+      }
+    }
+  }
+}

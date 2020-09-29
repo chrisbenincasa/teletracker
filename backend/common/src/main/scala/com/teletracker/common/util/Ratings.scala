@@ -10,9 +10,9 @@ object Ratings {
     weight: Int
   ): Double = {
     val calc = (averageRating * numRatings + overallAverage * weight) / (numRatings + weight)
-    roundTwoHundreths(calc)
+    roundTwoHundredths(calc)
   }
 
-  def roundTwoHundreths(rating: Double): Double =
+  def roundTwoHundredths(rating: Double): Double =
     Math.round(rating * 100.0) / 100.0
 }

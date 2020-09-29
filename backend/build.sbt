@@ -197,6 +197,7 @@ lazy val tasks = project
       "software.amazon.awssdk" % "arns" % "2.9.24",
       "org.xerial" % "sqlite-jdbc" % "3.30.1",
       "org.reflections" % "reflections" % "0.9.12",
+      "com.amazonaws" % "aws-java-sdk-s3" % "1.11.870", // For S3 select
       compilerPlugin(
         "org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full
       )

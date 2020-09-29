@@ -1,16 +1,25 @@
 package com.teletracker.common.elasticsearch
 
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.db.model.{ItemType, UserThingTagType}
+import com.teletracker.common.db.model.{
+  ExternalSource,
+  ItemType,
+  UserThingTagType
+}
+import com.teletracker.common.elasticsearch.async.EsIngestQueue
+import com.teletracker.common.elasticsearch.async.EsIngestQueue.AsyncItemUpdateRequest
 import com.teletracker.common.elasticsearch.lookups.ElasticsearchExternalIdMappingStore
 import com.teletracker.common.elasticsearch.model.{
   EsExternalId,
   EsItem,
+  EsItemRating,
   EsItemTag,
   EsUserItem,
   EsUserItemTag
 }
 import com.teletracker.common.monitoring.Timing
+import com.teletracker.common.pubsub.EsIngestItemDenormArgs
+import com.teletracker.common.util.CaseClassImplicits
 import io.circe.Json
 import javax.inject.Inject
 import org.elasticsearch.action.DocWriteResponse
@@ -37,162 +46,14 @@ import java.util.UUID
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
-
-object ItemUpdater {
-
-  final private def UpdateTagsScriptSourceWithValueCheck(
-    field: Option[String]
-  ) = {
-    val fieldClause = field match {
-      case Some(value) => s" && tag.$value.equals(params.tag.$value)"
-      case None        => ""
-    }
-
-    val removeClause =
-      s"ctx._source.tags.removeIf(tag -> tag.tag.equals(params.tag.tag)$fieldClause)"
-
-    s"""
-       |if (ctx._source.tags == null) {
-       |   ctx._source.tags = [params.tag];
-       |} else {
-       |  $removeClause;
-       |   ctx._source.tags.add(params.tag);
-       |}
-       |""".stripMargin
-  }
-
-  final private def RemoveTagsScriptSourceWithValueCheck(
-    field: Option[String]
-  ) = {
-    val fieldClause = field match {
-      case Some(value) => s" && tag.$value.equals(params.tag.$value)"
-      case None        => ""
-    }
-
-    val removeClause =
-      s"ctx._source.tags.removeIf(tag -> tag.tag.equals(params.tag.tag)$fieldClause);"
-
-    s"""
-       |if (ctx._source.tags != null) {
-       |  $removeClause
-       |}
-       |""".stripMargin
-  }
-
-  final private val UpdateTagsScriptSource =
-    UpdateTagsScriptSourceWithValueCheck(None)
-
-  final private val UpdateTagsWithStringValueScriptSource =
-    UpdateTagsScriptSourceWithValueCheck(Some("string_value"))
-
-  final private val UpdateTagsWithDoubleValueScriptSource =
-    UpdateTagsScriptSourceWithValueCheck(Some("value"))
-
-  final private val UpdateUserTagsScriptSource =
-    UpdateTagsScriptSourceWithValueCheck(None)
-
-  final private val UpdateUserTagsWithStringValueScriptSource =
-    UpdateTagsScriptSourceWithValueCheck(Some("string_value"))
-
-  final private val UpdateUserTagsWithDoubleValueScriptSource =
-    UpdateTagsScriptSourceWithValueCheck(Some("double_value"))
-
-  final private val RemoveTagsScriptSource =
-    RemoveTagsScriptSourceWithValueCheck(None)
-
-  final private val RemoveTagsWithStringValueScriptSource =
-    RemoveTagsScriptSourceWithValueCheck(Some("string_value"))
-
-  final private val RemoveTagsWithDoubleValueScriptSource =
-    RemoveTagsScriptSourceWithValueCheck(Some("value"))
-
-  final private val RemoveUserTagsWithStringValueScriptSource =
-    RemoveTagsScriptSourceWithValueCheck(Some("string_value"))
-
-  final private val RemoveUserTagsWithDoubleValueScriptSource =
-    RemoveTagsScriptSourceWithValueCheck(Some("double_value"))
-
-  final private def UpdateTagsScript(
-    tag: EsItemTag,
-    scriptSource: String
-  ): Script = {
-    new Script(
-      ScriptType.INLINE,
-      "painless",
-      scriptSource,
-      Map[String, Object]("tag" -> tagAsMap(tag)).asJava
-    )
-  }
-
-  final private def UpdateUserTagsScript(
-    tag: EsUserItemTag,
-    scriptSource: String
-  ) = {
-    new Script(
-      ScriptType.INLINE,
-      "painless",
-      scriptSource,
-      Map[String, Object]("tag" -> tagAsMap(tag)).asJava
-    )
-  }
-
-  final private def RemoveTagScript(
-    tag: EsItemTag,
-    scriptSource: String
-  ) = {
-    new Script(
-      ScriptType.INLINE,
-      "painless",
-      scriptSource,
-      Map[String, Object]("tag" -> tagAsMap(tag)).asJava
-    )
-  }
-
-  final private def RemoveUserTagScript(
-    tag: EsUserItemTag,
-    scriptSource: String
-  ) = {
-    new Script(
-      ScriptType.INLINE,
-      "painless",
-      scriptSource,
-      Map[String, Object]("tag" -> tagAsMap(tag)).asJava
-    )
-  }
-
-  private def tagAsMap(tag: EsItemTag) = {
-    List(
-      "tag" -> Some(tag.tag),
-      "value" -> tag.value,
-      "string_value" -> tag.string_value
-    ).collect {
-        case (x, Some(v)) => x -> v
-      }
-      .toMap
-      .asJava
-  }
-
-  private def tagAsMap(tag: EsUserItemTag) = {
-    List(
-      "tag" -> Some(tag.tag),
-      "int_value" -> tag.int_value,
-      "double_value" -> tag.double_value,
-      "date_value" -> tag.date_value,
-      "string_value" -> tag.string_value,
-      "last_updated" -> tag.last_updated
-    ).collect {
-        case (x, Some(v)) => x -> v
-      }
-      .toMap
-      .asJava
-  }
-}
+import io.circe.syntax._
 
 class ItemUpdater @Inject()(
   itemSearch: ItemLookup,
   elasticsearchExecutor: ElasticsearchExecutor,
   teletrackerConfig: TeletrackerConfig,
-  idMappingLookup: ElasticsearchExternalIdMappingStore
+  idMappingLookup: ElasticsearchExternalIdMappingStore,
+  itemUpdateQueue: EsIngestQueue
 )(implicit executionContext: ExecutionContext) {
   import ItemUpdater._
   import io.circe.syntax._
@@ -260,14 +121,60 @@ class ItemUpdater @Inject()(
     } yield updateResp
   }
 
+  def updateWithScript2(
+    id: UUID,
+    itemType: ItemType,
+    script: Script,
+    async: Boolean,
+    denormArgs: Option[EsIngestItemDenormArgs]
+  ): Future[UpdateItemResult] = {
+    if (async) {
+      val scriptJson = getScriptUpdateJson(id, script)
+      itemUpdateQueue
+        .queueItemUpdate(
+          AsyncItemUpdateRequest.script(
+            id = id,
+            itemType = itemType,
+            script = scriptJson.asJson,
+            denorm = denormArgs
+          )
+        )
+        .map {
+          case Some(_) =>
+            UpdateItemResult.queued
+          case None =>
+            throw new RuntimeException(s"Could not queue update for ${id}")
+        }
+    } else {
+      updateWithScript(id, script).flatMap(response => {
+        denormArgs
+          .map(itemUpdateQueue.queueItemDenormalization(id, _))
+          .getOrElse(Future.unit)
+          .map(_ => {
+            UpdateItemResult.syncSuccess(response)
+          })
+      })
+    }
+  }
+
   def updateWithScript(
     id: UUID,
-    script: Json
+    script: Script
   ): Future[UpdateResponse] = {
     val request = new UpdateRequest(
       teletrackerConfig.elasticsearch.items_index_name,
       id.toString
-    ).script(
+    ).script(script)
+
+    elasticsearchExecutor.update(request)
+  }
+
+  def updateWithScript(
+    id: UUID,
+    script: Json
+  ): Future[UpdateResponse] = {
+    updateWithScript(
+      id,
       Script.parse(
         JsonXContent.jsonXContent.createParser(
           NamedXContentRegistry.EMPTY,
@@ -276,8 +183,6 @@ class ItemUpdater @Inject()(
         )
       )
     )
-
-    elasticsearchExecutor.update(request)
   }
 
   def getUpdateJson(
@@ -291,6 +196,23 @@ class ItemUpdater @Inject()(
         ToXContent.EMPTY_PARAMS,
         pretty
       )
+      .utf8ToString
+  }
+
+  def getScriptUpdateJson(
+    id: UUID,
+    script: Script,
+    pretty: Boolean = true
+  ): String = {
+    val request = new UpdateRequest(
+      teletrackerConfig.elasticsearch.items_index_name,
+      id.toString
+    ).script(
+      script
+    )
+
+    XContentHelper
+      .toXContent(request, XContentType.JSON, ToXContent.EMPTY_PARAMS, pretty)
       .utf8ToString
   }
 
@@ -650,6 +572,195 @@ class ItemUpdater @Inject()(
   private def isValidExternalIdForMapping(externalId: EsExternalId) = {
     externalId.id.nonEmpty && externalId.id != "0"
   }
+}
+
+object ItemUpdater extends CaseClassImplicits {
+
+  final private def UpdateTagsScriptSourceWithValueCheck(
+    field: Option[String]
+  ) = {
+    val fieldClause = field match {
+      case Some(value) => s" && tag.$value.equals(params.tag.$value)"
+      case None        => ""
+    }
+
+    val removeClause =
+      s"ctx._source.tags.removeIf(tag -> tag.tag.equals(params.tag.tag)$fieldClause)"
+
+    s"""
+       |if (ctx._source.tags == null) {
+       |   ctx._source.tags = [params.tag];
+       |} else {
+       |  $removeClause;
+       |   ctx._source.tags.add(params.tag);
+       |}
+       |""".stripMargin
+  }
+
+  final private def RemoveTagsScriptSourceWithValueCheck(
+    field: Option[String]
+  ) = {
+    val fieldClause = field match {
+      case Some(value) => s" && tag.$value.equals(params.tag.$value)"
+      case None        => ""
+    }
+
+    val removeClause =
+      s"ctx._source.tags.removeIf(tag -> tag.tag.equals(params.tag.tag)$fieldClause);"
+
+    s"""
+       |if (ctx._source.tags != null) {
+       |  $removeClause
+       |}
+       |""".stripMargin
+  }
+
+  final private def UpsertRatingForProviderSource(
+    externalSource: ExternalSource
+  ) = {
+    val removeClause =
+      s"ctx._source.ratings.removeIf(r -> r.provider_id == ${externalSource.ordinal()})"
+
+    s"""
+       |if (ctx._source.ratings == null) {
+       |   ctx._source.ratings = [params.rating];
+       |} else {
+       |  $removeClause;
+       |   ctx._source.ratings.add(params.rating);
+       |}
+       |""".stripMargin
+  }
+
+  final private val UpdateTagsScriptSource =
+    UpdateTagsScriptSourceWithValueCheck(None)
+
+  final private val UpdateTagsWithStringValueScriptSource =
+    UpdateTagsScriptSourceWithValueCheck(Some("string_value"))
+
+  final private val UpdateTagsWithDoubleValueScriptSource =
+    UpdateTagsScriptSourceWithValueCheck(Some("value"))
+
+  final private val UpdateUserTagsScriptSource =
+    UpdateTagsScriptSourceWithValueCheck(None)
+
+  final private val UpdateUserTagsWithStringValueScriptSource =
+    UpdateTagsScriptSourceWithValueCheck(Some("string_value"))
+
+  final private val UpdateUserTagsWithDoubleValueScriptSource =
+    UpdateTagsScriptSourceWithValueCheck(Some("double_value"))
+
+  final private val RemoveTagsScriptSource =
+    RemoveTagsScriptSourceWithValueCheck(None)
+
+  final private val RemoveTagsWithStringValueScriptSource =
+    RemoveTagsScriptSourceWithValueCheck(Some("string_value"))
+
+  final private val RemoveTagsWithDoubleValueScriptSource =
+    RemoveTagsScriptSourceWithValueCheck(Some("value"))
+
+  final private val RemoveUserTagsWithStringValueScriptSource =
+    RemoveTagsScriptSourceWithValueCheck(Some("string_value"))
+
+  final private val RemoveUserTagsWithDoubleValueScriptSource =
+    RemoveTagsScriptSourceWithValueCheck(Some("double_value"))
+
+  final private def UpdateTagsScript(
+    tag: EsItemTag,
+    scriptSource: String
+  ): Script = {
+    new Script(
+      ScriptType.INLINE,
+      "painless",
+      scriptSource,
+      Map[String, Object]("tag" -> tagAsMap(tag)).asJava
+    )
+  }
+
+  final private def UpdateUserTagsScript(
+    tag: EsUserItemTag,
+    scriptSource: String
+  ) = {
+    new Script(
+      ScriptType.INLINE,
+      "painless",
+      scriptSource,
+      Map[String, Object]("tag" -> tagAsMap(tag)).asJava
+    )
+  }
+
+  final private def RemoveTagScript(
+    tag: EsItemTag,
+    scriptSource: String
+  ) = {
+    new Script(
+      ScriptType.INLINE,
+      "painless",
+      scriptSource,
+      Map[String, Object]("tag" -> tagAsMap(tag)).asJava
+    )
+  }
+
+  final private def RemoveUserTagScript(
+    tag: EsUserItemTag,
+    scriptSource: String
+  ) = {
+    new Script(
+      ScriptType.INLINE,
+      "painless",
+      scriptSource,
+      Map[String, Object]("tag" -> tagAsMap(tag)).asJava
+    )
+  }
+
+  final def UpsertRatingScript(rating: EsItemRating) = {
+    new Script(
+      ScriptType.INLINE,
+      "painless",
+      UpsertRatingForProviderSource(rating.externalSource),
+      Map[String, Object](
+        "rating" -> rating.mkMapAnyUnwrapOptions.asJava
+      ).asJava
+    )
+  }
+
+  private def tagAsMap(tag: EsItemTag) = {
+    List(
+      "tag" -> Some(tag.tag),
+      "value" -> tag.value,
+      "string_value" -> tag.string_value
+    ).collect {
+        case (x, Some(v)) => x -> v
+      }
+      .toMap
+      .asJava
+  }
+
+  private def tagAsMap(tag: EsUserItemTag) = {
+    List(
+      "tag" -> Some(tag.tag),
+      "int_value" -> tag.int_value,
+      "double_value" -> tag.double_value,
+      "date_value" -> tag.date_value,
+      "string_value" -> tag.string_value,
+      "last_updated" -> tag.last_updated
+    ).collect {
+        case (x, Some(v)) => x -> v
+      }
+      .toMap
+      .asJava
+  }
+
+  sealed trait UpdateItemResultStatus
+  case class SuccessResult(updateResponse: UpdateResponse)
+      extends UpdateItemResultStatus
+  case object QueuedResult extends UpdateItemResultStatus
+
+  object UpdateItemResult {
+    def syncSuccess(updateResponse: UpdateResponse): UpdateItemResult =
+      UpdateItemResult(SuccessResult(updateResponse))
+    def queued: UpdateItemResult = UpdateItemResult(QueuedResult)
+  }
+  case class UpdateItemResult(status: UpdateItemResultStatus)
 }
 
 case class UpdateMultipleDocResponse(

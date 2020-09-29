@@ -10,6 +10,34 @@ import io.circe.generic.JsonCodec
 import java.time.LocalDate
 import java.util.UUID
 
+object EsItem {
+  def externalIdsGrouped(esItem: EsItem): Map[ExternalSource, String] =
+    externalIdsGrouped(esItem.external_ids.getOrElse(Nil))
+
+  def externalIdsGrouped(
+    externalIds: List[EsExternalId]
+  ): Map[ExternalSource, String] = {
+    externalIds
+      .map(id => {
+        ExternalSource.fromString(id.provider) -> id.id
+      })
+      .toMap
+  }
+
+  def ratingsGrouped(esItem: EsItem): Map[ExternalSource, EsItemRating] =
+    ratingsGrouped(esItem.ratings.getOrElse(Nil))
+
+  def ratingsGrouped(
+    ratings: List[EsItemRating]
+  ): Map[ExternalSource, EsItemRating] = {
+    ratings
+      .map(rating => {
+        ExternalSource.fromString(rating.provider_shortname) -> rating
+      })
+      .toMap
+  }
+}
+
 @JsonCodec
 case class EsItem(
   adult: Option[Boolean],
@@ -54,23 +82,11 @@ case class EsItem(
   def containsCrewMember(id: UUID): Boolean =
     crewMemberForId(id).isDefined
 
-  def externalIdsGrouped: Map[ExternalSource, String] = {
-    external_ids
-      .getOrElse(Nil)
-      .map(id => {
-        ExternalSource.fromString(id.provider) -> id.id
-      })
-      .toMap
-  }
+  def externalIdsGrouped: Map[ExternalSource, String] =
+    EsItem.externalIdsGrouped(this)
 
-  def ratingsGrouped: Map[ExternalSource, EsItemRating] = {
-    ratings
-      .getOrElse(Nil)
-      .map(rating => {
-        ExternalSource.fromString(rating.provider_shortname) -> rating
-      })
-      .toMap
-  }
+  def ratingsGrouped: Map[ExternalSource, EsItemRating] =
+    EsItem.ratingsGrouped(this)
 
   def imagesGrouped: Map[(ExternalSource, EsImageType), List[EsItemImage]] = {
     images

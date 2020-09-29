@@ -6,6 +6,7 @@ import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.elasticsearch.async.EsIngestQueue.AsyncItemUpdateRequest
 import com.teletracker.common.elasticsearch.model.{EsItem, EsPerson}
 import com.teletracker.common.pubsub.{
+  EsDenormalizeItemMessage,
   EsIngestIndex,
   EsIngestItemDenormArgs,
   EsIngestItemExternalIdMapping,
@@ -18,11 +19,13 @@ import io.circe.Json
 import javax.inject.Inject
 import java.util.UUID
 import io.circe.syntax._
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class EsIngestQueue @Inject()(
   queue: SqsFifoQueue[EsIngestMessage],
-  teletrackerConfig: TeletrackerConfig) {
+  denormQueue: SqsFifoQueue[EsDenormalizeItemMessage],
+  teletrackerConfig: TeletrackerConfig
+)(implicit executionContext: ExecutionContext) {
 
   def queueItemInsert(esItem: EsItem): Future[Option[EsIngestMessage]] = {
     queue.queue(
@@ -68,9 +71,17 @@ class EsIngestQueue @Inject()(
     )
   }
 
+  def queueItemUpdate(
+    request: AsyncItemUpdateRequest
+  ): Future[Option[EsIngestMessage]] = {
+    queueItemUpdates(request :: Nil).map(_.headOption)
+  }
+
   def queueItemUpdates(
     requests: List[AsyncItemUpdateRequest]
   ): Future[List[EsIngestMessage]] = {
+    require(requests.forall(r => r.doc.isDefined ^ r.script.isDefined))
+
     val messages = requests.map(request => {
       EsIngestMessage(
         operation = EsIngestMessageOperation.Update,
@@ -79,7 +90,7 @@ class EsIngestQueue @Inject()(
             index = teletrackerConfig.elasticsearch.items_index_name,
             id = request.id.toString,
             itemType = Some(request.itemType),
-            doc = Some(request.doc),
+            doc = request.doc,
             script = None,
             itemDenorm = request.denorm
           )
@@ -88,6 +99,23 @@ class EsIngestQueue @Inject()(
     })
 
     queue.batchQueue(messages)
+  }
+
+  def queueItemDenormalization(
+    id: UUID,
+    denormArgs: EsIngestItemDenormArgs
+  ): Future[Unit] = {
+    denormQueue
+      .queue(
+        EsDenormalizeItemMessage(
+          itemId = id,
+          creditsChanged = denormArgs.cast,
+          crewChanged = denormArgs.crew,
+          dryRun = false
+        ),
+        messageGroupId = id.toString
+      )
+      .map(_ => {})
   }
 
   def queuePersonInsert(esPerson: EsPerson): Future[Option[EsIngestMessage]] = {
@@ -135,9 +163,30 @@ class EsIngestQueue @Inject()(
 }
 
 object EsIngestQueue {
+  object AsyncItemUpdateRequest {
+    def apply(
+      id: UUID,
+      itemType: ItemType,
+      doc: Json,
+      denorm: Option[EsIngestItemDenormArgs]
+    ): AsyncItemUpdateRequest = {
+      AsyncItemUpdateRequest(id, itemType, Some(doc), None, denorm)
+    }
+
+    def script(
+      id: UUID,
+      itemType: ItemType,
+      script: Json,
+      denorm: Option[EsIngestItemDenormArgs]
+    ): AsyncItemUpdateRequest = {
+      AsyncItemUpdateRequest(id, itemType, None, Some(script), denorm)
+    }
+  }
+
   case class AsyncItemUpdateRequest(
     id: UUID,
     itemType: ItemType,
-    doc: Json,
+    doc: Option[Json],
+    script: Option[Json],
     denorm: Option[EsIngestItemDenormArgs])
 }

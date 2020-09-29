@@ -1,0 +1,351 @@
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "title_search": {
+          "filter": [
+            "lowercase"
+          ],
+          "char_filter": [
+            "quotes"
+          ],
+          "tokenizer": "standard"
+        },
+        "title_search_ascii": {
+          "filter": [
+            "lowercase",
+            "asciifolding"
+          ],
+          "char_filter": [
+            "quotes"
+          ],
+          "tokenizer": "standard"
+        },
+        "english_title_search": {
+          "filter": [
+            "lowercase",
+            "classic"
+          ],
+          "char_filter": [
+            "quotes"
+          ],
+          "tokenizer": "classic"
+        },
+        "english_title_search_ascii": {
+          "filter": [
+            "lowercase",
+            "classic",
+            "asciifolding"
+          ],
+          "tokenizer": "classic"
+        }
+      },
+      "char_filter": {
+        "quotes": {
+          "mappings": [
+            "\\u0091=>'",
+            "\\u0092=>'",
+            "\\u2018=>'",
+            "\\u2019=>'",
+            "\\u201B=>'"
+          ],
+          "type": "mapping"
+        }
+      }
+    }
+  },
+  "mappings" : {
+    "dynamic" : "false",
+    "properties" : {
+      "adult" : {
+        "type" : "boolean"
+      },
+      "alternative_titles": {
+        "properties": {
+          "title" : {
+            "type" : "search_as_you_type",
+            "analyzer": "title_search",
+            "fields": {
+              "ascii": {
+                "type": "search_as_you_type",
+                "analyzer": "title_search_ascii"
+              }
+            }
+          },
+          "country_code" : {
+            "type" : "keyword"
+          },
+          "type": {
+            "type": "keyword"
+          }
+        }
+      },
+      "availability" : {
+        "type" : "nested",
+        "properties" : {
+          "cost" : {
+            "type" : "double"
+          },
+          "currency" : {
+            "type" : "keyword"
+          },
+          "end_date" : {
+            "type" : "date"
+          },
+          "network_id" : {
+            "type" : "integer"
+          },
+          "network_name": {
+            "type": "keyword"
+          },
+          "offer_type" : {
+            "type" : "keyword"
+          },
+          "presentation_type" : {
+            "type" : "keyword"
+          },
+          "region" : {
+            "type" : "keyword"
+          },
+          "start_date" : {
+            "type" : "date"
+          },
+          "num_seasons_available": {
+            "type": "integer"
+          },
+          "last_updated": {
+            "type": "date"
+          },
+          "last_updated_by": {
+            "type": "keyword"
+          },
+          "crawler": {
+            "type": "keyword"
+          },
+          "crawler_version": {
+            "type": "long",
+            "fields": {
+              "datetime": {
+                "type": "date"
+              }
+            }
+          }
+        }
+      },
+      "cast" : {
+        "type" : "nested",
+        "properties" : {
+          "character" : {
+            "type" : "text"
+          },
+          "id" : {
+            "type" : "keyword"
+          },
+          "name" : {
+            "type" : "text"
+          },
+          "order" : {
+            "type" : "integer"
+          },
+          "slug" : {
+            "type" : "keyword"
+          }
+        }
+      },
+      "crew" : {
+        "type" : "nested",
+        "properties" : {
+          "department" : {
+            "type" : "keyword"
+          },
+          "id" : {
+            "type" : "keyword"
+          },
+          "job" : {
+            "type" : "keyword"
+          },
+          "name" : {
+            "type" : "text"
+          },
+          "order" : {
+            "type" : "integer"
+          },
+          "slug" : {
+            "type" : "keyword"
+          }
+        }
+      },
+      "external_ids" : {
+        "type" : "keyword"
+      },
+      "genres" : {
+        "type" : "nested",
+        "properties" : {
+          "id" : {
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : "keyword"
+          }
+        }
+      },
+      "id" : {
+        "type" : "keyword"
+      },
+      "images" : {
+        "properties" : {
+          "id" : {
+            "type" : "keyword"
+          },
+          "image_type" : {
+            "type" : "keyword"
+          },
+          "provider_id" : {
+            "type" : "integer"
+          },
+          "provider_shortname" : {
+            "type" : "keyword"
+          }
+        }
+      },
+      "last_updated": {
+        "type": "date"
+      },
+      "original_title" : {
+        "type" : "search_as_you_type",
+        "analyzer": "title_search",
+        "fields": {
+          "ascii": {
+            "type": "search_as_you_type",
+            "analyzer": "title_search_ascii"
+          }
+        }
+      },
+      "overview" : {
+        "type" : "text"
+      },
+      "popularity" : {
+        "type" : "double"
+      },
+      "ratings" : {
+        "type" : "nested",
+        "properties" : {
+          "provider_id" : {
+            "type" : "integer"
+          },
+          "provider_shortname" : {
+            "type" : "keyword"
+          },
+          "vote_average" : {
+            "type" : "double"
+          },
+          "vote_count" : {
+            "type" : "integer"
+          },
+          "weighted_average": {
+            "type": "double"
+          },
+          "weighted_last_generated": {
+            "type": "date"
+          }
+        }
+      },
+      "recommendations" : {
+        "type" : "nested",
+        "properties" : {
+          "id" : {
+            "type" : "keyword"
+          },
+          "title" : {
+            "type" : "text"
+          }
+        }
+      },
+      "release_date" : {
+        "type" : "date"
+      },
+      "release_dates" : {
+        "properties" : {
+          "certification" : {
+            "type" : "keyword"
+          },
+          "country_code" : {
+            "type" : "keyword"
+          },
+          "release_date" : {
+            "type" : "date"
+          }
+        }
+      },
+      "runtime" : {
+        "type" : "integer"
+      },
+      "slug" : {
+        "type" : "keyword"
+      },
+      "tags" : {
+        "properties" : {
+          "tag" : {
+            "type" : "keyword"
+          },
+          "value" : {
+            "type" : "double"
+          },
+          "string_value": {
+            "type": "keyword"
+          },
+          "last_updated": {
+            "type": "date"
+          }
+        }
+      },
+      "title" : {
+        "type" : "search_as_you_type",
+        "analyzer": "english_title_search",
+        "fields": {
+          "ascii": {
+            "type": "search_as_you_type",
+            "analyzer": "english_title_search_ascii"
+          }
+        }
+      },
+      "type" : {
+        "type" : "keyword"
+      },
+      "videos": {
+        "properties": {
+          "provider_id": {
+            "type": "integer"
+          },
+          "provider_shortname": {
+            "type": "keyword"
+          },
+          "provider_source_id": {
+            "type": "keyword"
+          },
+          "name": {
+            "type": "keyword"
+          },
+          "language_code": {
+            "type": "keyword"
+          },
+          "country_code": {
+            "type": "keyword"
+          },
+          "video_source": {
+            "type": "keyword"
+          },
+          "video_source_id": {
+            "type": "keyword"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "video_type": {
+            "type": "keyword"
+          }
+        }
+      }
+    }
+  }
+}

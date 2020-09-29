@@ -35,4 +35,8 @@ trait StringListOrString extends Equals {
   override def equals(obj: Any): Boolean = canEqual(obj) && {
     obj.asInstanceOf[StringListOrString].get.equals(this.get)
   }
+
+  override def toString: String = {
+    get.headOption.toString
+  }
 }

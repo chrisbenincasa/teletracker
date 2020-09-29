@@ -34,9 +34,16 @@ abstract class Scroller[T](
     query: QueryBuilder,
     ttl: TimeValue = TimeValue.timeValueMinutes(5)
   ): AsyncStream[T] = {
+    start(new SearchSourceBuilder().query(query), ttl)
+  }
+
+  def start(
+    source: SearchSourceBuilder,
+    ttl: TimeValue
+  ): AsyncStream[T] = {
     val request =
       new SearchRequest(indexName)
-        .source(new SearchSourceBuilder().query(query))
+        .source(source)
         .scroll(ttl)
 
     AsyncStream

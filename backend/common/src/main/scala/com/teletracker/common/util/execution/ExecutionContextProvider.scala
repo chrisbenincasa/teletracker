@@ -36,8 +36,10 @@ trait ProvidedExecutorService extends ExecutorService {
   }
 }
 
-trait ProvidedSchedulerService extends ScheduledExecutorService {
-  def asExecutionContext: ExecutionContextExecutorService = {
+trait ProvidedSchedulerService
+    extends ProvidedExecutorService
+    with ScheduledExecutorService {
+  override def asExecutionContext: ExecutionContextExecutorService = {
     ExecutionContext.fromExecutorService(this)
   }
 }

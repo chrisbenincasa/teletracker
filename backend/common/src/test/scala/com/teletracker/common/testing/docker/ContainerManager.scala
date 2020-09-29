@@ -22,7 +22,7 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success, Try}
 
-class ContainerCreator(
+class ContainerManager(
   dockerConfig: DockerClientConfig =
     DefaultDockerClientConfig.createDefaultConfigBuilder().build()) {
   protected val logger = LoggerFactory.getLogger(getClass)
@@ -44,6 +44,8 @@ class ContainerCreator(
         .awaitCompletion()
     }
 
+    logger.info(s"Creating container: ${config.imageName}")
+
     val container = dockerClient
       .createContainerCmd(config.imageName)
       .applyOptional(config.port)(
@@ -56,13 +58,23 @@ class ContainerCreator(
               )
           )
       )
+      .withEnv(config.envVars: _*)
       .exec()
 
     val containerId = container.getId
 
+    logger.info(
+      s"Created container: ${config.imageName} with id ${containerId}"
+    )
+    logger.info(
+      s"Starting container: ${config.imageName} with id ${containerId}"
+    )
+
     dockerClient.startContainerCmd(containerId).exec()
 
     if (config.waitForLogLine.exists(_.nonEmpty)) {
+      logger.info(s"Waiting for log line: ${config.imageName}")
+
       val latch = new CountDownLatch(1)
       val thread = new Thread(() => {
         val stdout = new StringBuffer("")
@@ -70,6 +82,9 @@ class ContainerCreator(
 
         dockerClient
           .logContainerCmd(containerId)
+          .withStdOut(true)
+          .withStdErr(true)
+          .withFollowStream(true)
           .withTailAll()
           .exec(
             new ResultCallback.Adapter[Frame] {
@@ -77,9 +92,9 @@ class ContainerCreator(
                 frame.getStreamType match {
                   case StreamType.STDIN =>
                   case StreamType.STDOUT =>
-                    stdout.append(frame.getPayload)
+                    stdout.append(new String(frame.getPayload))
                   case StreamType.STDERR =>
-                    stderr.append(frame.getPayload)
+                    stderr.append(new String(frame.getPayload))
                   case StreamType.RAW =>
                 }
 
@@ -87,6 +102,7 @@ class ContainerCreator(
                       .contains(config.waitForLogLine.get) || stderr.toString
                       .contains(config.waitForLogLine.get)) {
                   latch.countDown()
+                  close()
                 }
               }
             }
@@ -132,17 +148,42 @@ class ContainerCreator(
       .map(Map(_))
       .getOrElse(Map())
 
-    Container(containerId, portMap)
+    logger.info(
+      s"Running container: ${config.imageName} with id ${containerId}"
+    )
+
+    new Container(containerId, portMap, config, this)
+  }
+
+  def stop(
+    containerId: String,
+    remove: Boolean = true
+  ): Unit = {
+    logger.info(s"Stopping container: ${containerId}")
+
+    dockerClient.stopContainerCmd(containerId).exec()
+
+    if (remove) {
+      logger.info(s"Removing container: ${containerId}")
+      dockerClient.removeContainerCmd(containerId)
+    }
   }
 }
 
-case class Container(
-  id: String,
-  portMap: Map[Int, Int])
+class Container(
+  val id: String,
+  val portMap: Map[Int, Int],
+  val config: ContainerConfig,
+  private val manager: ContainerManager)
+    extends AutoCloseable {
+  override def close(): Unit = manager.stop(id, config.removeAfterStop)
+}
 
 case class ContainerConfig(
   imageName: String,
   pullAlways: Boolean = true,
   waitForLogLine: Option[String] = None,
   maxWaitForLogLine: Option[FiniteDuration] = None,
-  port: Option[Int] = None)
+  port: Option[Int] = None,
+  removeAfterStop: Boolean = true,
+  envVars: Seq[String] = Seq())

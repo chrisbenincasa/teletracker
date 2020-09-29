@@ -139,6 +139,9 @@ object ArgParser extends LowPriArgParsers {
   ): ArgParser[Set[T]] =
     listArg[T].andThen(_.toSet).or(anyArg[Set[T]])
 
+  implicit val unitArg: ArgParser[Unit] =
+    (_: ArgType) => Success(Unit)
+
   final val tryInstance = cats.instances.try_.catsStdInstancesForTry
 }
 

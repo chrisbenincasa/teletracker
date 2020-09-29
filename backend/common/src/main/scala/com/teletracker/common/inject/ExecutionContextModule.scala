@@ -4,11 +4,17 @@ import com.google.inject.{Provider, Provides, Singleton}
 import com.teletracker.common.util.execution.{
   ExecutionContextProvider,
   ProvidedExecutionContext,
+  ProvidedExecutorService,
   ProvidedSchedulerService
 }
 import com.twitter.concurrent.NamedPoolThreadFactory
 import com.twitter.inject.TwitterModule
-import java.util.concurrent.{Executors, ScheduledExecutorService}
+import java.util.concurrent.{
+  ExecutorService,
+  Executors,
+  ScheduledExecutorService,
+  ThreadFactory
+}
 import scala.concurrent.ExecutionContext
 
 class ExecutionContextModule(implicit executionContext: ExecutionContext)
@@ -43,9 +49,42 @@ class ExecutionContextModule(implicit executionContext: ExecutionContext)
   @Provides
   @Singleton
   @RetryScheduler
-  def retryScheduler: ScheduledExecutorService =
-    Executors.newScheduledThreadPool(
-      5,
-      new NamedPoolThreadFactory("retry-scheduler")
+  def retryScheduler: ScheduledExecutorService = {
+    ExecutionContextProvider.provider.of(
+      Executors.newScheduledThreadPool(
+        5,
+        new NamedPoolThreadFactory("retry-scheduler")
+      )
     )
+  }
 }
+
+abstract class GeneralThreadPoolFactory[T <: ExecutorService](
+  protected val factory: (Int, ThreadFactory) => T) {
+  def create(
+    size: Int,
+    name: String
+  ): ProvidedExecutorService = {
+    ExecutionContextProvider.provider.of(
+      factory(
+        size,
+        new NamedPoolThreadFactory(name)
+      )
+    )
+  }
+}
+
+object NamedScheduledThreadPoolFactory
+    extends GeneralThreadPoolFactory(Executors.newScheduledThreadPool) {
+  override def create(
+    size: Int,
+    name: String
+  ): ProvidedSchedulerService = {
+    ExecutionContextProvider.provider.of(
+      factory(size, new NamedPoolThreadFactory(name))
+    )
+  }
+}
+
+object NamedFixedThreadPoolFactory
+    extends GeneralThreadPoolFactory(Executors.newFixedThreadPool)
