@@ -46,6 +46,9 @@ declare global {
 export default function AppWrapper(props: Props) {
   const isBooting = useStateSelector(state => state.startup.isBooting);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  useEffect(() => {
+    console.log('drawer state: ' + drawerOpen);
+  }, [drawerOpen]);
   const classes = useStyles();
   const nextRouter = useRouter();
   const user = currentUser();
@@ -63,26 +66,25 @@ export default function AppWrapper(props: Props) {
     <NoSsr>
       <div className={classes.root}>
         <WithUser>
-          <NoSsr>
-            <Toolbar
-              drawerOpen={drawerOpen}
-              onDrawerChange={shouldClose =>
-                setDrawerOpen(
-                  !_.isUndefined(shouldClose) ? !shouldClose : !drawerOpen,
-                )
-              }
-              showToolbarSearch={
-                _.isUndefined(props.showToolbarSearch)
-                  ? true
-                  : props.showToolbarSearch
-              }
-            />
-          </NoSsr>
+          <Toolbar
+            drawerOpen={drawerOpen}
+            onDrawerChange={shouldClose =>
+              setDrawerOpen(
+                !_.isUndefined(shouldClose) ? !shouldClose : !drawerOpen,
+              )
+            }
+            showToolbarSearch={
+              _.isUndefined(props.showToolbarSearch)
+                ? true
+                : props.showToolbarSearch
+            }
+          />
           {!isBooting ? (
             <div style={{ flexGrow: 1 }}>
               <Drawer
                 open={drawerOpen}
                 closeRequested={() => setDrawerOpen(false)}
+                drawerStateChanged={value => setDrawerOpen(value)}
               />
               <main
                 style={{

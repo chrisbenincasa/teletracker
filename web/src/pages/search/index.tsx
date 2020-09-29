@@ -29,7 +29,7 @@ interface WithStore {
 }
 
 function SearchWrapper(props: Props) {
-  let title = 'Teletracker Search';
+  let title = '🔭 Telescope Search';
   if (props.query) {
     title += ' - ' + props.query;
   }

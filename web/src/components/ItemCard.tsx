@@ -35,6 +35,9 @@ import {
   ThumbUp,
   Visibility,
   Storage,
+  PlaylistAdd,
+  PlaylistAddTwoTone,
+  PlaylistAddCheckTwoTone,
 } from '@material-ui/icons';
 import RouterLink from 'next/link';
 import { updateListTracking } from '../actions/lists';
@@ -152,7 +155,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     opacity: 1.0,
   },
   statusIconDisabled: {
-    opacity: 0.5,
+    opacity: 0.7,
     '&:hover': {
       opacity: 1.0,
     },
@@ -392,6 +395,11 @@ function ItemCard(props: Props) {
     const ratingTitle = `You ${rating} this ${itemType}`;
     const deleteTitle = `Remove this ${itemType} from this list`;
 
+    const AddToListComponent =
+      itemBelongsToLists(item).length > 0
+        ? PlaylistAddCheckTwoTone
+        : PlaylistAddTwoTone;
+
     return (
       <div className={classes.statusIconContainer}>
         {renderDevtools()}
@@ -461,7 +469,7 @@ function ItemCard(props: Props) {
             aria-label={trackedTitle}
             onClick={() => setManageTrackingModalOpen(true)}
           >
-            <CheckCircleTwoTone
+            <AddToListComponent
               className={classNames(
                 classes.statusIcon,
                 belongsToLists.length > 0
@@ -618,7 +626,7 @@ function ItemCard(props: Props) {
         entering the viewport & image has successfuly loaded in,
         ensuring the fade is visible to user.
       */
-          in={isInViewport && !_.isUndefined(item) && imageLoaded}
+          in={/*isInViewport && */ !_.isUndefined(item) && imageLoaded}
           timeout={1000}
           ref={loadWrapperRef}
         >
@@ -639,7 +647,7 @@ function ItemCard(props: Props) {
               ref={itemRef}
             >
               {/* No network call is made until container is entering the viewport. */}
-              {isNearViewport && renderPoster(item)}
+              {/*isNearViewport && */ renderPoster(item)}
             </Card>
           </Grid>
         </Fade>

@@ -38,6 +38,7 @@ import useStateSelector from '../../hooks/useStateSelector';
 import { useWithUserContext } from '../../hooks/useWithUser';
 import { useGenres } from '../../hooks/useStateMetadata';
 import Telescope from '../../icons/Telescope';
+import _ from 'lodash';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -171,12 +172,15 @@ interface Props {
 }
 
 export default function Toolbar(props: Props) {
-  const { drawerOpen, showToolbarSearch } = props;
+  const { drawerOpen } = props;
   const classes = useStyles();
   const router = useRouter();
   const genres = useGenres();
   const isMobile = useIsMobile();
   const isSmallScreen = useIsSmallScreen();
+
+  const query = router.query.q as string | undefined;
+  const showToolbarSearch = _.isUndefined(query);
 
   const isBooting = useStateSelector(state => state.startup.isBooting);
   const [mobileSearchBarOpen, setMobileSearchBarOpen] = useState(false);

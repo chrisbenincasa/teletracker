@@ -1,6 +1,7 @@
 import React, { ReactElement, useCallback, useEffect, useState } from 'react';
 import {
   Avatar,
+  Badge,
   CircularProgress,
   createStyles,
   Divider,
@@ -14,6 +15,7 @@ import {
   ListItemText,
   ListSubheader,
   makeStyles,
+  SwipeableDrawer,
   Theme,
   Tooltip,
   Typography,
@@ -29,6 +31,7 @@ import {
   Public,
   Settings,
   TrendingUp,
+  List as ListIcon,
 } from '@material-ui/icons';
 import CreateListDialog from './Dialogs/CreateListDialog';
 import SmartListDialog from './Dialogs/SmartListDialog';
@@ -59,7 +62,7 @@ import {
 } from '../actions/lists';
 import { usePrevious } from '../hooks/usePrevious';
 
-export const DrawerWidthPx = 250;
+export const DrawerWidthPx = 300;
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -82,9 +85,12 @@ const useStyles = makeStyles((theme: Theme) =>
       padding: theme.spacing(0, 1),
       flex: '0 0 auto',
     },
-    toolbar: theme.mixins.toolbar,
+    // toolbar: theme.mixins.toolbar,
+    toolbar: {
+      minHeight: 48, // We're using dense toolbar... make a mixin if other pages need this
+    },
     list: {
-      padding: theme.spacing(0, 1),
+      padding: theme.spacing(1),
       flex: '1 1 auto',
       overflowY: 'scroll',
     },
@@ -142,14 +148,11 @@ interface LinkProps {
 interface Props {
   readonly open: boolean;
   readonly closeRequested: () => void;
+  readonly drawerStateChanged: (open: boolean) => void;
 }
 
 const DrawerItemListLink = (props: LinkProps) => {
-  const theme = useTheme();
-  const { index, primary, selected, listLength, isDynamic, isPublic } = props;
-
-  const backgroundColor =
-    theme.palette.primary[index ? (index < 9 ? `${9 - index}00` : 100) : 900];
+  const { primary, selected, listLength, isDynamic, isPublic } = props;
 
   const handleClick = () => {
     if (props.onClick) {
@@ -167,18 +170,32 @@ const DrawerItemListLink = (props: LinkProps) => {
             </ListItemIcon>
           </Tooltip>
         ) : (
-          <ListItemAvatar>
-            <Avatar
-              style={{
-                backgroundColor,
-                width: 30,
-                height: 30,
-                fontSize: '1em',
-              }}
+          // <ListItemAvatar>
+          //   <Avatar
+          //     style={{
+          //       backgroundColor,
+          //       width: 30,
+          //       height: 30,
+          //       fontSize: '1em',
+          //     }}
+          //   >
+          //     {listLength >= 100 ? '99+' : listLength}
+          //   </Avatar>
+          // </ListItemAvatar>
+          <ListItemIcon>
+            <Badge
+              badgeContent={
+                _.isUndefined(listLength)
+                  ? 0
+                  : listLength >= 100
+                  ? '99+'
+                  : listLength
+              }
+              color="secondary"
             >
-              {listLength >= 100 ? '99+' : listLength}
-            </Avatar>
-          </ListItemAvatar>
+              <ListIcon style={{ width: 30, height: 30 }} />
+            </Badge>
+          </ListItemIcon>
         )}
         <ListItemText
           style={{
@@ -225,6 +242,27 @@ export default function Drawer(props: Props) {
 
   const [loadingLists, wasLoadingLists] = useStateSelectorWithPrevious(
     state => state.lists.loading[LIST_RETRIEVE_ALL_INITIATED],
+  );
+
+  const [isOpen, setIsOpen] = useState(false);
+
+  const iOS =
+    (process as any).browser &&
+    navigator &&
+    /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+  useEffect(() => {
+    setIsOpen(props.open);
+  }, [props.open]);
+
+  const setDrawerState = useCallback(
+    (value: boolean) => {
+      if (isOpen !== value) {
+        setIsOpen(value);
+        props.drawerStateChanged(value);
+      }
+    },
+    [isOpen, props.drawerStateChanged],
   );
 
   const width = useWidth();
@@ -352,7 +390,9 @@ export default function Drawer(props: Props) {
       return (
         <Link href={to}>
           <ListItem button selected={selected} onClick={props.onClick}>
-            {icon ? <ListItemIcon>{icon}</ListItemIcon> : null}
+            {icon ? (
+              <ListItemIcon className={classes.drawerIcon}>{icon}</ListItemIcon>
+            ) : null}
             <ListItemText>{primary}</ListItemText>
           </ListItem>
         </Link>
@@ -374,15 +414,15 @@ export default function Drawer(props: Props) {
                   button: true,
                 }}
               />
-              <ListItemLink
-                to="/new"
-                primary="What's New?"
-                icon={<FiberNew />}
-                ListItemProps={{
-                  selected: router.pathname.toLowerCase() === '/new',
-                  button: true,
-                }}
-              />
+              {/*<ListItemLink*/}
+              {/*  to="/new"*/}
+              {/*  primary="What's New?"*/}
+              {/*  icon={<FiberNew />}*/}
+              {/*  ListItemProps={{*/}
+              {/*    selected: router.pathname.toLowerCase() === '/new',*/}
+              {/*    button: true,*/}
+              {/*  }}*/}
+              {/*/>*/}
             </React.Fragment>
           )}
           {isLoggedIn ? (
@@ -444,11 +484,16 @@ export default function Drawer(props: Props) {
 
   const renderDrawer = () => {
     return (
-      <DrawerUI
-        open={props.open}
+      <SwipeableDrawer
+        open={isOpen}
+        onOpen={() => setDrawerState(true)}
+        onClose={() => setDrawerState(false)}
         anchor="left"
         className={classes.drawer}
-        style={{ width: props.open ? 220 : 0 }}
+        style={{ width: isOpen ? DrawerWidthPx : 0 }}
+        disableBackdropTransition={!iOS}
+        disableDiscovery={iOS}
+        swipeAreaWidth={50}
         ModalProps={{
           onBackdropClick: props.closeRequested,
           onEscapeKeyDown: props.closeRequested,
@@ -458,7 +503,7 @@ export default function Drawer(props: Props) {
         }}
       >
         {isLoading() ? <CircularProgress /> : renderDrawerContents()}
-      </DrawerUI>
+      </SwipeableDrawer>
     );
   };
 
@@ -468,7 +513,7 @@ export default function Drawer(props: Props) {
 
   return (
     <React.Fragment>
-      {renderDrawer()}
+      <div>{renderDrawer()}</div>
       <CreateListDialog open={createDialogOpen} onClose={handleModalClose} />
       <SmartListDialog open={smartListDialogOpen} onClose={handleModalClose} />
       <AuthDialog

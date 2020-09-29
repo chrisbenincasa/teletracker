@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   createStyles,
+  Fab,
   IconButton,
   makeStyles,
   Theme,
@@ -30,14 +31,14 @@ export default function ScrollToTopButton(props: Props) {
   const classes = useStyles();
 
   return props.show ? (
-    <IconButton
+    <Fab
       onClick={props.onClick}
       style={props.style}
       className={classNames(props.className, classes.scrollToTop)}
       size="medium"
     >
-      <KeyboardArrowUp />
+      <KeyboardArrowUp style={{ fill: 'white' }} />
       <Typography variant="srOnly">Scroll to Top</Typography>
-    </IconButton>
+    </Fab>
   ) : null;
 }

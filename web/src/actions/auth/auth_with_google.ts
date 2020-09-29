@@ -43,7 +43,6 @@ export const authWithGoogleSaga = function*() {
 
         // todo:  separate each
         yield call(logEvent, 'Login and Signup', 'Login/Signup', 'Google');
-        console.log(creds);
       } catch (e) {
         console.error(e);
         yield call(logException, `${e}`, false);

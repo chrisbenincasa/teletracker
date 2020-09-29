@@ -89,7 +89,7 @@ function WithItemFilters(props: WithItemFiltersProps) {
     () => {
       filterState.setFilters(initialFilters);
     },
-    [props.initialFilters],
+    [initialFilters],
     (prevDeps, nextDeps) => hookDeepEqual(prevDeps, nextDeps),
   );
 

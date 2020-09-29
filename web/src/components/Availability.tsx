@@ -224,7 +224,6 @@ const Availability = (props: Props) => {
         }
 
         const link = getDeepLink(availability, offersOfType);
-        console.log(availability, offersOfType, link);
 
         return (
           <a
