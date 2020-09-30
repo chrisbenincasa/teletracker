@@ -391,12 +391,12 @@ function ListDetail(props: ListDetailProps) {
               label="Automatically remove items after watching"
             />
           </MenuItem>
-          <MenuItem onClick={() => setPublicListOptionsOpen(true)}>
+          {/* <MenuItem onClick={() => setPublicListOptionsOpen(true)}>
             <ListItemIcon>
               <Public />
             </ListItemIcon>
             {`Make list ${list.isPublic ? 'Private' : 'Public'}`}
-          </MenuItem>
+          </MenuItem> */}
         </Menu>
       </div>
     );
