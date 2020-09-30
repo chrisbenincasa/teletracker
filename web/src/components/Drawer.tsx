@@ -2,7 +2,9 @@ import React, { ReactElement, useCallback, useEffect, useState } from 'react';
 import {
   Avatar,
   Badge,
+  Button,
   CircularProgress,
+  Collapse,
   createStyles,
   Divider,
   Drawer as DrawerUI,
@@ -19,18 +21,20 @@ import {
   Theme,
   Tooltip,
   Typography,
-  useTheme,
 } from '@material-ui/core';
 import {
   AddCircle,
+  ExpandLess,
+  ExpandMore,
   FiberNew,
   Lock,
-  OfflineBolt,
+  MovieFilter,
   PersonAdd,
   PowerSettingsNew,
   Public,
   Settings,
   TrendingUp,
+  Label,
   List as ListIcon,
 } from '@material-ui/icons';
 import CreateListDialog from './Dialogs/CreateListDialog';
@@ -85,6 +89,12 @@ const useStyles = makeStyles((theme: Theme) =>
       padding: theme.spacing(0, 1),
       flex: '0 0 auto',
     },
+    parent: {
+      paddingLeft: theme.spacing(2),
+    },
+    nested: {
+      paddingLeft: theme.spacing(3),
+    },
     // toolbar: theme.mixins.toolbar,
     toolbar: {
       minHeight: 48, // We're using dense toolbar... make a mixin if other pages need this
@@ -117,6 +127,9 @@ const useStyles = makeStyles((theme: Theme) =>
     },
     iconSmall: {
       fontSize: 20,
+    },
+    newList: {
+      margin: theme.spacing(2, 0),
     },
   }),
 );
@@ -153,6 +166,7 @@ interface Props {
 
 const DrawerItemListLink = (props: LinkProps) => {
   const { primary, selected, listLength, isDynamic, isPublic } = props;
+  const classes = useStyles();
 
   const handleClick = () => {
     if (props.onClick) {
@@ -162,41 +176,20 @@ const DrawerItemListLink = (props: LinkProps) => {
 
   return (
     <Link href={props.to} as={props.as} passHref>
-      <ListItem button onClick={handleClick} selected={selected}>
-        {isDynamic ? (
-          <Tooltip title={'Learn more about Smart Lists'} placement={'top'}>
-            <ListItemIcon onClick={() => props.onSmartListClick()}>
-              <OfflineBolt style={{ width: 30, height: 30 }} />
-            </ListItemIcon>
-          </Tooltip>
-        ) : (
-          // <ListItemAvatar>
-          //   <Avatar
-          //     style={{
-          //       backgroundColor,
-          //       width: 30,
-          //       height: 30,
-          //       fontSize: '1em',
-          //     }}
-          //   >
-          //     {listLength >= 100 ? '99+' : listLength}
-          //   </Avatar>
-          // </ListItemAvatar>
+      <ListItem
+        button
+        onClick={handleClick}
+        selected={selected}
+        className={classes.nested}
+        dense
+        disableGutters
+      >
+        {isPublic && (
           <ListItemIcon>
-            <Badge
-              badgeContent={
-                _.isUndefined(listLength)
-                  ? 0
-                  : listLength >= 100
-                  ? '99+'
-                  : listLength
-              }
-              color="secondary"
-            >
-              <ListIcon style={{ width: 30, height: 30 }} />
-            </Badge>
+            <Public style={{ width: 24, height: 24 }} />
           </ListItemIcon>
         )}
+
         <ListItemText
           style={{
             whiteSpace: 'nowrap',
@@ -205,18 +198,13 @@ const DrawerItemListLink = (props: LinkProps) => {
           }}
           primary={primary}
         />
-        {isPublic && (
-          <ListItemSecondaryAction>
-            <IconButton
-              edge="end"
-              aria-label="public lists"
-              size="small"
-              onClick={() => props.onPublicListClick()}
-            >
-              <Public />
-            </IconButton>
-          </ListItemSecondaryAction>
-        )}
+        <ListItemSecondaryAction>
+          {_.isUndefined(listLength)
+            ? 0
+            : listLength >= 100
+            ? '99+'
+            : listLength}
+        </ListItemSecondaryAction>
       </ListItem>
     </Link>
   );
@@ -245,6 +233,18 @@ export default function Drawer(props: Props) {
   );
 
   const [isOpen, setIsOpen] = useState(false);
+  const [manualListOpen, setManualListOpen] = React.useState(true);
+  const [smartListOpen, setSmartListOpen] = React.useState(false);
+
+  const handleManualListsClick = () => {
+    setManualListOpen(!manualListOpen);
+    setSmartListOpen(false);
+  };
+
+  const handleSmartListsClick = () => {
+    setSmartListOpen(!smartListOpen);
+    setManualListOpen(false);
+  };
 
   const iOS =
     (process as any).browser &&
@@ -379,17 +379,21 @@ export default function Drawer(props: Props) {
   const renderDrawerContents = () => {
     const sortedLists = _.sortBy(
       lists,
+      list => (list.isDynamic ? 1 : -1),
       list => (list.createdAt ? -new Date(list.createdAt) : null),
       list => (list.legacyId ? -list.legacyId : null),
       'id',
     );
+
+    const smartLists = _.filter(sortedLists, list => list.isDynamic);
+    const manualLists = _.filter(sortedLists, list => !list.isDynamic);
 
     function ListItemLink(props: ListItemProps) {
       const { primary, to, selected, icon } = props;
 
       return (
         <Link href={to}>
-          <ListItem button selected={selected} onClick={props.onClick}>
+          <ListItem button divider selected={selected} onClick={props.onClick}>
             {icon ? (
               <ListItemIcon className={classes.drawerIcon}>{icon}</ListItemIcon>
             ) : null}
@@ -403,58 +407,73 @@ export default function Drawer(props: Props) {
       <React.Fragment>
         <div className={classes.toolbar} />
         <List className={classes.list}>
-          {['xs', 'sm', 'md'].includes(width) && (
-            <React.Fragment>
-              <ListItemLink
-                to="/popular"
-                primary="Explore"
-                icon={<TrendingUp />}
-                ListItemProps={{
-                  selected: router.pathname.toLowerCase() === '/popular',
-                  button: true,
-                }}
-              />
-              {/*<ListItemLink*/}
-              {/*  to="/new"*/}
-              {/*  primary="What's New?"*/}
-              {/*  icon={<FiberNew />}*/}
-              {/*  ListItemProps={{*/}
-              {/*    selected: router.pathname.toLowerCase() === '/new',*/}
-              {/*    button: true,*/}
-              {/*  }}*/}
-              {/*/>*/}
-            </React.Fragment>
-          )}
+          <ListItemLink
+            to="/popular"
+            primary="Explore"
+            icon={<TrendingUp />}
+            ListItemProps={{
+              selected: router.pathname.toLowerCase() === '/popular',
+              button: true,
+              divider: true,
+            }}
+          />
           {isLoggedIn ? (
             <React.Fragment>
-              <ListSubheader className={classes.listHeader}>
-                <Typography
-                  component="h6"
-                  variant="h6"
-                  className={classes.margin}
-                >
-                  My Lists
-                </Typography>
-              </ListSubheader>
-              <ListItem button onClick={handleModalOpen}>
+              <ListItem
+                button
+                onClick={handleManualListsClick}
+                className={classes.parent}
+                selected={manualListOpen}
+                divider
+              >
                 <ListItemIcon>
-                  <AddCircle className={classes.drawerIcon} />
+                  <ListIcon />
                 </ListItemIcon>
-                <ListItemText>Create New List</ListItemText>
+                <ListItemText primary="My Lists" />
+                {manualListOpen ? <ExpandLess /> : <ExpandMore />}
               </ListItem>
-              {_.map(sortedLists, renderListItems)}
+              <Collapse in={manualListOpen} timeout="auto" unmountOnExit>
+                {_.map(manualLists, renderListItems)}
+                <ListItem
+                  button
+                  onClick={handleModalOpen}
+                  className={classes.nested}
+                  dense
+                  disableGutters
+                >
+                  <ListItemText
+                    style={{
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                    primary="+ Create New List"
+                  />
+                </ListItem>
+              </Collapse>
+
+              <ListItem
+                button
+                onClick={handleSmartListsClick}
+                className={classes.parent}
+                selected={smartListOpen}
+                divider
+              >
+                <ListItemIcon>
+                  <MovieFilter />
+                </ListItemIcon>
+                <ListItemText primary="My Smart Lists" />
+                {smartListOpen ? <ExpandLess /> : <ExpandMore />}
+              </ListItem>
+              <Collapse in={smartListOpen} timeout="auto" unmountOnExit>
+                {_.map(smartLists, renderListItems)}
+              </Collapse>
               <Divider />
             </React.Fragment>
           ) : null}
         </List>
         {isLoggedIn ? (
           <List className={classes.fixedListItems}>
-            {/* <ListItemLink
-              to="/account"
-              primary="Settings"
-              onClick={props.closeRequested}
-              icon={<Settings />}
-            /> */}
             <ListItem button onClick={handleLogout}>
               <ListItemIcon>
                 <PowerSettingsNew className={classes.drawerIcon} />
