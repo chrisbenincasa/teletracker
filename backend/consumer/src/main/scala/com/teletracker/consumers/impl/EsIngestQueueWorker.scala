@@ -205,7 +205,8 @@ class EsIngestQueueWorker @Inject()(
     } else if (update.script.isDefined) {
       itemUpdater
         .updateWithScript(
-          UUID.fromString(update.id),
+          id = UUID.fromString(update.id),
+          itemType = update.itemType,
           update.script.get
         )
         .map(_ => {})

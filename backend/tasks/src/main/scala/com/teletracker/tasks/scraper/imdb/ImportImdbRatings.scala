@@ -179,7 +179,7 @@ class ImportImdbRatings @Inject()(
                 }
                 .map(rating => {
                   if (!args.dryRun) {
-                    itemUpdater.updateWithScript2(
+                    itemUpdater.updateWithScript(
                       id = item.id,
                       itemType = item.`type`,
                       script = ItemUpdater.UpsertRatingScript(rating),

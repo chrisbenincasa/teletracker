@@ -121,7 +121,29 @@ class ItemUpdater @Inject()(
     } yield updateResp
   }
 
-  def updateWithScript2(
+  def updateWithScript(
+    id: UUID,
+    itemType: ItemType,
+    script: Json,
+    async: Boolean,
+    denormArgs: Option[EsIngestItemDenormArgs]
+  ): Future[UpdateItemResult] = {
+    updateWithScript(
+      id,
+      itemType,
+      Script.parse(
+        JsonXContent.jsonXContent.createParser(
+          NamedXContentRegistry.EMPTY,
+          DeprecationHandler.THROW_UNSUPPORTED_OPERATION,
+          script.deepDropNullValues.noSpaces
+        )
+      ): Script,
+      async,
+      denormArgs
+    )
+  }
+
+  def updateWithScript(
     id: UUID,
     itemType: ItemType,
     script: Script,
@@ -157,7 +179,7 @@ class ItemUpdater @Inject()(
     }
   }
 
-  def updateWithScript(
+  private def updateWithScript(
     id: UUID,
     script: Script
   ): Future[UpdateResponse] = {
@@ -169,7 +191,7 @@ class ItemUpdater @Inject()(
     elasticsearchExecutor.update(request)
   }
 
-  def updateWithScript(
+  private def updateWithScript(
     id: UUID,
     script: Json
   ): Future[UpdateResponse] = {
