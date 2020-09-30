@@ -90,12 +90,12 @@ export function toItemTypeEnum(itemType: ItemType): ItemTypeEnum {
 export type NetworkType =
   | typeof networks.Netflix
   | typeof networks.Hbo
+  | typeof networks.HboMax
   // | 'hbo-now'
   | typeof networks.PrimeVideo
   | typeof networks.AmazonVideo
   | typeof networks.Hulu
   | typeof networks.DisneyPlus
-  | typeof networks.HboMax
   | typeof networks.AppleTv;
 
 export function isNetworkType(s: string): s is NetworkType {
@@ -109,24 +109,24 @@ export function isNetworkTypeOrAll(s: string): s is NetworkType | 'all' {
 export const networkToPrettyName: { readonly [K in NetworkType]: string } = {
   [networks.Netflix]: 'Netflix',
   [networks.Hbo]: 'HBO',
+  [networks.HboMax]: 'HBO Max',
   // 'hbo-now': 'HBO',
   [networks.PrimeVideo]: 'Prime Video',
   [networks.AmazonVideo]: 'Amazon Video',
   [networks.Hulu]: 'Hulu',
   [networks.DisneyPlus]: 'Disney Plus',
-  [networks.HboMax]: 'HBO Max',
   [networks.AppleTv]: 'Apple TV',
 };
 
 export const networkToColor: { readonly [K in NetworkType]?: string } = {
   [networks.Netflix]: '#000',
+  [networks.Hbo]: '#fff',
+  [networks.HboMax]: '#fff',
   // 'hbo-now': '#fff',
   [networks.AmazonVideo]: '#fff',
   [networks.PrimeVideo]: '#fff',
   [networks.Hulu]: '#1ce783',
   [networks.DisneyPlus]: '#1a1d29',
-  [networks.HboMax]: '#fff',
-  [networks.Hbo]: '#fff',
   [networks.AppleTv]: '#fff',
 };
 
@@ -273,7 +273,7 @@ export interface UserPreferences {
 
 // Transition type while we remove hbo-go and hbo-now references
 // from the backend
-export type StoredNetworkType = Exclude<NetworkType, 'hbo-go'> | 'hbo';
+export type StoredNetworkType = Exclude<NetworkType, 'hbo-go'> | 'hbo-now';
 
 export interface Network {
   readonly id: number;

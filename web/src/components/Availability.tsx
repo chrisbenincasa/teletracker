@@ -24,6 +24,7 @@ import useStateSelector from '../hooks/useStateSelector';
 import selectItem from '../selectors/selectItem';
 import { collect } from '../utils/collection-utils';
 import { getLogoUrl } from '../utils/image-helper';
+import clsx from 'clsx';
 
 const useStyles = makeStyles((theme: Theme) => ({
   availabilityContainer: {
@@ -55,11 +56,12 @@ const useStyles = makeStyles((theme: Theme) => ({
     padding: theme.spacing(1),
     margin: theme.spacing(0.5, 0),
     border: '1px solid transparent',
+  },
+  cardRootHover: {
     transition:
       'boder-color 100ms, box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms',
     '&:hover': {
       borderColor: theme.palette.primary.main,
-      cursor: 'pointer',
     },
   },
   cardContent: {
@@ -84,6 +86,19 @@ const useStyles = makeStyles((theme: Theme) => ({
     textDecoration: 'none',
     [theme.breakpoints.down('sm')]: {
       width: '100%',
+    },
+    '&:hover': {
+      cursor: 'pointer',
+    },
+  },
+  noLink: {
+    marginRight: theme.spacing(0.5),
+    textDecoration: 'none',
+    [theme.breakpoints.down('sm')]: {
+      width: '100%',
+    },
+    '&:hover': {
+      cursor: 'inherit',
     },
   },
   logo: {
@@ -225,14 +240,33 @@ const Availability = (props: Props) => {
 
         const link = getDeepLink(availability, offersOfType);
 
+        const ConditionalLink = ({ condition, wrapper, children }) =>
+          condition ? (
+            wrapper(children)
+          ) : (
+            <div className={classes.noLink}>{children}</div>
+          );
+
         return (
-          <a
-            href={link ? link : '#'}
-            target="_blank"
-            className={classes.link}
-            key={index}
+          <ConditionalLink
+            condition={link}
+            wrapper={children => (
+              <a
+                href={link}
+                target="_blank"
+                className={classes.link}
+                key={index}
+              >
+                {children}
+              </a>
+            )}
           >
-            <Card className={classes.cardRoot}>
+            <Card
+              className={clsx(
+                classes.cardRoot,
+                link ? classes.cardRootHover : null,
+              )}
+            >
               <CardMedia
                 className={classes.networkLogo}
                 image={logoUri}
@@ -247,7 +281,7 @@ const Availability = (props: Props) => {
                 }`}</Typography>
               </CardContent>
             </Card>
-          </a>
+          </ConditionalLink>
         );
       })
       .compact()
