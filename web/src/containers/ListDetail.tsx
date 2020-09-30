@@ -88,7 +88,7 @@ function ListDetail(props: ListDetailProps) {
     hookDeepEqual,
   );
 
-  let defaultFilters: FilterParams = useMemoCompare(
+  const defaultFilters: FilterParams = useMemoCompare(
     () => {
       if (list && networks) {
         return smartListRulesToFilters(list, networks || []);

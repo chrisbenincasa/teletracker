@@ -1,4 +1,4 @@
-import React, { createContext, ReactNode, useCallback, useEffect } from 'react';
+import React, { createContext, ReactNode, useEffect } from 'react';
 import {
   DEFAULT_FILTER_PARAMS,
   FilterParams,
@@ -13,9 +13,9 @@ import {
   updateUrlParamsForNextRouter,
 } from '../../utils/urlHelper';
 import qs from 'querystring';
-import { hookDeepEqual } from '../../hooks/util';
 import useEffectCompare from '../../hooks/useEffectCompare';
 import { useRouter } from 'next/router';
+import useCustomCompareCallback from '../../hooks/useCallbackCompare';
 
 export interface FilterContextState {
   readonly filters: FilterParams;
@@ -30,40 +30,12 @@ export const FilterContext = createContext<FilterContextState>({
   setFilters: () => {},
   clearFilters: () => {},
   currentFiltersAreDefault: true,
+  defaultFilters: DEFAULT_FILTER_PARAMS,
 });
 
 interface WithItemFiltersProps {
   readonly initialFilters?: FilterParams;
   readonly children: ReactNode;
-}
-
-function withFilters(
-  initialFilters: FilterParams,
-  defaultFilters?: FilterParams,
-): FilterContextState {
-  const [filters, setFilters] = useStateDeepEq(
-    initialFilters,
-    (left, right) => {
-      return filterParamsEqual(left, right, defaultFilters?.sortOrder);
-    },
-  );
-
-  const actuallySetFilters = useCallback(
-    (newFilters: FilterParams) => {
-      setFilters(normalizeFilterParams(newFilters));
-    },
-    [filters],
-  );
-
-  const clearFilters = useCallback(() => {
-    actuallySetFilters(defaultFilters || {});
-  }, []);
-  return {
-    filters,
-    setFilters: actuallySetFilters,
-    clearFilters,
-    currentFiltersAreDefault: filterParamsEqual(filters, defaultFilters),
-  };
 }
 
 function WithItemFilters(props: WithItemFiltersProps) {
@@ -75,35 +47,112 @@ function WithItemFilters(props: WithItemFiltersProps) {
     ...paramsFromQuery,
   };
 
-  const filterState = withFilters(initialFilters, props.initialFilters);
-
-  const memoedFilterState = useCustomCompareMemo(
-    () => {
-      return { ...filterState, defaultFilters: props.initialFilters };
+  const [filters, setFilters] = useStateDeepEq(
+    {
+      filters: initialFilters,
+      defaultFilters: props.initialFilters,
+      currentFiltersAreDefault: filterParamsEqual(
+        initialFilters,
+        props.initialFilters,
+        props.initialFilters?.sortOrder,
+      ),
     },
-    [filterState],
-    hookDeepEqual,
+    (left, right) => {
+      return (
+        filterParamsEqual(left.filters, right.filters) &&
+        filterParamsEqual(left.defaultFilters, right.defaultFilters)
+      );
+    },
   );
 
   useEffectCompare(
     () => {
-      filterState.setFilters(initialFilters);
+      let newFilters = {
+        ...(props.initialFilters || DEFAULT_FILTER_PARAMS),
+        ...paramsFromQuery,
+      };
+
+      setFilters({
+        filters: newFilters,
+        defaultFilters: props.initialFilters,
+        currentFiltersAreDefault: filterParamsEqual(
+          newFilters,
+          props.initialFilters,
+        ),
+      });
     },
-    [initialFilters],
-    (prevDeps, nextDeps) => hookDeepEqual(prevDeps, nextDeps),
+    [props.initialFilters],
+    ([left], [right]) => filterParamsEqual(left, right),
   );
 
+  const actuallySetFilters = useCustomCompareCallback(
+    (newFilters: FilterParams) => {
+      // setFilters(normalizeFilterParams(newFilters));
+      const normalized = normalizeFilterParams(newFilters);
+      console.log('set new filters', normalized);
+      setFilters(prev => {
+        return {
+          ...prev,
+          filters: normalized,
+          currentFiltersAreDefault: filterParamsEqual(
+            normalized,
+            prev.defaultFilters,
+            prev.defaultFilters?.sortOrder,
+          ),
+        };
+      });
+    },
+    [filters],
+    ([left], [right]) => filterParamsEqual(left, right),
+  );
+
+  const clearFilters = useCustomCompareCallback(
+    () => {
+      actuallySetFilters(props.initialFilters || DEFAULT_FILTER_PARAMS);
+    },
+    [props.initialFilters],
+    ([left], [right]) => filterParamsEqual(left, right),
+  );
+
+  // Update query params if either the applied or default filters change
   useEffect(() => {
     updateUrlParamsForNextRouter(
       router,
-      memoedFilterState.filters,
+      filters.filters,
       [],
-      memoedFilterState.defaultFilters,
+      filters.defaultFilters,
     );
-  }, [memoedFilterState]);
+  }, [filters.filters, filters.defaultFilters]);
+
+  // Memoize the whole context state
+  const wholeState = useCustomCompareMemo<FilterContextState>(
+    () => {
+      return {
+        filters: filters.filters,
+        defaultFilters: filters.defaultFilters,
+        currentFiltersAreDefault: filters.currentFiltersAreDefault,
+        clearFilters: clearFilters,
+        setFilters: actuallySetFilters,
+      };
+    },
+    [filters, actuallySetFilters, clearFilters],
+    (prev, next) => {
+      const [prevFilters, prevSet, prevClear] = prev;
+      const [nextFilters, nextSet, nextClear] = next;
+      return (
+        filterParamsEqual(prevFilters.filters, nextFilters.filters) &&
+        filterParamsEqual(
+          prevFilters.defaultFilters,
+          nextFilters.defaultFilters,
+        ) &&
+        prevSet === nextSet &&
+        prevClear === nextClear
+      );
+    },
+  );
 
   return (
-    <FilterContext.Provider value={memoedFilterState}>
+    <FilterContext.Provider value={wholeState}>
       {props.children}
     </FilterContext.Provider>
   );

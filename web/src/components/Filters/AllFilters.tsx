@@ -364,9 +364,7 @@ const AllFilters = (props: Props) => {
             </ExpansionPanelSummary>
             <ExpansionPanelDetails>
               <div className={classes.slidersContainer}>
-                <div className={classes.sliderContainer}>
-                  <RatingFilter handleChange={setRating} showTitle={false} />
-                </div>
+                <RatingFilter handleChange={setRating} showTitle={false} />
               </div>
             </ExpansionPanelDetails>
           </ExpansionPanel>
@@ -383,12 +381,10 @@ const AllFilters = (props: Props) => {
             </ExpansionPanelSummary>
             <ExpansionPanelDetails>
               <div className={classes.slidersContainer}>
-                <div className={classes.sliderContainer}>
-                  <ReleaseYearFilter
-                    handleChange={setReleaseYear}
-                    showTitle={false}
-                  />
-                </div>
+                <ReleaseYearFilter
+                  handleChange={setReleaseYear}
+                  showTitle={false}
+                />
               </div>
             </ExpansionPanelDetails>
           </ExpansionPanel>
