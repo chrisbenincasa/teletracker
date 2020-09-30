@@ -96,7 +96,7 @@ export default function RatingFilter(props: Props) {
         ]}
         onChange={handleImdbChange}
         onChangeCommitted={handleImdbCommitted}
-        valueLabelDisplay="auto"
+        valueLabelDisplay="on"
         aria-labelledby="range-slider"
       />
     </div>

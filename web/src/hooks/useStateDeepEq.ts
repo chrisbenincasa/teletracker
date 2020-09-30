@@ -1,6 +1,7 @@
-import { Dispatch, useState } from 'react';
+import { Dispatch, SetStateAction, useState } from 'react';
 import { useStateWithPrevious } from './useStateWithPrevious';
 import { hookDeepEqual } from './util';
+import _ from 'lodash';
 
 /**
  * Version of {@link useState} that uses a custom equality check before
@@ -11,12 +12,23 @@ import { hookDeepEqual } from './util';
 export function useStateDeepEq<T>(
   value: T,
   equalityCheck: (left: T, right: T) => boolean = hookDeepEqual,
-): [T, Dispatch<T>] {
+): [T, Dispatch<SetStateAction<T>>] {
   const [v, actuallySetValue] = useState(value);
 
-  const dispatch = (newValue: T) => {
-    if (!equalityCheck(v, newValue)) {
-      actuallySetValue(newValue);
+  const dispatch = (newValue: SetStateAction<T>) => {
+    if (_.isFunction(newValue)) {
+      actuallySetValue(prev => {
+        const nv = newValue(prev);
+        if (!equalityCheck(nv, prev)) {
+          return nv;
+        } else {
+          return prev;
+        }
+      });
+    } else {
+      if (!equalityCheck(v, newValue)) {
+        actuallySetValue(newValue);
+      }
     }
   };
 
