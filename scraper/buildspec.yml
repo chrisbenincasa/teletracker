@@ -11,7 +11,7 @@ phases:
   build:
     commands:
       - cd scraper/python/crawlers
-      - ./scripts/build_new_version
+      - ./scripts/build_new_version.sh
       - echo "Built version $(cat FULL_VERSION)"
   post_build:
     commands:
