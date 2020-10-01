@@ -108,7 +108,7 @@ function Featured(props: Props) {
 
   useEffect(() => {
     setImageLoading(true);
-  }, [featuredItems]);
+  }, []);
 
   const renderTitle = (item: Item) => {
     const runtime =
@@ -206,16 +206,6 @@ function Featured(props: Props) {
             <RouterLink href={item.canonicalUrl} as={item.relativeUrl} passHref>
               <WrappedCardMedia item={item} />
             </RouterLink>
-
-            {/* <div className={classes.manageTrackingButton}>
-              <ManageTracking itemDetail={item} />
-            </div> */}
-
-            <AddToListDialog
-              open={manageTrackingModalOpen}
-              onClose={() => setManageTrackingModalOpen(false)}
-              itemId={item.id}
-            />
           </div>
           <Grow in={!imageLoading} timeout={500}>
             {renderTitle(item)}

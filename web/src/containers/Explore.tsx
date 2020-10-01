@@ -114,6 +114,7 @@ function Explore() {
 
   const popularWrapper = useRef<HTMLDivElement | null>(null);
   const previousWidth = usePrevious<Breakpoint>(width);
+  const previousIsMobile = usePrevious<boolean>(isMobile);
 
   let { filters } = useContext(FilterContext);
 
@@ -147,8 +148,6 @@ function Explore() {
 
   const loadPopular = (passBookmark: boolean, compensate?: number) => {
     if (!loading) {
-      let numberFeaturedItems: number = getNumberFeaturedItems();
-
       retrievePopularFromServer({
         bookmark: passBookmark ? popularBookmark : undefined,
         limit: calculateLimit(width, DEFAULT_ROWS) + (compensate || 0),
@@ -204,10 +203,7 @@ function Explore() {
       hangerItems > 0 ? itemsPerRowForWidth - hangerItems : 0;
 
     // If we don't have enough content to fill featured items, don't show any
-    if (
-      featuredItems.length < numberFeaturedItems ||
-      popular!.length < featuredRequiredItems
-    ) {
+    if (featuredItems.length < numberFeaturedItems) {
       // Prevent re-setting state if it's already been reset
       if (featuredItemsIndex.length > 0) {
         setFeaturedItemsIndex([]);
@@ -284,9 +280,7 @@ function Explore() {
       !loading &&
       popular?.length - numberFeaturedItems <= DEFAULT_POPULAR_LIMIT;
     const didScreenResize =
-      popular &&
-      !_.isUndefined(previousWidth) &&
-      ['xs', 'sm'].includes(previousWidth) !== ['xs', 'sm'].includes(width);
+      !_.isUndefined(previousIsMobile) && previousIsMobile !== isMobile;
     const didNavigate = !isInitialFetch && needsNewFeatured;
 
     if (isInitialFetch || isNewFetch || didScreenResize || didNavigate) {
