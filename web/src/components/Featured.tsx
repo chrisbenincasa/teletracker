@@ -23,7 +23,6 @@ import { Id } from '../types/v2';
 import useStateSelector from '../hooks/useStateSelector';
 import selectItems from '../selectors/selectItems';
 import useIsMobile from '../hooks/useIsMobile';
-import { usePrevious } from '../hooks/usePrevious';
 
 const useStyles = makeStyles((theme: Theme) => ({
   backdropContainer: {
