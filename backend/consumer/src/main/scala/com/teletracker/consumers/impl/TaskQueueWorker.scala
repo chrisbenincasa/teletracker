@@ -13,7 +13,11 @@ import com.teletracker.common.aws.sqs.worker.{
 }
 import com.teletracker.common.config.core.api.ReloadableConfig
 import com.teletracker.common.inject.QueueConfigAnnotations
-import com.teletracker.common.pubsub.{TaskTag, TeletrackerTaskQueueMessage}
+import com.teletracker.common.pubsub.{
+  FailedMessage,
+  TaskTag,
+  TeletrackerTaskQueueMessage
+}
 import com.teletracker.common.tasks.TeletrackerTask.FailureResult
 import com.teletracker.common.tasks.args.JsonTaskArgs
 import com.teletracker.common.tasks.storage.{
@@ -51,7 +55,8 @@ class TaskQueueWorker @Inject()(
     normalPool.getPending.map(_.originalMessage)
   }
 
-  def requeueUnfinishedTasks(): Future[List[TeletrackerTaskQueueMessage]] = {
+  def requeueUnfinishedTasks(
+  ): Future[List[FailedMessage[TeletrackerTaskQueueMessage]]] = {
     queue.batchQueue(
       getUnexecutedTasks.toList.map(
         message => message -> message.messageGroupId.getOrElse(message.clazz)
