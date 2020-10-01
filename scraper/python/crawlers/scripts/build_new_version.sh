@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-./scripts/gen_version.sh
+./gen_version.sh
 
 VERSION=$(cat FULL_VERSION)
 
