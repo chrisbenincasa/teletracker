@@ -1,0 +1,26 @@
+version: 0.2
+
+env:
+  variables:
+    JAVA_OPTS: -Dsbt.log.noformat=true
+
+phases:
+  install:
+    runtime-versions:
+      java: openjdk8
+    commands:
+      - which java
+      - echo Entered the install phase...
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - $(aws ecr get-login --no-include-email --region $AWS_REGION)
+  build:
+    commands:
+      - cd backend
+      - echo "$(cat VERSION)-$(date +%s).${SHORT_SHA:-$(git rev-parse --short HEAD)}" > FULL_VERSION
+      - echo "Building version $(cat FULL_VERSION)"
+      - ./sbt -Dversion=$(cat FULL_VERSION) server/assembly server/docker
+  post_build:
+    commands:
+      - docker push "302782651551.dkr.ecr.${AWS_REGION}.amazonaws.com/teletracker/server:$(cat FULL_VERSION)"

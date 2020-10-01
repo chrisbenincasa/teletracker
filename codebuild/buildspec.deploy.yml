@@ -1,0 +1,27 @@
+version: 0.2
+
+env:
+  variables:
+    JAVA_OPTS: -Dsbt.log.noformat=true
+    TF_SHA: 6544eb55b3e916affeea0a46fe785329c36de1ba1bdb51ca5239d3567101876f
+
+phases:
+  install:
+    runtime-versions:
+      java: openjdk8
+    commands:
+      - echo Entered the install phase...
+  pre_build:
+    commands:
+      - pwd
+      - cd /tmp &&
+        curl -o terraform.zip https://releases.hashicorp.com/terraform/0.12.6/terraform_0.12.6_linux_amd64.zip &&
+        echo "${TF_SHA} terraform.zip" | sha256sum -c --quiet &&
+        unzip terraform.zip &&
+        mv terraform /usr/bin
+      - terraform version
+  build:
+    commands:
+      - cd $CODEBUILD_SRC_DIR/terraform/qa/us-west-2
+      - terraform init
+      - terraform plan
