@@ -204,15 +204,8 @@ function Explore() {
 
     // If we don't have enough content to fill featured items, don't show any
     if (featuredItems.length < numberFeaturedItems) {
-      console.log(featuredItems.length < numberFeaturedItems);
-      console.log(popular!.length < featuredRequiredItems);
-      console.log(popular!.length);
-
-      console.log(featuredRequiredItems);
-
       // Prevent re-setting state if it's already been reset
       if (featuredItemsIndex.length > 0) {
-        console.log('resest');
         setFeaturedItemsIndex([]);
         setFeaturedItems([]);
         setNeedsNewFeatured(false);
@@ -234,7 +227,7 @@ function Explore() {
     if (popular?.length === DEFAULT_POPULAR_LIMIT && missingItems > 0) {
       loadPopular(true, missingItems);
     }
-  }, [popular, thingsById, isMobile, theme, featuredItemsIndex]);
+  }, [popular, thingsById, width, theme, featuredItemsIndex]);
 
   const toggleFilters = () => {
     setShowFilter(prev => !prev);
@@ -293,7 +286,7 @@ function Explore() {
     if (isInitialFetch || isNewFetch || didScreenResize || didNavigate) {
       updateFeaturedItems();
     }
-  }, [popular, loading, width, isMobile, needsNewFeatured]);
+  }, [popular, loading, width, needsNewFeatured]);
 
   //
   // Render functions
@@ -379,7 +372,7 @@ function Explore() {
       </div>
     ) : null;
   };
-  console.log({ featuredItems });
+
   return (
     <ScrollToTopContainer>
       <div className={classes.popularWrapper}>
