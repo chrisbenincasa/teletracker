@@ -32,7 +32,8 @@ import com.teletracker.common.pubsub.{
 import com.teletracker.common.inject.QueueConfigAnnotations.EsIngestQueueConfig
 import javax.inject.Inject
 import java.util.UUID
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.Try
 import scala.util.control.NonFatal
 
 class EsIngestQueueWorker @Inject()(
@@ -78,128 +79,133 @@ class EsIngestQueueWorker @Inject()(
   }
 
   private def handleIndex(index: EsIngestIndex) = {
-    require(
-      isValidIndex(index.index),
-      s"Invalid index found: ${index.index} when attempting to index item: ${index.id}"
-    )
+    validateItemIndex(index).flatMap(_ => {
+      if (teletrackerConfig.elasticsearch.items_index_name == index.index) {
+        index.doc.as[EsItem] match {
+          case Left(value) =>
+            logger.error("Could not parse EsItem from json", value)
+            Future.unit
 
-    if (teletrackerConfig.elasticsearch.items_index_name == index.index) {
-      index.doc.as[EsItem] match {
-        case Left(value) =>
-          logger.error("Could not parse EsItem from json", value)
-          Future.unit
+          case Right(value) =>
+            itemUpdater.insert(value).flatMap {
+              case _ if index.externalIdMappings.exists(_.nonEmpty) =>
+                val ids =
+                  index.externalIdMappings
+                    .getOrElse(Set.empty)
+                    .toList
+                    .map(
+                      mapping => {
+                        (
+                          EsExternalId(mapping.source, mapping.id),
+                          mapping.itemType
+                        ) -> value.id
+                      }
+                    )
+                    .toMap
 
-        case Right(value) =>
-          itemUpdater.insert(value).flatMap {
-            case _ if index.externalIdMappings.exists(_.nonEmpty) =>
-              val ids =
-                index.externalIdMappings
-                  .getOrElse(Set.empty)
-                  .toList
-                  .map(
-                    mapping => {
-                      (
-                        EsExternalId(mapping.source, mapping.id),
-                        mapping.itemType
-                      ) -> value.id
-                    }
-                  )
-                  .toMap
+                mappingStore.mapExternalIds(ids)
 
-              mappingStore.mapExternalIds(ids)
+              case _ => Future.unit
+            }
+        }
+      } else if (teletrackerConfig.elasticsearch.people_index_name == index.index) {
+        index.doc.as[EsPerson] match {
+          case Left(value) =>
+            logger.error("Could not parse EsItem from json", value)
+            Future.unit
 
-            case _ => Future.unit
-          }
+          case Right(value) =>
+            personUpdater.insert(value).flatMap {
+              case _ if index.externalIdMappings.exists(_.nonEmpty) =>
+                val ids =
+                  index.externalIdMappings
+                    .getOrElse(Set.empty)
+                    .toList
+                    .map(
+                      mapping => {
+                        (
+                          EsExternalId(mapping.source, mapping.id),
+                          mapping.itemType
+                        ) -> value.id
+                      }
+                    )
+                    .toMap
+
+                mappingStore.mapExternalIds(ids)
+
+              case _ => Future.unit
+            }
+        }
+      } else {
+        Future.failed(
+          new IllegalArgumentException(s"Unexpected index: ${index.index}")
+        )
       }
-    } else if (teletrackerConfig.elasticsearch.people_index_name == index.index) {
-      index.doc.as[EsPerson] match {
-        case Left(value) =>
-          logger.error("Could not parse EsItem from json", value)
-          Future.unit
+    })
+  }
 
-        case Right(value) =>
-          personUpdater.insert(value).flatMap {
-            case _ if index.externalIdMappings.exists(_.nonEmpty) =>
-              val ids =
-                index.externalIdMappings
-                  .getOrElse(Set.empty)
-                  .toList
-                  .map(
-                    mapping => {
-                      (
-                        EsExternalId(mapping.source, mapping.id),
-                        mapping.itemType
-                      ) -> value.id
-                    }
-                  )
-                  .toMap
-
-              mappingStore.mapExternalIds(ids)
-
-            case _ => Future.unit
-          }
+  private def validateItemIndex(index: EsIngestIndex) = {
+    Promise.fromTry {
+      Try {
+        require(
+          isValidIndex(index.index),
+          s"Invalid index found: ${index.index} when attempting to index item: ${index.id}"
+        )
       }
-    } else {
-      Future.failed(
-        new IllegalArgumentException(s"Unexpected index: ${index.index}")
-      )
-    }
+    }.future
   }
 
   private def handleUpdate(update: EsIngestUpdate) = {
-    require(
-      isValidIndex(update.index),
-      s"Invalid index found: ${update.index} when attempting to update item: ${update.id}"
-    )
-
-    require(
-      update.script.isDefined ^ update.doc.isDefined,
-      s"Either script or doc must be defined, but not both. id = ${update.id}"
-    )
-
-    if (teletrackerConfig.elasticsearch.items_index_name == update.index) {
-      handleItemUpdate(update).flatMap {
-        case _ if update.itemDenorm.exists(_.needsDenorm) =>
-          itemDenormQueue
-            .queue(
-              EsDenormalizeItemMessage(
-                itemId = UUID.fromString(update.id),
-                creditsChanged = update.itemDenorm.get.cast,
-                crewChanged = update.itemDenorm.get.crew,
-                dryRun = false
-              ),
-              messageGroupId = update.id
-            )
-            .map(_ => {})
-        case _ => Future.unit
+    validateItemUpdate(update).flatMap(_ => {
+      if (teletrackerConfig.elasticsearch.items_index_name == update.index) {
+        handleItemUpdate(update)
+      } else if (teletrackerConfig.elasticsearch.people_index_name == update.index) {
+        handlePersonUpdate(update).flatMap {
+          case _ if update.personDenorm.exists(_.needsDenorm) =>
+            personDenormQueue
+              .queue(
+                EsDenormalizePersonMessage(
+                  personId = UUID.fromString(update.id)
+                ),
+                messageGroupId = update.id
+              )
+              .map(_ => {})
+          case _ => Future.unit
+        }
+      } else {
+        Future.failed(
+          new IllegalArgumentException(s"Unexpected index: ${update.index}")
+        )
       }
-    } else if (teletrackerConfig.elasticsearch.people_index_name == update.index) {
-      handlePersonUpdate(update).flatMap {
-        case _ if update.personDenorm.exists(_.needsDenorm) =>
-          personDenormQueue
-            .queue(
-              EsDenormalizePersonMessage(
-                personId = UUID.fromString(update.id)
-              ),
-              messageGroupId = update.id
-            )
-            .map(_ => {})
-        case _ => Future.unit
+    })
+
+  }
+
+  private def validateItemUpdate(update: EsIngestUpdate): Future[Unit] = {
+    Promise.fromTry {
+      Try {
+        require(
+          isValidIndex(update.index),
+          s"Invalid index found: ${update.index} when attempting to update item: ${update.id}"
+        )
+
+        require(
+          update.script.isDefined ^ update.doc.isDefined,
+          s"Either script or doc must be defined, but not both. id = ${update.id}"
+        )
       }
-    } else {
-      Future.failed(
-        new IllegalArgumentException(s"Unexpected index: ${update.index}")
-      )
-    }
+    }.future
   }
 
   private def handleItemUpdate(update: EsIngestUpdate) = {
     if (update.doc.isDefined) {
       itemUpdater
         .updateFromJson(
-          UUID.fromString(update.id),
-          update.itemType,
-          update.doc.get
+          id = UUID.fromString(update.id),
+          itemType = update.itemType,
+          json = update.doc.get,
+          async = false,
+          denormArgs = update.itemDenorm
         )
         .map(_ => {})
     } else if (update.script.isDefined) {
@@ -207,7 +213,9 @@ class EsIngestQueueWorker @Inject()(
         .updateWithScript(
           id = UUID.fromString(update.id),
           itemType = update.itemType,
-          update.script.get
+          script = update.script.get,
+          async = false,
+          denormArgs = update.itemDenorm
         )
         .map(_ => {})
     } else {
@@ -223,8 +231,10 @@ class EsIngestQueueWorker @Inject()(
     if (update.doc.isDefined) {
       personUpdater
         .updateFromJson(
-          UUID.fromString(update.id),
-          update.doc.get
+          id = UUID.fromString(update.id),
+          json = update.doc.get,
+          async = true,
+          denormArgs = update.personDenorm
         )
         .map(_ => {})
     } else if (update.script.isDefined) {

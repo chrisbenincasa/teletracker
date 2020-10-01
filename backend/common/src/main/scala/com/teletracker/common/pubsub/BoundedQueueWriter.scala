@@ -15,7 +15,7 @@ trait BoundedQueueWriter[UpperBound] extends QueueIdentity {
     message: T,
     messageGroupId: Option[String] = None
   )(implicit enc: Codec[T]
-  ): Future[Option[T]]
+  ): Future[Option[FailedMessage[T]]]
 
   /**
     * Push items onto the queue in batch, asynchronously
@@ -31,5 +31,5 @@ trait BoundedQueueWriter[UpperBound] extends QueueIdentity {
     messages: List[T],
     messageGroupId: Option[String] = None
   )(implicit enc: Codec[T]
-  ): Future[List[T]]
+  ): Future[List[FailedMessage[T]]]
 }

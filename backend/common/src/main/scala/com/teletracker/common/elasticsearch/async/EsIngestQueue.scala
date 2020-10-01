@@ -3,17 +3,22 @@ package com.teletracker.common.elasticsearch.async
 import com.teletracker.common.aws.sqs.SqsFifoQueue
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.ItemType
-import com.teletracker.common.elasticsearch.async.EsIngestQueue.AsyncItemUpdateRequest
+import com.teletracker.common.elasticsearch.async.EsIngestQueue.{
+  AsyncItemUpdateRequest,
+  AsyncPersonUpdateRequest
+}
 import com.teletracker.common.elasticsearch.model.{EsItem, EsPerson}
 import com.teletracker.common.pubsub.{
   EsDenormalizeItemMessage,
+  EsDenormalizePersonMessage,
   EsIngestIndex,
   EsIngestItemDenormArgs,
   EsIngestItemExternalIdMapping,
   EsIngestMessage,
   EsIngestMessageOperation,
   EsIngestPersonDenormArgs,
-  EsIngestUpdate
+  EsIngestUpdate,
+  FailedMessage
 }
 import io.circe.Json
 import javax.inject.Inject
@@ -24,10 +29,13 @@ import scala.concurrent.{ExecutionContext, Future}
 class EsIngestQueue @Inject()(
   queue: SqsFifoQueue[EsIngestMessage],
   denormQueue: SqsFifoQueue[EsDenormalizeItemMessage],
+  personDenormQueue: SqsFifoQueue[EsDenormalizePersonMessage],
   teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext) {
 
-  def queueItemInsert(esItem: EsItem): Future[Option[EsIngestMessage]] = {
+  def queueItemInsert(
+    esItem: EsItem
+  ): Future[Option[FailedMessage[EsIngestMessage]]] = {
     queue.queue(
       message = EsIngestMessage(
         operation = EsIngestMessageOperation.Index,
@@ -52,7 +60,7 @@ class EsIngestQueue @Inject()(
     itemType: ItemType,
     doc: Json,
     denorm: Option[EsIngestItemDenormArgs]
-  ): Future[Option[EsIngestMessage]] = {
+  ): Future[Option[FailedMessage[EsIngestMessage]]] = {
     queue.queue(
       message = EsIngestMessage(
         operation = EsIngestMessageOperation.Update,
@@ -60,7 +68,7 @@ class EsIngestQueue @Inject()(
           EsIngestUpdate(
             index = teletrackerConfig.elasticsearch.items_index_name,
             id = id.toString,
-            itemType = Some(itemType),
+            itemType = itemType,
             doc = Some(doc),
             script = None,
             itemDenorm = denorm
@@ -73,13 +81,13 @@ class EsIngestQueue @Inject()(
 
   def queueItemUpdate(
     request: AsyncItemUpdateRequest
-  ): Future[Option[EsIngestMessage]] = {
+  ): Future[Option[FailedMessage[EsIngestMessage]]] = {
     queueItemUpdates(request :: Nil).map(_.headOption)
   }
 
   def queueItemUpdates(
     requests: List[AsyncItemUpdateRequest]
-  ): Future[List[EsIngestMessage]] = {
+  ): Future[List[FailedMessage[EsIngestMessage]]] = {
     require(requests.forall(r => r.doc.isDefined ^ r.script.isDefined))
 
     val messages = requests.map(request => {
@@ -89,9 +97,9 @@ class EsIngestQueue @Inject()(
           EsIngestUpdate(
             index = teletrackerConfig.elasticsearch.items_index_name,
             id = request.id.toString,
-            itemType = Some(request.itemType),
+            itemType = request.itemType,
             doc = request.doc,
-            script = None,
+            script = request.script,
             itemDenorm = request.denorm
           )
         )
@@ -118,7 +126,9 @@ class EsIngestQueue @Inject()(
       .map(_ => {})
   }
 
-  def queuePersonInsert(esPerson: EsPerson): Future[Option[EsIngestMessage]] = {
+  def queuePersonInsert(
+    esPerson: EsPerson
+  ): Future[Option[FailedMessage[EsIngestMessage]]] = {
     queue.queue(
       message = EsIngestMessage(
         operation = EsIngestMessageOperation.Index,
@@ -141,23 +151,38 @@ class EsIngestQueue @Inject()(
     id: UUID,
     doc: Json,
     denorm: Option[EsIngestPersonDenormArgs]
-  ): Future[Option[EsIngestMessage]] = {
+  ): Future[Option[FailedMessage[EsIngestMessage]]] = {
     queue.queue(
       message = EsIngestMessage(
         operation = EsIngestMessageOperation.Update,
         update = Some(
-          EsIngestUpdate(
-            index = teletrackerConfig.elasticsearch.people_index_name,
-            id = id.toString,
-            itemType = Some(ItemType.Person),
-            doc = Some(doc),
-            script = None,
-            itemDenorm = None,
-            personDenorm = denorm
-          )
+          personRequestToMessage(AsyncPersonUpdateRequest(id, doc, denorm))
         )
       ),
       messageGroupId = id.toString // Handle updates for this item in order
+    )
+  }
+
+  def queuePersonDenormalization(id: UUID): Future[Unit] = {
+    personDenormQueue
+      .queue(
+        EsDenormalizePersonMessage(personId = id),
+        messageGroupId = id.toString
+      )
+      .map(_ => {})
+  }
+
+  private def personRequestToMessage(
+    request: AsyncPersonUpdateRequest
+  ): EsIngestUpdate = {
+    EsIngestUpdate(
+      index = teletrackerConfig.elasticsearch.people_index_name,
+      id = request.id.toString,
+      itemType = ItemType.Person,
+      doc = request.doc,
+      script = request.script,
+      itemDenorm = None,
+      personDenorm = request.denorm
     )
   }
 }
@@ -189,4 +214,23 @@ object EsIngestQueue {
     doc: Option[Json],
     script: Option[Json],
     denorm: Option[EsIngestItemDenormArgs])
+
+  object AsyncPersonUpdateRequest {
+    def apply(
+      id: UUID,
+      doc: Json,
+      denorm: Option[EsIngestPersonDenormArgs]
+    ): AsyncPersonUpdateRequest = AsyncPersonUpdateRequest(
+      id = id,
+      doc = Some(doc),
+      script = None,
+      denorm = denorm
+    )
+  }
+
+  case class AsyncPersonUpdateRequest(
+    id: UUID,
+    doc: Option[Json],
+    script: Option[Json],
+    denorm: Option[EsIngestPersonDenormArgs])
 }

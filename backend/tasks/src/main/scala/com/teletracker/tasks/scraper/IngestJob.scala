@@ -279,6 +279,14 @@ abstract class IngestJob[T <: ScrapedItem: ScrapedItemAvailabilityDetails](
           }
       }
 
+      val denormArgs = Some(
+        EsIngestItemDenormArgs(
+          needsDenorm = true,
+          cast = false,
+          crew = false
+        )
+      )
+
       if (!args.dryRun) {
         if (args.updateAsync) {
           val requests = itemsWithNewAvailability.map(item => {
@@ -286,13 +294,7 @@ abstract class IngestJob[T <: ScrapedItem: ScrapedItemAvailabilityDetails](
               id = item.id,
               itemType = item.`type`,
               doc = item.asJson,
-              denorm = Some(
-                EsIngestItemDenormArgs(
-                  needsDenorm = true,
-                  cast = false,
-                  crew = false
-                )
-              )
+              denorm = denormArgs
             )
           })
 
@@ -302,7 +304,11 @@ abstract class IngestJob[T <: ScrapedItem: ScrapedItemAvailabilityDetails](
             .fromIterable(itemsWithNewAvailability)
             .grouped(10)
             .mapF(batch => {
-              Future.sequence(batch.map(itemUpdater.update)).map(_ => {})
+              Future
+                .sequence(
+                  batch.map(itemUpdater.update(_, denormArgs = denormArgs))
+                )
+                .map(_ => {})
             })
             .force
         }

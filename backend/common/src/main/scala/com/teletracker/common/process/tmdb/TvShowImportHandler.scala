@@ -309,19 +309,18 @@ class TvShowImportHandler @Inject()(
           )
         }
       } else if (itemChanged) {
+        val denormArgs = EsIngestItemDenormArgs(
+          needsDenorm = itemChanged,
+          cast = castNeedsDenorm,
+          crew = crewNeedsDenorm
+        )
         if (args.async) {
           itemUpdateQueue
             .queueItemUpdate(
               id = existingShow.id,
               itemType = ItemType.Show,
               doc = updatedItem.asJson,
-              denorm = Some(
-                EsIngestItemDenormArgs(
-                  needsDenorm = itemChanged,
-                  cast = castNeedsDenorm,
-                  crew = crewNeedsDenorm
-                )
-              )
+              denorm = Some(denormArgs)
             )
             .map(_ => {
               TvShowImportResult(
@@ -336,7 +335,10 @@ class TvShowImportHandler @Inject()(
             })
         } else {
           itemUpdater
-            .update(updatedItem)
+            .update(
+              updatedItem,
+              denormArgs = Some(denormArgs)
+            )
             .map(_ => {
               TvShowImportResult(
                 itemId = existingShow.id,

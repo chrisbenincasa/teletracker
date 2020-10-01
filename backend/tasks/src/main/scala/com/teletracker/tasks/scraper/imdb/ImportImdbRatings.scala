@@ -4,6 +4,10 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch.ItemUpdater
+import com.teletracker.common.elasticsearch.ItemUpdater.{
+  FailureResult,
+  UpdateItemResult
+}
 import com.teletracker.common.elasticsearch.model.{
   EsExternalId,
   EsItem,
@@ -39,8 +43,10 @@ case class ImportImdbRatingsArgs(
   limit: Int = -1,
   itemType: ItemType = ItemType.Movie,
   ratingWeight: Int = 5000,
-  popularityThreshold: Option[Double],
+  popularityGte: Option[Double],
+  popularityLt: Option[Double],
   async: Boolean = true,
+  countOnly: Boolean = false,
   override val dryRun: Boolean = true,
   override val sleepBetweenWriteMs: Option[Long])
     extends BaseTaskArgs
@@ -55,13 +61,16 @@ class ImportImdbRatings @Inject()(
 )(implicit executionContext: ExecutionContext)
     extends TypedTeletrackerTask[ImportImdbRatingsArgs] {
 
-  private def generateQuery =
+  private def generateQuery: String =
     s"""
       |select s."type", s.external_ids, s.id, s.popularity, s.ratings
       | from s3object[*]._source s 
       | where s."type" = '${args.itemType}'
-      | ${if (args.popularityThreshold.isDefined)
-         s"and s.popularity >= ${args.popularityThreshold.get}"
+      | ${if (args.popularityGte.isDefined)
+         s"and s.popularity >= ${args.popularityGte.get}"
+       else ""}
+      | ${if (args.popularityLt.isDefined)
+         s"and s.popularity < ${args.popularityLt.get}"
        else ""}
       |""".stripMargin
 
@@ -104,7 +113,9 @@ class ImportImdbRatings @Inject()(
 
     val now = Instant.now()
 
-    AsyncStream
+    logger.info(s"Selecting items with query:\n${generateQuery}")
+
+    val total = AsyncStream
       .fromStream(
         sourceRetriever
           .getUriStream(
@@ -124,7 +135,6 @@ class ImportImdbRatings @Inject()(
 
         case _ => throw new IllegalStateException("Impossible.")
       }
-      .safeTake(args.limit)
       .flatMapSeq(file => {
         val source = Source.fromFile(file)
         try {
@@ -170,45 +180,77 @@ class ImportImdbRatings @Inject()(
                               .contains(imdbWeighted)) {
                           None
                         } else {
-                          Some(newRating)
+                          Some(item -> newRating)
 
                         }
 
-                      case None => Some(newRating)
+                      case None => Some(item -> newRating)
                     }
                 }
-                .map(rating => {
-                  if (!args.dryRun) {
-                    itemUpdater.updateWithScript(
-                      id = item.id,
-                      itemType = item.`type`,
-                      script = ItemUpdater.UpsertRatingScript(rating),
-                      async = args.async,
-                      denormArgs = Some(
-                        EsIngestItemDenormArgs(
-                          needsDenorm = true,
-                          cast = false,
-                          crew = false
-                        )
-                      )
-                    )
-                  } else {
-                    val json = itemUpdater.getScriptUpdateJson(
-                      item.id,
-                      ItemUpdater.UpsertRatingScript(rating)
-                    )
-                    logger
-                      .info(s"Would've updated id ${item.id} with:\n${json}")
-                  }
-                })
             })
             .toList
         } finally {
           source.close()
         }
       })
-      .force
+      .safeTake(args.limit)
+      .foldLeftF(0L) {
+        case (acc, (item, rating)) =>
+          if (args.countOnly) {
+            Future.successful(acc + 1)
+          } else {
+            if (!args.dryRun) {
+              logger.debug(
+                s"Updating ${item.id} (async=${args.async}) with new rating: ${rating}"
+              )
+
+              itemUpdater
+                .updateWithScript(
+                  id = item.id,
+                  itemType = item.`type`,
+                  script = ItemUpdater.UpsertRatingScript(rating),
+                  async = args.async,
+                  denormArgs = Some(
+                    EsIngestItemDenormArgs(
+                      needsDenorm = true,
+                      cast = false,
+                      crew = false
+                    )
+                  )
+                )
+                .map {
+                  case UpdateItemResult(FailureResult(_, reason)) =>
+                    logger.error(
+                      s"Could not queue update for item id ${item.id}. Reason: ${reason}"
+                    )
+
+                    acc
+                  case _ => acc + 1
+                }
+            } else {
+              Future.successful {
+                val json = itemUpdater.getScriptUpdateJson(
+                  item.id,
+                  ItemUpdater.UpsertRatingScript(rating)
+                )
+
+                logger
+                  .info(s"Would've updated id ${item.id} with:\n${json}")
+
+                acc + 1
+              }
+            }
+          }
+      }
       .await()
+
+    if (args.countOnly) {
+      logger.info(s"${total} items matched and would potentially be updated")
+    } else if (args.dryRun) {
+      logger.info(s"Would've updated a total of ${total} items")
+    } else {
+      logger.info(s"Updated ${total} total items")
+    }
   }
 }
 

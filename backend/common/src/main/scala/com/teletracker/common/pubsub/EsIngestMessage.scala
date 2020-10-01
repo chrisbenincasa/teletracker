@@ -29,7 +29,7 @@ case class EsIngestItemExternalIdMapping(
 case class EsIngestUpdate(
   index: String,
   id: String,
-  itemType: Option[ItemType],
+  itemType: ItemType,
   script: Option[Json],
   doc: Option[Json],
   itemDenorm: Option[EsIngestItemDenormArgs] = None,
@@ -39,7 +39,17 @@ case class EsIngestUpdate(
 case class EsIngestItemDenormArgs(
   needsDenorm: Boolean,
   cast: Boolean,
-  crew: Boolean)
+  crew: Boolean,
+  externalIds: Option[Boolean] = None)
+
+object EsIngestItemDenormArgs {
+  final val noDenorm: EsIngestItemDenormArgs = EsIngestItemDenormArgs(
+    needsDenorm = false,
+    cast = false,
+    crew = false,
+    externalIds = None
+  )
+}
 
 @JsonCodec
 case class EsIngestPersonDenormArgs(needsDenorm: Boolean)

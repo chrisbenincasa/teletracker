@@ -2,8 +2,19 @@ package com.teletracker.common.elasticsearch
 
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.ItemType
+import com.teletracker.common.elasticsearch.ItemUpdater.UpdateItemResult
+import com.teletracker.common.elasticsearch.PersonUpdater.UpdatePersonResult
+import com.teletracker.common.elasticsearch.async.EsIngestQueue
+import com.teletracker.common.elasticsearch.async.EsIngestQueue.{
+  AsyncItemUpdateRequest,
+  AsyncPersonUpdateRequest
+}
 import com.teletracker.common.elasticsearch.lookups.ElasticsearchExternalIdMappingStore
 import com.teletracker.common.elasticsearch.model.{EsExternalId, EsPerson}
+import com.teletracker.common.pubsub.{
+  EsIngestItemDenormArgs,
+  EsIngestPersonDenormArgs
+}
 import com.teletracker.common.util.Functions._
 import io.circe.Json
 import io.circe.syntax._
@@ -22,7 +33,8 @@ import scala.util.control.NonFatal
 class PersonUpdater @Inject()(
   elasticsearchExecutor: ElasticsearchExecutor,
   teletrackerConfig: TeletrackerConfig,
-  idMappingLookup: ElasticsearchExternalIdMappingStore
+  idMappingLookup: ElasticsearchExternalIdMappingStore,
+  updateQueue: EsIngestQueue
 )(implicit executionContext: ExecutionContext)
     extends ElasticsearchAccess {
 
@@ -56,31 +68,54 @@ class PersonUpdater @Inject()(
   def updateFromJson(
     id: UUID,
     json: Json,
-    refresh: Boolean = false
-  ): Future[UpdateResponse] = {
-    val externalIds = json.asObject
-      .flatMap(
-        obj =>
-          obj("external_ids")
-            .flatMap(_.asArray)
-            .map(_.toList.flatMap(_.asString))
-            .map(_.map(EsExternalId.parse))
-      )
-      .filter(_.nonEmpty)
+    refresh: Boolean = false,
+    async: Boolean,
+    denormArgs: Option[EsIngestPersonDenormArgs]
+  ): Future[UpdatePersonResult] = {
+    if (async) {
+      updateQueue
+        .queuePersonUpdate(
+          id = id,
+          doc = json,
+          denorm = denormArgs
+        )
+        .map {
+          case Some(_) =>
+            UpdatePersonResult.queued
+          case None =>
+            throw new RuntimeException(s"Could not queue update for ${id}")
+        }
+    } else {
+      val externalIds = json.asObject
+        .flatMap(
+          obj =>
+            obj("external_ids")
+              .flatMap(_.asArray)
+              .map(_.toList.flatMap(_.asString))
+              .map(_.map(EsExternalId.parse))
+        )
+        .filter(_.nonEmpty)
 
-    val mappingsFut = for {
-      ids <- externalIds
-    } yield {
-      updateMappings(id, ids)
+      val mappingsFut = for {
+        ids <- externalIds
+      } yield {
+        updateMappings(id, ids)
+      }
+
+      val updateFut =
+        elasticsearchExecutor.update(getUpdateRequest(id, json, refresh))
+
+      for {
+        _ <- mappingsFut.getOrElse(Future.unit)
+        updateResp <- updateFut
+        _ <- denormArgs
+          .filter(_.needsDenorm)
+          .map(_ => updateQueue.queuePersonDenormalization(id))
+          .getOrElse(Future.unit)
+      } yield {
+        UpdatePersonResult.syncSuccess(updateResp)
+      }
     }
-
-    val updateFut =
-      elasticsearchExecutor.update(getUpdateRequest(id, json, refresh))
-
-    for {
-      _ <- mappingsFut.getOrElse(Future.unit)
-      updateResp <- updateFut
-    } yield updateResp
   }
 
   def updateWithScript(
@@ -183,4 +218,18 @@ class PersonUpdater @Inject()(
   private def isValidExternalIdForMapping(externalId: EsExternalId) = {
     externalId.id.nonEmpty && externalId.id != "0"
   }
+}
+
+object PersonUpdater {
+  sealed trait UpdatePersonResultStatus
+  case class SuccessResult(updateResponse: UpdateResponse)
+      extends UpdatePersonResultStatus
+  case object QueuedResult extends UpdatePersonResultStatus
+
+  object UpdatePersonResult {
+    def syncSuccess(updateResponse: UpdateResponse): UpdatePersonResult =
+      UpdatePersonResult(SuccessResult(updateResponse))
+    def queued: UpdatePersonResult = UpdatePersonResult(QueuedResult)
+  }
+  case class UpdatePersonResult(status: UpdatePersonResultStatus)
 }

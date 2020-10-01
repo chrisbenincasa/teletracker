@@ -5,8 +5,14 @@ import com.teletracker.common.aws.sqs.{SqsFifoQueue, SqsQueue}
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch.model.EsExternalId
-import com.teletracker.common.elasticsearch.{ItemLookup, PersonLookup}
+import com.teletracker.common.elasticsearch.{
+  ItemLookup,
+  ItemUpdater,
+  PersonLookup,
+  PersonUpdater
+}
 import com.teletracker.common.pubsub.{
+  EsIngestItemDenormArgs,
   EsIngestMessage,
   EsIngestMessageOperation,
   EsIngestUpdate
@@ -41,6 +47,8 @@ class UpdatePopularitiesDependencies @Inject()(
   val sourceRetriever: SourceRetriever,
   val ingestJobParser: IngestJobParser,
   val itemLookup: ItemLookup,
+  val itemUpdater: ItemUpdater,
+  val personUpdater: PersonUpdater,
   val personLookup: PersonLookup,
   val teletrackerConfig: TeletrackerConfig,
   val sqsAsyncClient: SqsAsyncClient)
@@ -95,24 +103,6 @@ abstract class UpdateItemPopularities[T <: TmdbDumpFileRow: Decoder](
         }
       })
   }
-
-  override protected def createUpdateMessage(
-    id: UUID,
-    popularity: Double
-  ): EsIngestMessage = {
-    EsIngestMessage(
-      EsIngestMessageOperation.Update,
-      update = Some(
-        EsIngestUpdate(
-          index = deps.teletrackerConfig.elasticsearch.items_index_name,
-          id.toString,
-          Some(itemType),
-          None,
-          Some(Map("popularity" -> popularity).asJson)
-        )
-      )
-    )
-  }
 }
 
 class UpdatePeoplePopularities @Inject()(
@@ -132,24 +122,6 @@ class UpdatePeoplePopularities @Inject()(
           case (EsExternalId(_, id), item) => id.toInt -> item.id
         }
       })
-  }
-
-  override protected def createUpdateMessage(
-    id: UUID,
-    popularity: Double
-  ): EsIngestMessage = {
-    EsIngestMessage(
-      EsIngestMessageOperation.Update,
-      update = Some(
-        EsIngestUpdate(
-          index = deps.teletrackerConfig.elasticsearch.people_index_name,
-          id.toString,
-          None,
-          None,
-          Some(Map("popularity" -> popularity).asJson)
-        )
-      )
-    )
   }
 }
 
@@ -261,17 +233,44 @@ abstract class UpdatePopularities[T <: TmdbDumpFileRow: Decoder](
               logger.debug(s"Looking up ${innerBatch.size} items")
               lookupBatch(innerBatch.map(_._1).toList).flatMap(itemIdById => {
                 logger.debug(s"Found ${itemIdById.size} items")
-                val messages = innerBatch
+                val updateFuts = innerBatch
                   .flatMap {
                     case (tmdbId, popularity) =>
                       itemIdById.get(tmdbId).map(_ -> popularity)
                   }
                   .map {
                     case (uuid, popularity) =>
-                      createUpdateMessage(uuid, popularity) -> uuid.toString
+                      itemType match {
+                        case ItemType.Movie | ItemType.Show =>
+                          deps.itemUpdater
+                            .updateFromJson(
+                              id = uuid,
+                              itemType = itemType,
+                              json = Map("popularity" -> popularity).asJson,
+                              async = true,
+                              denormArgs = Some(
+                                EsIngestItemDenormArgs(
+                                  needsDenorm = true,
+                                  cast = true,
+                                  crew = true
+                                )
+                              )
+                            )
+                            .map(_ => {})
+                        case ItemType.Person =>
+                          deps.personUpdater
+                            .updateFromJson(
+                              id = uuid,
+                              json = Map("popularity" -> popularity).asJson,
+                              async = true,
+                              // Person popularities are not denormalized
+                              denormArgs = None
+                            )
+                            .map(_ => {})
+                      }
                   }
 
-                esIngestQueue.batchQueue(messages.toList)
+                Future.sequence(updateFuts).map(_ => {})
               })
             })
             .force
@@ -292,9 +291,4 @@ abstract class UpdatePopularities[T <: TmdbDumpFileRow: Decoder](
   }
 
   protected def lookupBatch(ids: List[Int]): Future[Map[Int, UUID]]
-
-  protected def createUpdateMessage(
-    id: UUID,
-    popularity: Double
-  ): EsIngestMessage
 }

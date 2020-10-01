@@ -161,7 +161,8 @@ class DynamoCrawlRecorder:
             'time_opened': info['time_opened'],
             'metadata': json.dumps(self._build_metadata_blob(spider)),
             'num_open_spiders': 1,
-            'is_distributed': info['is_distributed']
+            'is_distributed': info['is_distributed'],
+            'total_items_scraped': 0
         }
 
     def spider_closed(self, spider, reason):

@@ -33,7 +33,10 @@ import com.teletracker.common.model.scraping.netflix.{
   NetflixScrapedCatalogItem
 }
 import com.teletracker.common.model.{DataResponse, Paging}
-import com.teletracker.common.pubsub.EsDenormalizeItemMessage
+import com.teletracker.common.pubsub.{
+  EsDenormalizeItemMessage,
+  EsIngestItemDenormArgs
+}
 import com.teletracker.common.util.{HasThingIdOrSlug, NetworkCache}
 import com.teletracker.common.util.json.circe._
 import com.teletracker.service.auth.AdminFilter
@@ -201,13 +204,14 @@ class AdminController @Inject()(
                             .applyAvailabilities(rawItem, availabilities)
 
                           for {
-                            _ <- itemUpdater.update(itemWithUpdates)
-                            _ <- itemDenormQueue.queue(
-                              EsDenormalizeItemMessage(
-                                itemWithUpdates.id,
-                                creditsChanged = false,
-                                crewChanged = false,
-                                dryRun = false
+                            _ <- itemUpdater.update(
+                              itemWithUpdates,
+                              Some(
+                                EsIngestItemDenormArgs(
+                                  needsDenorm = true,
+                                  cast = false,
+                                  crew = false
+                                )
                               )
                             )
                           } yield {

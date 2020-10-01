@@ -1,6 +1,6 @@
 package com.teletracker.common.aws.sqs
 
-import com.teletracker.common.pubsub.{EventBase, Queue}
+import com.teletracker.common.pubsub.{EventBase, FailedMessage, Queue}
 import io.circe.Codec
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model._
@@ -49,7 +49,7 @@ class SqsQueue[T <: EventBase: Manifest: Codec](
   override def queue(
     message: T,
     messageGroupId: Option[String]
-  ): Future[Option[T]] = {
+  ): Future[Option[FailedMessage[T]]] = {
     batchQueue(List(message)).map(_.headOption)
   }
 
@@ -61,7 +61,7 @@ class SqsQueue[T <: EventBase: Manifest: Codec](
   override def batchQueue(
     messages: List[T],
     messageGroupId: Option[String] = None
-  ): Future[List[T]] = {
+  ): Future[List[FailedMessage[T]]] = {
     batchQueueAsyncImpl(messages, messageGroupId)
   }
 

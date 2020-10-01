@@ -1,6 +1,6 @@
 package com.teletracker.common.aws.sqs
 
-import com.teletracker.common.pubsub.{EventBase, Queue}
+import com.teletracker.common.pubsub.{EventBase, FailedMessage, Queue}
 import io.circe.{Codec, Decoder}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{
@@ -30,17 +30,17 @@ class SqsFifoQueue[T <: EventBase: Manifest: Codec](
   final override def queue(
     message: T,
     messageGroupId: Option[String]
-  ): Future[Option[T]] = {
+  ): Future[Option[FailedMessage[T]]] = {
     ???
   }
 
-  final def queue(message: T): Future[Option[T]] =
+  final def queue(message: T): Future[Option[FailedMessage[T]]] =
     queue(message, defaultGroupId)
 
   final def queue(
     message: T,
     messageGroupId: String
-  ): Future[Option[T]] = {
+  ): Future[Option[FailedMessage[T]]] = {
     batchQueue(List(message), messageGroupId).map(_.headOption)
   }
 
@@ -48,18 +48,20 @@ class SqsFifoQueue[T <: EventBase: Manifest: Codec](
   override def batchQueue(
     messages: List[T],
     messageGroupId: Option[String]
-  ): Future[List[T]] = {
+  ): Future[List[FailedMessage[T]]] = {
     ???
   }
 
   final def batchQueue(
     messages: List[T],
     messageGroupId: String
-  ): Future[List[T]] = {
+  ): Future[List[FailedMessage[T]]] = {
     batchQueueAsyncImpl(messages, Some(messageGroupId))
   }
 
-  final def batchQueue(messages: List[(T, String)]): Future[List[T]] = {
+  final def batchQueue(
+    messages: List[(T, String)]
+  ): Future[List[FailedMessage[T]]] = {
     batchQueueAsyncImpl(messages.map {
       case (t, str) => t -> Some(str)
     })

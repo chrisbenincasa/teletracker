@@ -18,7 +18,10 @@ import com.teletracker.common.elasticsearch.{
   ItemLookupResponse,
   ItemUpdater
 }
-import com.teletracker.common.pubsub.EsDenormalizeItemMessage
+import com.teletracker.common.pubsub.{
+  EsDenormalizeItemMessage,
+  EsIngestItemDenormArgs
+}
 import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.Futures._
@@ -175,13 +178,14 @@ class InsertAmazonAvailability @Inject()(
             logger.info(s"Updating availability for item id = ${newItem.id}")
 
             for {
-              _ <- itemUpdater.update(newItem)
-              _ <- itemDenormQueue.queue(
-                EsDenormalizeItemMessage(
-                  newItem.id,
-                  creditsChanged = false,
-                  crewChanged = false,
-                  dryRun = false
+              _ <- itemUpdater.update(
+                newItem,
+                denormArgs = Some(
+                  EsIngestItemDenormArgs(
+                    needsDenorm = true,
+                    cast = false,
+                    crew = false
+                  )
                 )
               )
             } yield {}

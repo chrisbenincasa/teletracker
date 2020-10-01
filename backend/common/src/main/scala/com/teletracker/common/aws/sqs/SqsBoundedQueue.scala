@@ -2,6 +2,7 @@ package com.teletracker.common.aws.sqs
 
 import com.teletracker.common.pubsub.{
   BoundedQueue,
+  FailedMessage,
   SettableGroupId,
   SettableReceiptHandle
 }
@@ -88,7 +89,7 @@ class SqsBoundedQueue[UpperBound <: SettableReceiptHandle with SettableGroupId](
     message: T,
     messageGroupId: Option[String]
   )(implicit codec: Codec[T]
-  ): Future[Option[T]] = {
+  ): Future[Option[FailedMessage[T]]] = {
     batchQueue(List(message), messageGroupId).map(_.headOption)
   }
 
@@ -106,7 +107,7 @@ class SqsBoundedQueue[UpperBound <: SettableReceiptHandle with SettableGroupId](
     messages: List[T],
     messageGroupId: Option[String]
   )(implicit enc: Codec[T]
-  ): Future[List[T]] = {
+  ): Future[List[FailedMessage[T]]] = {
     batchQueueAsyncImpl(messages, messageGroupId)
   }
 }

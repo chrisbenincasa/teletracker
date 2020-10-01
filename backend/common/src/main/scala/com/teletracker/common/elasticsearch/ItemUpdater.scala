@@ -81,44 +81,74 @@ class ItemUpdater @Inject()(
     item.asJson.noSpaces
   }
 
-  def update(item: EsItem): Future[UpdateResponse] = {
+  def update(
+    item: EsItem,
+    denormArgs: Option[EsIngestItemDenormArgs]
+  ): Future[UpdateResponse] = {
     val mappingFut = updateMappings(item)
     val updateFut = elasticsearchExecutor.update(getUpdateRequest(item))
 
     for {
       _ <- mappingFut
       updateResp <- updateFut
+      _ <- denormArgs
+        .map(itemUpdateQueue.queueItemDenormalization(item.id, _))
+        .getOrElse(Future.unit)
     } yield updateResp
   }
 
   def updateFromJson(
     id: UUID,
-    itemType: Option[ItemType],
-    json: Json
-  ): Future[UpdateResponse] = {
-    val externalIds = json.asObject
-      .flatMap(
-        obj =>
-          obj("external_ids")
-            .flatMap(_.asArray)
-            .map(_.toList.flatMap(_.asString))
-            .map(_.map(EsExternalId.parse))
-      )
-      .filter(_.nonEmpty)
+    itemType: ItemType,
+    json: Json,
+    async: Boolean,
+    denormArgs: Option[EsIngestItemDenormArgs]
+  ): Future[UpdateItemResult] = {
+    if (async) {
+      itemUpdateQueue
+        .queueItemUpdate(
+          AsyncItemUpdateRequest(
+            id = id,
+            itemType = itemType,
+            doc = json,
+            denorm = denormArgs
+          )
+        )
+        .map {
+          case Some(_) =>
+            UpdateItemResult.queued
+          case None =>
+            throw new RuntimeException(s"Could not queue update for ${id}")
+        }
+    } else {
+      val externalIds = json.asObject
+        .flatMap(
+          obj =>
+            obj("external_ids")
+              .flatMap(_.asArray)
+              .map(_.toList.flatMap(_.asString))
+              .map(_.map(EsExternalId.parse))
+        )
+        .filter(_.nonEmpty)
 
-    val mappingsFut = for {
-      typ <- itemType
-      ids <- externalIds
-    } yield {
-      updateMappings(id, typ, ids)
+      val mappingsFut = for {
+        ids <- externalIds
+      } yield {
+        updateMappings(id, itemType, ids)
+      }
+
+      val updateFut = elasticsearchExecutor.update(getUpdateRequest(id, json))
+
+      for {
+        _ <- mappingsFut.getOrElse(Future.unit)
+        updateResp <- updateFut
+        _ <- denormArgs
+          .map(itemUpdateQueue.queueItemDenormalization(id, _))
+          .getOrElse(Future.unit)
+      } yield {
+        UpdateItemResult.syncSuccess(updateResp)
+      }
     }
-
-    val updateFut = elasticsearchExecutor.update(getUpdateRequest(id, json))
-
-    for {
-      _ <- mappingsFut.getOrElse(Future.unit)
-      updateResp <- updateFut
-    } yield updateResp
   }
 
   def updateWithScript(
@@ -151,21 +181,24 @@ class ItemUpdater @Inject()(
     denormArgs: Option[EsIngestItemDenormArgs]
   ): Future[UpdateItemResult] = {
     if (async) {
-      val scriptJson = getScriptUpdateJson(id, script)
+      val scriptJson = getScriptJson(script)
       itemUpdateQueue
         .queueItemUpdate(
           AsyncItemUpdateRequest.script(
             id = id,
             itemType = itemType,
-            script = scriptJson.asJson,
+            script = scriptJson,
             denorm = denormArgs
           )
         )
         .map {
-          case Some(_) =>
-            UpdateItemResult.queued
           case None =>
-            throw new RuntimeException(s"Could not queue update for ${id}")
+            UpdateItemResult.queued
+          case Some(failedMessage) =>
+            UpdateItemResult.failure(
+              async = true,
+              reason = failedMessage.reason
+            )
         }
     } else {
       updateWithScript(id, script).flatMap(response => {
@@ -223,8 +256,28 @@ class ItemUpdater @Inject()(
 
   def getScriptUpdateJson(
     id: UUID,
-    script: Script,
-    pretty: Boolean = true
+    script: Script
+  ): Json = {
+    io.circe.parser
+      .parse(
+        getScriptUpdateRequestJsonString(id, script)
+      )
+      .fold(throw _, identity)
+  }
+
+  def getScriptJson(script: Script): Json = {
+    io.circe.parser.parse(getScriptJsonString(script)).fold(throw _, identity)
+  }
+
+  private def getScriptJsonString(script: Script): String = {
+    XContentHelper
+      .toXContent(script, XContentType.JSON, ToXContent.EMPTY_PARAMS, true)
+      .utf8ToString()
+  }
+
+  private def getScriptUpdateRequestJsonString(
+    id: UUID,
+    script: Script
   ): String = {
     val request = new UpdateRequest(
       teletrackerConfig.elasticsearch.items_index_name,
@@ -234,7 +287,7 @@ class ItemUpdater @Inject()(
     )
 
     XContentHelper
-      .toXContent(request, XContentType.JSON, ToXContent.EMPTY_PARAMS, pretty)
+      .toXContent(request, XContentType.JSON, ToXContent.EMPTY_PARAMS, true)
       .utf8ToString
   }
 
@@ -776,11 +829,19 @@ object ItemUpdater extends CaseClassImplicits {
   case class SuccessResult(updateResponse: UpdateResponse)
       extends UpdateItemResultStatus
   case object QueuedResult extends UpdateItemResultStatus
+  case class FailureResult(
+    async: Boolean,
+    reason: String)
+      extends UpdateItemResultStatus
 
   object UpdateItemResult {
     def syncSuccess(updateResponse: UpdateResponse): UpdateItemResult =
       UpdateItemResult(SuccessResult(updateResponse))
     def queued: UpdateItemResult = UpdateItemResult(QueuedResult)
+    def failure(
+      async: Boolean,
+      reason: String
+    ): UpdateItemResult = UpdateItemResult(FailureResult(async, reason))
   }
   case class UpdateItemResult(status: UpdateItemResultStatus)
 }

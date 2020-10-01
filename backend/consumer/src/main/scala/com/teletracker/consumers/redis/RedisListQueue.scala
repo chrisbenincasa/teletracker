@@ -1,6 +1,11 @@
 package com.teletracker.consumers.redis
 
-import com.teletracker.common.pubsub.{EventBase, QueueReader, QueueWriter}
+import com.teletracker.common.pubsub.{
+  EventBase,
+  FailedMessage,
+  QueueReader,
+  QueueWriter
+}
 import com.teletracker.common.util.AsyncStream
 import com.teletracker.common.util.Futures._
 import com.twitter.finagle.redis.Client
@@ -106,7 +111,7 @@ abstract class RedisListQueue[T <: EventBase: Codec](
   override def queue(
     message: T,
     messageGroupId: Option[String]
-  ): Future[Option[T]] = {
+  ): Future[Option[FailedMessage[T]]] = {
     batchQueue(List(message), messageGroupId).map(_.headOption)
   }
 
@@ -114,14 +119,15 @@ abstract class RedisListQueue[T <: EventBase: Codec](
     * Send many messages to the queue
     *
     * @param messages
+    * @return messages that failed to be queued
     */
   override def batchQueue(
     messages: List[T],
     messageGroupId: Option[String]
-  ): Future[List[T]] = {
+  ): Future[List[FailedMessage[T]]] = {
     client
       .lPush(keyAsBuf, messages.map(tToBuf))
-      .map(_ => messages)
+      .map(_ => Nil)
       .toScalaFuture()
   }
 

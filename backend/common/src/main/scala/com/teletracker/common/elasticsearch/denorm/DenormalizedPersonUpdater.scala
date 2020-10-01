@@ -103,7 +103,8 @@ class DenormalizedPersonUpdater @Inject()(
                       logger.info(
                         s"Updating item ${item.id} with credit for person ${person.id}"
                       )
-                      itemUpdater.update(item).map(_ => {})
+                      // Prevent an infinite loop by not denormalizing again
+                      itemUpdater.update(item, denormArgs = None).map(_ => {})
                     case None => Future.unit
                   }
                 })

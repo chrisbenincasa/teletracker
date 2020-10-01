@@ -52,7 +52,7 @@ trait QueueWriter[T <: EventBase] extends QueueIdentity {
   def queue(
     message: T,
     messageGroupId: Option[String]
-  ): Future[Option[T]]
+  ): Future[Option[FailedMessage[T]]]
 
   /**
     * Send many messages to the queue
@@ -62,7 +62,7 @@ trait QueueWriter[T <: EventBase] extends QueueIdentity {
   def batchQueue(
     messages: List[T],
     messageGroupId: Option[String] = None
-  ): Future[List[T]]
+  ): Future[List[FailedMessage[T]]]
 }
 
 trait QueueIdentity {
@@ -72,3 +72,8 @@ trait QueueIdentity {
 }
 
 trait Queue[T <: EventBase] extends QueueReader[T] with QueueWriter[T]
+
+case class FailedMessage[T](
+  data: T,
+  reason: String,
+  senderFault: Option[Boolean])

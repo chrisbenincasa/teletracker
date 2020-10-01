@@ -409,7 +409,17 @@ class MovieImportHandler @Inject()(
             })
         } else {
           itemUpdater
-            .update(updatedItem)
+            .update(
+              updatedItem,
+              denormArgs = Some(
+                EsIngestItemDenormArgs(
+                  needsDenorm = true,
+                  cast = castNeedsDenorm,
+                  crew = crewNeedsDenorm,
+                  externalIds = None
+                )
+              )
+            )
             .map(_ => {
               MovieImportResult(
                 itemId = existingMovie.id,

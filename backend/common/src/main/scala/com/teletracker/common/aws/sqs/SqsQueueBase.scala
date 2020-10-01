@@ -1,7 +1,7 @@
 package com.teletracker.common.aws.sqs
 
 import com.teletracker.common.aws.sqs.SqsQueue.MAX_MESSAGE_BATCH_SIZE
-import com.teletracker.common.pubsub.QueueIdentity
+import com.teletracker.common.pubsub.{FailedMessage, QueueIdentity}
 import software.amazon.awssdk.services.sqs.model.{
   ChangeMessageVisibilityBatchRequest,
   ChangeMessageVisibilityBatchRequestEntry,
@@ -50,55 +50,73 @@ abstract class SqsQueueBase(
     messages: List[T],
     messageGroupId: Option[String] = None
   )(implicit codec: Codec[T]
-  ): Future[List[T]] = {
+  ): Future[List[FailedMessage[T]]] = {
     batchQueueAsyncImpl(messages.map(_ -> messageGroupId))
   }
 
   protected def batchQueueAsyncImpl[T](
     messages: List[(T, Option[String])]
   )(implicit codec: Codec[T]
-  ): Future[List[T]] = {
-    implicit val decoder: Decoder[T] = implicitly[Decoder[T]]
+  ): Future[List[FailedMessage[T]]] = {
     val entries = createBatchQueueGroups(messages)
 
     def batchQueueAsyncInner(
-      groups: Iterable[List[SendMessageBatchRequestEntry]],
-      failed: List[T] = Nil
-    ): Future[List[T]] = {
+      groups: Iterable[BatchGroups[EntryWithSize[T]]],
+      failed: List[FailedMessage[T]] = Nil
+    ): Future[List[FailedMessage[T]]] = {
       if (groups.isEmpty) {
-        return Future.successful(failed)
-      }
+        Future.successful(failed)
+      } else {
+        val group = groups.head.group.map(_.entry)
+        val messageById = groups.head.group.map {
+          case EntryWithSize(entry, data, _) => entry.id() -> data
+        }.toMap
 
-      val group = groups.head
+        val request = SendMessageBatchRequest
+          .builder()
+          .queueUrl(url)
+          .entries(group.asJava)
+          .build()
 
-      val request = SendMessageBatchRequest
-        .builder()
-        .queueUrl(url)
-        .entries(group.asJava)
-        .build()
-
-      sqs
-        .sendMessageBatch(request)
-        .toScala
-        .flatMap(_ => {
-          batchQueueAsyncInner(groups.tail, failed)
-        })
-        .recoverWith {
-          case NonFatal(throwable) => {
-            logger.error(
-              "Encountered batchQueueAsync failure for batch",
-              throwable
-            )
-
-            val failedMessages =
-              group.map(_.messageBody()).flatMap(deserialize[T](_).toOption)
-
+        sqs
+          .sendMessageBatch(request)
+          .toScala
+          .flatMap(res => {
+            val failedMessages = res
+              .failed()
+              .asScala
+              .toList
+              .flatMap(failed => {
+                messageById
+                  .get(failed.id())
+                  .map(failedData => {
+                    FailedMessage(
+                      failedData,
+                      failed.message(),
+                      Option(failed.senderFault())
+                    )
+                  })
+              })
             batchQueueAsyncInner(groups.tail, failed ++ failedMessages)
+          })
+          .recoverWith {
+            case NonFatal(throwable) => {
+              logger.error(
+                "Encountered batchQueueAsync failure for batch",
+                throwable
+              )
+
+              val failedMessages = messageById.values.map(
+                message => FailedMessage(message, throwable.getMessage, None)
+              )
+
+              batchQueueAsyncInner(groups.tail, failed ++ failedMessages)
+            }
           }
-        }
+      }
     }
 
-    batchQueueAsyncInner(entries.map(_.group.map(_.entry)))
+    batchQueueAsyncInner(entries)
   }
 
   protected def dequeueImpl[T: Decoder](
