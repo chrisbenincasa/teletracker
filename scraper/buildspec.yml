@@ -15,5 +15,5 @@ phases:
       - echo "Built version $(cat FULL_VERSION)"
   post_build:
     commands:
-      - docker tag 302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/crawlers:"${VERSION}" 302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/crawlers:latest
+      - docker tag 302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/crawlers:"$(cat FULL_VERSION)" 302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/crawlers:latest
       - docker push "302782651551.dkr.ecr.${AWS_REGION}.amazonaws.com/teletracker/crawlers:$(cat FULL_VERSION)"

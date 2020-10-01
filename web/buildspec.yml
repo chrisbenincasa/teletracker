@@ -1,0 +1,19 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 12
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - $(aws ecr get-login --no-include-email --region $AWS_REGION)
+  build:
+    commands:
+      - cd web
+      - ./scripts/gen_version
+      - ./build-ssr "$(cat FULL_VERSION)"
+      - echo "Built version $(cat FULL_VERSION)"
+  post_build:
+    commands:
+      - ./deploy-ssr "$(cat FULL_VERSION)"

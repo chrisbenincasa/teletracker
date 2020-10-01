@@ -8,7 +8,14 @@ mkdir out
 
 if [ -d ".next/" ]; then rm -rf ".next/"; fi
 
-VERSION=${1:-"$(date +%s).${SHORT_SHA:-$(git rev-parse --short HEAD)}"}
+# Get or set version
+VERSION=$1
+
+if [ -z "${VERSION}" ]
+then
+    ./scripts/gen_version
+    VERSION=$(cat FULL_VERSION)
+fi
 
 ENV_FILE=telescope.env VERSION=${VERSION} yarn run next-build || exit
 
