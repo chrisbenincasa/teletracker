@@ -1,10 +1,8 @@
 import Head from 'next/head';
 import React from 'react';
 import { itemFetchSuccess } from '../../actions/item-detail';
-import AppWrapper from '../../containers/AppWrapper';
 import ItemDetail from '../../containers/ItemDetail';
 import { ApiItem } from '../../types/v2';
-import { Item, ItemFactory } from '../../types/v2/Item';
 import { TeletrackerApi, TeletrackerResponse } from '../../utils/api-client';
 import { useSelector } from 'react-redux';
 import { AppState } from '../../reducers';
@@ -15,7 +13,6 @@ import { currentUserJwt } from '../../utils/page-utils';
 import { ItemType } from '../../types';
 import useItem from '../../hooks/useItem';
 import moment from 'moment';
-import { logException } from '../../utils/analytics';
 
 interface Props {
   itemId?: string;
@@ -102,13 +99,11 @@ export default function makeItemDetailWrapper(type: ItemType) {
           />
           <link rel="canonical" href={`${domain}${router.asPath}`} />
         </Head>
-        <AppWrapper>
-          <ItemDetail
-            itemPreloadedFromServer={
-              !_.isUndefined(props.itemId) && !_.isUndefined(item)
-            }
-          />
-        </AppWrapper>
+        <ItemDetail
+          itemPreloadedFromServer={
+            !_.isUndefined(props.itemId) && !_.isUndefined(item)
+          }
+        />
       </React.Fragment>
     );
   }

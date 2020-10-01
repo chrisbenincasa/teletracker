@@ -7,7 +7,6 @@ import {
   SearchFailed,
   SearchSuccess,
 } from '../../actions/search';
-import AppWrapper from '../../containers/AppWrapper';
 import Search from '../../containers/Search';
 import { ApiItem } from '../../types/v2';
 import { ItemFactory } from '../../types/v2/Item';
@@ -51,15 +50,15 @@ function SearchWrapper(props: Props) {
           content="minimum-scale=1, initial-scale=1, width=device-width"
         />
       </Head>
-      <AppWrapper hideFooter showToolbarSearch={showToolbarSearch}>
-        {/* TODO: Hook this up */}
-        <WithItemFilters>
-          <Search
-            preloadedQuery={props.query}
-            inViewportChange={inViewportCallback}
-          />
-        </WithItemFilters>
-      </AppWrapper>
+      <WithItemFilters>
+        <Search
+          preloadedQuery={props.query}
+          inViewportChange={inViewportCallback}
+        />
+      </WithItemFilters>
+      {/*<AppWrapper hideFooter showToolbarSearch={showToolbarSearch}>*/}
+      {/*   TODO: Hook this up */}
+      {/*</AppWrapper>*/}
     </React.Fragment>
   );
 }

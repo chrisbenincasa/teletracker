@@ -1,5 +1,4 @@
 import React from 'react';
-import AppWrapper from '../../containers/AppWrapper';
 import { ApiList, ListFactory } from '../../types';
 import { TeletrackerApi, TeletrackerResponse } from '../../utils/api-client';
 import { ListRetrieveSuccess } from '../../actions/lists';
@@ -77,9 +76,7 @@ function ListDetailWrapper(props: Props) {
           </React.Fragment>
         )}
       </Head>
-      <AppWrapper>
-        <ListDetail preloaded={props.preloaded} />
-      </AppWrapper>
+      <ListDetail preloaded={props.preloaded} />
     </React.Fragment>
   );
 }

@@ -1,5 +1,8 @@
 FROM node:12 as build
 
+ARG version
+ENV VERSION $version
+
 WORKDIR /usr/src/app
 
 ADD package.json .
@@ -15,8 +18,6 @@ ADD server.js .
 ADD src/ src/
 ADD public/ public/
 
-ARG version
-ENV VERSION $version
 RUN yarn run next-build
 
 FROM gcr.io/distroless/nodejs:12

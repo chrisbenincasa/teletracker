@@ -1,8 +1,6 @@
-import Auth, { CognitoUser } from '@aws-amplify/auth';
 import Head from 'next/head';
 import React from 'react';
 import { personFetchSuccess } from '../../actions/people/get_person';
-import AppWrapper from '../../containers/AppWrapper';
 import PersonDetail, {
   DEFAULT_CREDITS_FILTERS,
 } from '../../containers/PersonDetail';
@@ -98,9 +96,7 @@ function PersonDetailWrapper(props: Props) {
           content={`${process.env.REACT_APP_TELETRACKER_BASE_URL}${router.pathname}`}
         />
       </Head>
-      <AppWrapper>
-        <PersonDetail preloaded={!_.isUndefined(person)} />
-      </AppWrapper>
+      <PersonDetail preloaded={!_.isUndefined(person)} />
     </React.Fragment>
   );
 }

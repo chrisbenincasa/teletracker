@@ -1,4 +1,4 @@
-import React, { createContext, ReactNode, useEffect } from 'react';
+import React, { createContext, ReactNode, useEffect, useMemo } from 'react';
 import {
   DEFAULT_FILTER_PARAMS,
   FilterParams,
@@ -42,8 +42,10 @@ function WithItemFilters(props: WithItemFiltersProps) {
   const router = useRouter();
   const stringifiedQuery = qs.stringify(router.query);
   const paramsFromQuery = parseFilterParamsFromQs(stringifiedQuery);
+  const normalizedInitialFilters =
+    props.initialFilters || DEFAULT_FILTER_PARAMS;
   const initialFilters = {
-    ...(props.initialFilters || DEFAULT_FILTER_PARAMS),
+    ...normalizedInitialFilters,
     ...paramsFromQuery,
   };
 
@@ -68,7 +70,7 @@ function WithItemFilters(props: WithItemFiltersProps) {
   useEffectCompare(
     () => {
       let newFilters = {
-        ...(props.initialFilters || DEFAULT_FILTER_PARAMS),
+        ...normalizedInitialFilters,
         ...paramsFromQuery,
       };
 
@@ -81,15 +83,13 @@ function WithItemFilters(props: WithItemFiltersProps) {
         ),
       });
     },
-    [props.initialFilters],
+    [normalizedInitialFilters],
     ([left], [right]) => filterParamsEqual(left, right),
   );
 
   const actuallySetFilters = useCustomCompareCallback(
     (newFilters: FilterParams) => {
-      // setFilters(normalizeFilterParams(newFilters));
       const normalized = normalizeFilterParams(newFilters);
-      console.log('set new filters', normalized);
       setFilters(prev => {
         return {
           ...prev,
@@ -108,9 +108,9 @@ function WithItemFilters(props: WithItemFiltersProps) {
 
   const clearFilters = useCustomCompareCallback(
     () => {
-      actuallySetFilters(props.initialFilters || DEFAULT_FILTER_PARAMS);
+      actuallySetFilters(normalizedInitialFilters);
     },
-    [props.initialFilters],
+    [normalizedInitialFilters],
     ([left], [right]) => filterParamsEqual(left, right),
   );
 
