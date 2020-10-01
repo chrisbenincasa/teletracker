@@ -32,7 +32,7 @@ import { useDebouncedCallback } from 'use-debounce';
 import useStateSelector from '../hooks/useStateSelector';
 import { FilterContext } from '../components/Filters/FilterContext';
 import useFilterLoadEffect from '../hooks/useFilterLoadEffect';
-import AppContext from '../components/AppContext';
+import { AppContext } from '../components/AppContext';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({

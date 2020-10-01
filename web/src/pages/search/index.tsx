@@ -33,14 +33,6 @@ function SearchWrapper(props: Props) {
     title += ' - ' + props.query;
   }
 
-  const [showToolbarSearch, setShowToolbarSearch] = useState(
-    _.isUndefined(props.query),
-  );
-
-  const inViewportCallback = useCallback((inViewport: boolean) => {
-    setShowToolbarSearch(!inViewport);
-  }, []);
-
   return (
     <React.Fragment>
       <Head>
@@ -51,14 +43,8 @@ function SearchWrapper(props: Props) {
         />
       </Head>
       <WithItemFilters>
-        <Search
-          preloadedQuery={props.query}
-          inViewportChange={inViewportCallback}
-        />
+        <Search preloadedQuery={props.query} />
       </WithItemFilters>
-      {/*<AppWrapper hideFooter showToolbarSearch={showToolbarSearch}>*/}
-      {/*   TODO: Hook this up */}
-      {/*</AppWrapper>*/}
     </React.Fragment>
   );
 }
