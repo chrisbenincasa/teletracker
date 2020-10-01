@@ -1,6 +1,5 @@
 import Head from 'next/head';
 import React from 'react';
-import AppWrapper from '../../containers/AppWrapper';
 import Signup from '../../containers/Signup';
 
 export default function SignupWrapper() {
@@ -9,9 +8,7 @@ export default function SignupWrapper() {
       <Head>
         <title>Signup</title>
       </Head>
-      <AppWrapper>
-        <Signup />
-      </AppWrapper>
+      <Signup />
     </React.Fragment>
   );
 }

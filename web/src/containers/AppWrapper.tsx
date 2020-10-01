@@ -1,15 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Toolbar from '../components/Toolbar/Toolbar';
 import { LinearProgress, makeStyles, NoSsr, Theme } from '@material-ui/core';
 import Drawer from '../components/Drawer';
-import Footer from '../components/Footer';
 import { WithUser } from '../hooks/useWithUser';
-import { currentUser } from '../utils/page-utils';
 
 import useStateSelector from '../hooks/useStateSelector';
 import _ from 'lodash';
-import { initGA, logPageView, logTiming, setUser } from '../utils/analytics';
+import { initGA, logPageView } from '../utils/analytics';
 import { useRouter } from 'next/router';
+import qs from 'querystring';
+import url from 'url';
+import WithAppContext from '../components/AppContext';
 
 const useStyles = makeStyles((theme: Theme) => ({
   mainContent: {
@@ -33,8 +34,6 @@ const useStyles = makeStyles((theme: Theme) => ({
 
 interface Props {
   children: any;
-  hideFooter?: boolean;
-  showToolbarSearch?: boolean;
 }
 
 declare global {
@@ -46,12 +45,17 @@ declare global {
 export default function AppWrapper(props: Props) {
   const isBooting = useStateSelector(state => state.startup.isBooting);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  useEffect(() => {
-    console.log('drawer state: ' + drawerOpen);
-  }, [drawerOpen]);
   const classes = useStyles();
   const nextRouter = useRouter();
-  const user = currentUser();
+  const query = nextRouter.query.q as string | undefined;
+
+  const [showToolbarSearch, setShowToolbarSearch] = useState(
+    _.isUndefined(query),
+  );
+
+  const inViewportCallback = useCallback((inViewport: boolean) => {
+    setShowToolbarSearch(!inViewport);
+  }, []);
 
   useEffect(() => {
     if (window && !window.GA_INITIALIZED) {
@@ -65,42 +69,41 @@ export default function AppWrapper(props: Props) {
   return (
     <NoSsr>
       <div className={classes.root}>
-        <WithUser>
-          <Toolbar
-            drawerOpen={drawerOpen}
-            onDrawerChange={shouldClose =>
-              setDrawerOpen(
-                !_.isUndefined(shouldClose) ? !shouldClose : !drawerOpen,
-              )
-            }
-            showToolbarSearch={
-              _.isUndefined(props.showToolbarSearch)
-                ? true
-                : props.showToolbarSearch
-            }
-          />
-          {!isBooting ? (
-            <div style={{ flexGrow: 1 }}>
-              <Drawer
-                open={drawerOpen}
-                closeRequested={() => setDrawerOpen(false)}
-                drawerStateChanged={value => setDrawerOpen(value)}
-              />
-              <main
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column', // isAuthed ? 'row' : 'column',
-                }}
-                className={classes.mainContent}
-              >
-                {props.children}
-              </main>
-            </div>
-          ) : (
-            <LinearProgress />
-          )}
-          {props.hideFooter ? null : <Footer />}
-        </WithUser>
+        <WithAppContext inViewportCallback={inViewportCallback}>
+          <WithUser>
+            <Toolbar
+              drawerOpen={drawerOpen}
+              onDrawerChange={shouldClose =>
+                setDrawerOpen(
+                  !_.isUndefined(shouldClose) ? !shouldClose : !drawerOpen,
+                )
+              }
+              showToolbarSearch={
+                _.isUndefined(showToolbarSearch) ? true : showToolbarSearch
+              }
+            />
+            {!isBooting ? (
+              <div style={{ flexGrow: 1 }}>
+                <Drawer
+                  open={drawerOpen}
+                  closeRequested={() => setDrawerOpen(false)}
+                  drawerStateChanged={value => setDrawerOpen(value)}
+                />
+                <main
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column', // isAuthed ? 'row' : 'column',
+                  }}
+                  className={classes.mainContent}
+                >
+                  {props.children}
+                </main>
+              </div>
+            ) : (
+              <LinearProgress />
+            )}
+          </WithUser>
+        </WithAppContext>
       </div>
     </NoSsr>
   );

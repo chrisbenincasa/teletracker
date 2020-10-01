@@ -8,9 +8,6 @@ import React, {
   useState,
 } from 'react';
 import Head from 'next/head';
-import AppWrapper from '../../containers/AppWrapper';
-import useCustomCompareMemo from '../../hooks/useMemoCompare';
-import _ from 'lodash';
 
 interface ContextType {
   beans: number;
@@ -48,11 +45,9 @@ function makeExploreWrapper(defaultFilters: FilterParams) {
         <Head>
           <title>Explore - Popular</title>
         </Head>
-        <AppWrapper hideFooter>
-          <TestContext.Provider value={{ beans, setBeans }}>
-            <InnerComponent />
-          </TestContext.Provider>
-        </AppWrapper>
+        <TestContext.Provider value={{ beans, setBeans }}>
+          <InnerComponent />
+        </TestContext.Provider>
       </React.Fragment>
     );
   }

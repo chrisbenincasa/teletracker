@@ -32,6 +32,7 @@ import { useDebouncedCallback } from 'use-debounce';
 import useStateSelector from '../hooks/useStateSelector';
 import { FilterContext } from '../components/Filters/FilterContext';
 import useFilterLoadEffect from '../hooks/useFilterLoadEffect';
+import AppContext from '../components/AppContext';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -80,7 +81,6 @@ const useStyles = makeStyles((theme: Theme) =>
 );
 
 interface Props {
-  inViewportChange: (inViewport: boolean) => void;
   preloadedQuery?: string;
 }
 
@@ -104,6 +104,8 @@ const Search = (props: Props) => {
   const [searchText, setSearchText] = useState(currentSearchText || '');
   const { filters } = useContext(FilterContext);
   const searchWrapperRef = useRef<HTMLDivElement>(null);
+
+  const { inViewportChange } = useContext(AppContext);
 
   const { itemTypes, genresFilter, networks, sliders } = filters;
 
@@ -168,8 +170,7 @@ const Search = (props: Props) => {
 
   // Run callback when search enters/leaves viewport
   useEffect(() => {
-    console.log('search', isInViewport);
-    props.inViewportChange(isInViewport);
+    inViewportChange(isInViewport);
   }, [isInViewport]);
 
   const loadMoreResults = () => {

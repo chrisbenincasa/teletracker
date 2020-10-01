@@ -1,6 +1,5 @@
 import React from 'react';
 import Head from 'next/head';
-import AppWrapper from '../AppWrapper';
 import Explore from '../Explore';
 import qs from 'querystring';
 import url from 'url';
@@ -64,11 +63,9 @@ export default function makeExploreWrapper(defaultFilters: FilterParams) {
           />
           <link rel="canonical" href={`${domain}${router.asPath}`} />
         </Head>
-        <AppWrapper hideFooter>
-          <WithItemFilters initialFilters={{ ...defaultFilters }}>
-            <Explore />
-          </WithItemFilters>
-        </AppWrapper>
+        <WithItemFilters initialFilters={{ ...defaultFilters }}>
+          <Explore />
+        </WithItemFilters>
       </React.Fragment>
     );
   }
