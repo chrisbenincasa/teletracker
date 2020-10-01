@@ -1,6 +1,14 @@
 #!/bin/bash
 
-VERSION="$(date +%s).${SHORT_SHA:-$(git rev-parse --short HEAD)}"
+# Get or set version
+VERSION=$1
+
+if [ -z "${VERSION}" ]
+then
+    ./scripts/gen_version
+    VERSION=$(cat FULL_VERSION)
+fi
+
 echo $VERSION > CURRENT_VERSION
 ./build-ssr ${VERSION} || exit
 
