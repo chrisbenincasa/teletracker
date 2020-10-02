@@ -255,14 +255,15 @@ class AmazonSpider(BaseCrawlSpider):
                 empty_item_signal, response=response)
 
 
-class AmazonDistributedSpider(AmazonSpider, CustomRedisMixin):
+class AmazonDistributedSpider(AmazonSpider, RedisMixin):
     name = 'amazon_distributed'
     custom_settings = {
         **DISTRIBUTED_SETTINGS,
         'AUTOTHROTTLE_TARGET_CONCURRENCY': 8.0,
         'EXTENSIONS': {**EXTENSIONS, 'crawlers.extensions.empty_response_recorder.EmptyResponseRecorder': 500,
                        'scrapy.extensions.closespider.CloseSpider': 100},
-        'ITEM_PIPELINES': ITEM_PIPELINES,
+        # Remove the DupeIdFilterPipeline in distributed mode
+        'ITEM_PIPELINES': {**ITEM_PIPELINES, 'crawlers.pipelines.DupeIdFilterPipeline': None},
         'ROBOTSTXT_OBEY': True
     }
     is_distributed = True
@@ -273,11 +274,11 @@ class AmazonDistributedSpider(AmazonSpider, CustomRedisMixin):
         for req in RedisMixin.start_requests(self):
             yield req
 
-    def parse(self, response):
-        if self.should_close:
-            raise CloseSpider(reason=self.close_reason or 'cancelled')
-        else:
-            # If we got a response, cancel any existing close timeouts
-            if self.idle_df:
-                self.idle_df.cancel()
-            return super().parse(response)
+    # def parse(self, response):
+    #     if self.should_close:
+    #         raise CloseSpider(reason=self.close_reason or 'cancelled')
+    #     else:
+    #         If we got a response, cancel any existing close timeouts
+            # if self.idle_df:
+            #     self.idle_df.cancel()
+            # return super().parse(response)

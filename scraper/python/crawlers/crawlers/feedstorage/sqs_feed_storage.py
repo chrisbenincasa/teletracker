@@ -61,7 +61,7 @@ class SqsFeedStorageWriter:
             for _ in range(0, self.buffer_size):
                 buf.append(self.deck.popleft())
 
-        logger.info(
+        logger.debug(
             f'Enqueuing {len(buf)} items in chunks of {self.chunk_size}')
 
         for group in _chunk(buf, self.chunk_size):

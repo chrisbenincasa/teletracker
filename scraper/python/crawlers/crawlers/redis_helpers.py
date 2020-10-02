@@ -31,38 +31,37 @@ class CustomRedisMixin(Spider, RedisMixin):
     def spider_idle(self):
         from twisted.internet import reactor
 
-        self.log(f'Spider went idle', logging.INFO)
+        self.logger.info(f'Spider went idle')
 
         def close_self(value, _):
-            self.log('Got idle timeout...closing spider', logging.INFO)
+            self.logger.info('Got idle timeout...closing spider')
             self.crawler.engine.close_spider(self, 'finished')
 
         req_found = False
         for req in self.next_requests():
-            self.log('Found new request, continuing crawl')
+            self.logger.info('Found new request, continuing crawl')
             req_found = True
             self.crawler.engine.crawl(req, spider=self)
 
         # Received the idle signal again, but found new requests. Cancel the idle
         if req_found and self.idle_df:
-            self.log(
-                f'Found more requests, canceling close deferred.', logging.INFO)
+            self.logger.info(
+                f'Found more requests, canceling close deferred.')
             self.idle_df.cancel()
             self.idle_df = None
         elif not req_found and not self.idle_df:
             timeout = self.settings.getint(
                 'REDIS_SPIDER_IDLE_TIMEOUT', default=300)
-            self.log(
-                f'No requests found, starting {timeout} second timeout to close.', logging.INFO)
+            self.logger.info(
+                f'No requests found, starting {timeout} second timeout to close.')
             # We found no new requests, start the timer
             self.idle_df = defer.Deferred()
             # Wait 5 minutes for new messages and then declare that we're finished
             self.idle_df.addTimeout(
                 timeout, reactor, onTimeoutCancel=close_self)
         elif not req_found and self.idle_df:
-            self.log('No requests found. Timeout to close already started.')
+            self.logger.info('No requests found. Timeout to close already started.')
         else:
-            self.log('Found more requests and no timeout was set, continuing.')
+            self.logger.info('Found more requests and no timeout was set, continuing.')
 
-        # Found more requests, keep going
         raise DontCloseSpider
