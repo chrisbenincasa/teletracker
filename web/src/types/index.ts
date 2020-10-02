@@ -273,7 +273,7 @@ export interface UserPreferences {
 
 // Transition type while we remove hbo-go and hbo-now references
 // from the backend
-export type StoredNetworkType = Exclude<NetworkType, 'hbo-go'> | 'hbo-now';
+export type StoredNetworkType = Exclude<NetworkType, 'hbo-go'> | 'hbo';
 
 export interface Network {
   readonly id: number;
