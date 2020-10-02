@@ -149,8 +149,8 @@ lazy val consumer = project
         .getOrElse("")
     ),
     javaOptions in reStart ++= Seq(
-      "-Dregular_logging=true",
-      "-Dlog.level=DEBUG"
+      "-Dregular_logging=true"
+//      "-Dlog.level=DEBUG"
     ),
     Revolver.enableDebugging(port = 5005, suspend = false),
     dockerfile in docker := {

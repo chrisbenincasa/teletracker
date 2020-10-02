@@ -233,7 +233,7 @@ class EsIngestQueueWorker @Inject()(
         .updateFromJson(
           id = UUID.fromString(update.id),
           json = update.doc.get,
-          async = true,
+          async = false,
           denormArgs = update.personDenorm
         )
         .map(_ => {})

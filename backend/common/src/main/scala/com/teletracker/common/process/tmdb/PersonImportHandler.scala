@@ -232,7 +232,7 @@ class PersonImportHandler @Inject()(
                 )
               }
             } else if (personToUpdate != existingPerson) {
-              logger.info(
+              logger.debug(
                 s"Updated existing person (id = ${personToUpdate.id}, slug = ${personToUpdate.slug})"
               )
 

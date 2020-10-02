@@ -80,10 +80,12 @@ class PersonUpdater @Inject()(
           denorm = denormArgs
         )
         .map {
-          case Some(_) =>
-            UpdatePersonResult.queued
           case None =>
-            throw new RuntimeException(s"Could not queue update for ${id}")
+            UpdatePersonResult.queued
+          case Some(failedMessage) =>
+            throw new RuntimeException(
+              s"Could not queue update for ${id}, reason: ${failedMessage.reason}"
+            )
         }
     } else {
       val externalIds = json.asObject
