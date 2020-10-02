@@ -256,7 +256,10 @@ function AddToListDialog(props: Props) {
 
     return (
       <React.Fragment>
-        <FormControl disabled={createAListLoading}>
+        <FormControl
+          disabled={createAListLoading}
+          style={{ marginRight: isMobile ? 0 : 11 }}
+        >
           <InputLabel>New list</InputLabel>
           <Input
             type="text"
@@ -264,6 +267,7 @@ function AddToListDialog(props: Props) {
             onChange={updateListName}
             error={nameDuplicateError || nameLengthError}
             fullWidth
+            autoFocus
             disabled={createAListLoading}
             endAdornment={
               <React.Fragment>
@@ -323,7 +327,7 @@ function AddToListDialog(props: Props) {
         maxWidth="sm"
       >
         <DialogTitle id="update-tracking-dialog" className={classes.title}>
-          Track "{itemDetail.canonicalTitle}" in your lists
+          Add "{itemDetail.canonicalTitle}" to...
         </DialogTitle>
 
         <DialogContent className={classes.dialogContainer}>
@@ -359,16 +363,32 @@ function AddToListDialog(props: Props) {
             </div>
           ) : null}
         </DialogContent>
+        {!createAListEnabled && isMobile && (
+          <DialogActions>
+            <Button
+              variant="contained"
+              className={classes.button}
+              disabled={createAListEnabled}
+              onClick={toggleCreateAList}
+              fullWidth={true}
+            >
+              <PlaylistAdd className={classes.leftIcon} />
+              Create New List
+            </Button>
+          </DialogActions>
+        )}
         <DialogActions>
-          <Button
-            variant="contained"
-            className={classes.button}
-            disabled={createAListEnabled}
-            onClick={toggleCreateAList}
-          >
-            <PlaylistAdd className={classes.leftIcon} />
-            New
-          </Button>
+          {!isMobile && (
+            <Button
+              variant="contained"
+              className={classes.button}
+              disabled={createAListEnabled}
+              onClick={toggleCreateAList}
+            >
+              <PlaylistAdd className={classes.leftIcon} />
+              Create New List
+            </Button>
+          )}
           <div className={classes.spacer} />
           <Button onClick={handleModalClose} className={classes.button}>
             Cancel
