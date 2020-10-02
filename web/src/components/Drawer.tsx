@@ -8,41 +8,32 @@ import {
   createStyles,
   Divider,
   Drawer as DrawerUI,
-  IconButton,
   List,
   ListItem,
-  ListItemAvatar,
   ListItemIcon,
   ListItemSecondaryAction,
   ListItemText,
-  ListSubheader,
   makeStyles,
   SwipeableDrawer,
   Theme,
-  Tooltip,
-  Typography,
 } from '@material-ui/core';
 import {
-  AddCircle,
+  Description,
   ExpandLess,
   ExpandMore,
-  FiberNew,
   Lock,
   MovieFilter,
+  People,
   PersonAdd,
   PowerSettingsNew,
   Public,
-  Settings,
   TrendingUp,
-  Label,
   List as ListIcon,
 } from '@material-ui/icons';
 import CreateListDialog from './Dialogs/CreateListDialog';
 import SmartListDialog from './Dialogs/SmartListDialog';
 import PublicListDialog from './Dialogs/PublicListDialog';
 import AuthDialog from './Auth/AuthDialog';
-import { ListsByIdMap } from '../reducers/lists';
-import { Loading } from '../reducers/user';
 import { List as ListType } from '../types';
 import _ from 'lodash';
 import Link from 'next/link';
@@ -472,6 +463,26 @@ export default function Drawer(props: Props) {
             </React.Fragment>
           ) : null}
         </List>
+        <Link href="/about-us" passHref>
+          <List className={classes.fixedListItems}>
+            <ListItem button>
+              <ListItemIcon>
+                <People className={classes.drawerIcon} />
+              </ListItemIcon>
+              <ListItemText>About Us</ListItemText>
+            </ListItem>
+          </List>
+        </Link>
+        <Link href="/privacy-policy" passHref>
+          <List className={classes.fixedListItems}>
+            <ListItem button>
+              <ListItemIcon>
+                <Description className={classes.drawerIcon} />
+              </ListItemIcon>
+              <ListItemText>Privacy Policy</ListItemText>
+            </ListItem>
+          </List>
+        </Link>
         {isLoggedIn ? (
           <List className={classes.fixedListItems}>
             <ListItem button onClick={handleLogout}>
