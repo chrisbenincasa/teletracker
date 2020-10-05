@@ -47,12 +47,14 @@ redis==3.5.3
 s3transfer==0.3.3
 Scrapy==2.1.0
 scrapy-redis==0.6.8
+scrapy-rotating-proxies==0.6.2
 Scrapy-UserAgents==0.0.1
 service-identity==18.1.0
 six==1.14.0
 toml==0.10.0
 Twisted==20.3.0
 typed-ast==1.4.1
+typing==3.7.4.3
 urllib3==1.25.9
 w3lib==1.21.0
 wrapt==1.12.1

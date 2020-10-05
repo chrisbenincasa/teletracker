@@ -54,7 +54,8 @@ module "amazon_single_crawler" {
   extra_args = [
     "-sEMPTY_RESPONSE_RECORDER_ENABLED=True",
     "-sAUTOTHROTTLE_TARGET_CONCURRENCY=8",
-    "-sTELNETCONSOLE_HOST=0.0.0.0"
+    "-sTELNETCONSOLE_HOST=0.0.0.0",
+    "-sLOG_LEVEL=DEBUG"
   ]
 
   dynamodb_output_table = aws_dynamodb_table.crawls.name

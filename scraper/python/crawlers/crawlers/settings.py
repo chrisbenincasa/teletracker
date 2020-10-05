@@ -91,6 +91,8 @@ FEED_STORAGES = {
 FEED_FORMAT = 'jl.gz'
 FEED_URI_PARAMS = 'crawlers.util.misc.uri_params'
 
+LOG_FORMATTER = 'crawlers.logformatter.LogFormatter'
+
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
 AUTOTHROTTLE_ENABLED = True

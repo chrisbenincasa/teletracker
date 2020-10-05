@@ -23,6 +23,12 @@ def test_process_detail_link_preserve_query():
     assert _process_detail_link(link1) == _process_detail_link(link2)
 
 
+def test_storefront_url():
+    link1 = 'https://www.amazon.com/gp/video/storefront/ref=atv_hm_hom_1_c_7bCjc9_YPnx8G_9_1?contentType=merch&contentId=deals&merchId=deals'
+    link2 = 'https://www.amazon.com/gp/video/storefront/ref=atv_hm_hom_1_c_7bCjc9_UefIyC_9_2?contentType=merch&contentId=deals&merchId=deals'
+
+    assert _process_detail_link(link1) == _process_detail_link(link2)
+
 def test_same_request_fingerprint():
     link1 = 'https://www.amazon.com/gp/video/detail/B07SPFX1LK/ref=atv_dp_b00_det_c_UTPsmN_1_11'
     link2 = 'https://www.amazon.com/gp/video/detail/B07SPFX1LK/ref=atv_dp_b00_det_c_UTPsmN_1_12'

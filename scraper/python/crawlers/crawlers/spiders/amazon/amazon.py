@@ -1,6 +1,3 @@
-from scrapy.downloadermiddlewares.robotstxt import RobotsTxtMiddleware
-from scrapy_redis import picklecompat
-from scrapy.utils.reqser import request_to_dict, request_from_dict
 import json
 import logging
 import re
@@ -10,7 +7,6 @@ from json import JSONDecodeError
 import boto3
 from jsonpath_ng.ext import parse
 from scrapy import Request
-from scrapy.exceptions import CloseSpider
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Rule
 from scrapy_redis.spiders import RedisMixin
@@ -21,9 +17,7 @@ from crawlers.items import AmazonCastMember
 from crawlers.items import AmazonCrewMember
 from crawlers.items import AmazonItem
 from crawlers.items import AmazonItemOffer
-from crawlers.redis_helpers import CustomRedisMixin
-from crawlers.settings import EXTENSIONS
-from crawlers.settings import ITEM_PIPELINES
+from crawlers.settings import EXTENSIONS, ITEM_PIPELINES, DOWNLOADER_MIDDLEWARES
 from crawlers.spiders.common_settings import DISTRIBUTED_SETTINGS
 from crawlers.spiders.common_settings import get_data_bucket
 
@@ -35,6 +29,15 @@ PRICE_RE = r'\$(\d+\.\d+)'
 
 AMAZON_TV_SHOW_ENTITY_TYPE = 'TV Show'
 AMAZON_MOVIE_ENTITY_TYPE = 'Movie'
+
+_COMMON_SETTINGS = {
+    'DOWNLOADER_MIDDLEWARES': {
+        **DOWNLOADER_MIDDLEWARES,
+        'rotating_proxies.middlewares.RotatingProxyMiddleware': 610,
+        'rotating_proxies.middlewares.BanDetectionMiddleware': 620,
+    },
+    'ROTATING_PROXY_LIST': ["crawler:Pg2heq0W2YS8qSW@34.121.148.97:3128"]
+}
 
 
 def _process_detail_link(url):
@@ -54,6 +57,8 @@ class AmazonSpider(BaseCrawlSpider):
     store_name = 'amazon'
     allowed_domains = ['amazon.com', 'imdb.com']
 
+    custom_settings = _COMMON_SETTINGS
+
     start_urls = [
         'https://www.amazon.com/gp/video/storefront'
     ]
@@ -64,7 +69,8 @@ class AmazonSpider(BaseCrawlSpider):
                           process_value=_process_detail_link),
             callback='_handle_amazon_page', follow=True),
         Rule(LinkExtractor(
-            allow=r'(https://www\.amazon\.com)?/gp/video/storefront/?.*'), follow=True)
+            allow=r'(https://www\.amazon\.com)?/gp/video/storefront/?.*',
+            process_value=_process_detail_link), follow=True)
     )
 
     def __init__(self, json_logging=True, *a, **kw):
@@ -251,6 +257,7 @@ class AmazonSpider(BaseCrawlSpider):
                 continue
 
         if not item:
+            self.logger.warn('Could not extract item from page %s' % response.url)
             self.crawler.signals.send_catch_log(
                 empty_item_signal, response=response)
 
@@ -259,6 +266,7 @@ class AmazonDistributedSpider(AmazonSpider, RedisMixin):
     name = 'amazon_distributed'
     custom_settings = {
         **DISTRIBUTED_SETTINGS,
+        **_COMMON_SETTINGS,
         'AUTOTHROTTLE_TARGET_CONCURRENCY': 8.0,
         'EXTENSIONS': {**EXTENSIONS, 'crawlers.extensions.empty_response_recorder.EmptyResponseRecorder': 500,
                        'scrapy.extensions.closespider.CloseSpider': 100},
@@ -279,6 +287,6 @@ class AmazonDistributedSpider(AmazonSpider, RedisMixin):
     #         raise CloseSpider(reason=self.close_reason or 'cancelled')
     #     else:
     #         If we got a response, cancel any existing close timeouts
-            # if self.idle_df:
-            #     self.idle_df.cancel()
-            # return super().parse(response)
+    # if self.idle_df:
+    #     self.idle_df.cancel()
+    # return super().parse(response)
