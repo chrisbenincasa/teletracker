@@ -89,11 +89,11 @@ function PersonDetailWrapper(props: Props) {
         ) : null}
         <link
           rel="canonical"
-          href={`${process.env.REACT_APP_TELETRACKER_BASE_URL}${router.pathname}`}
+          href={`${process.env.REACT_APP_TELETRACKER_BASE_URL}${router.asPath}`}
         />
         <meta
           property="og:url"
-          content={`${process.env.REACT_APP_TELETRACKER_BASE_URL}${router.pathname}`}
+          content={`${process.env.REACT_APP_TELETRACKER_BASE_URL}${router.asPath}`}
         />
       </Head>
       <PersonDetail preloaded={!_.isUndefined(person)} />
