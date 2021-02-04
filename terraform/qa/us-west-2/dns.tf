@@ -22,42 +22,42 @@ resource "aws_acm_certificate" "telescopetv" {
   }
 }
 
-resource "aws_route53_record" "qa-teletracker-tv-cert-validation" {
-  name    = aws_acm_certificate.qa-teletracker-tv-cert-us-east-1.domain_validation_options[0].resource_record_name
-  type    = aws_acm_certificate.qa-teletracker-tv-cert-us-east-1.domain_validation_options[0].resource_record_type
-  zone_id = data.aws_route53_zone.teletracker-tv.id
-  records = [
-  aws_acm_certificate.qa-teletracker-tv-cert-us-east-1.domain_validation_options[0].resource_record_value]
-  ttl = 60
-}
+# resource "aws_route53_record" "qa-teletracker-tv-cert-validation" {
+#   name    = aws_acm_certificate.qa-teletracker-tv-cert-us-east-1.domain_validation_options[0].resource_record_name
+#   type    = aws_acm_certificate.qa-teletracker-tv-cert-us-east-1.domain_validation_options[0].resource_record_type
+#   zone_id = data.aws_route53_zone.teletracker-tv.id
+#   records = [
+#   aws_acm_certificate.qa-teletracker-tv-cert-us-east-1.domain_validation_options[0].resource_record_value]
+#   ttl = 60
+# }
 
-resource "aws_route53_record" "qa-teletracker-tv-cert-validation-alt1" {
-  name    = aws_acm_certificate.qa-teletracker-tv-cert-us-east-1.domain_validation_options[1].resource_record_name
-  type    = aws_acm_certificate.qa-teletracker-tv-cert-us-east-1.domain_validation_options[1].resource_record_type
-  zone_id = data.aws_route53_zone.teletracker-tv.id
-  records = [
-  aws_acm_certificate.qa-teletracker-tv-cert-us-east-1.domain_validation_options[1].resource_record_value]
-  ttl = 60
-}
+# resource "aws_route53_record" "qa-teletracker-tv-cert-validation-alt1" {
+#   name    = aws_acm_certificate.qa-teletracker-tv-cert-us-east-1.domain_validation_options[1].resource_record_name
+#   type    = aws_acm_certificate.qa-teletracker-tv-cert-us-east-1.domain_validation_options[1].resource_record_type
+#   zone_id = data.aws_route53_zone.teletracker-tv.id
+#   records = [
+#   aws_acm_certificate.qa-teletracker-tv-cert-us-east-1.domain_validation_options[1].resource_record_value]
+#   ttl = 60
+# }
 
-resource "aws_route53_record" "qa-teletracker-tv-cert-validation-alt2" {
-  name    = aws_acm_certificate.qa-teletracker-tv-cert-us-east-1.domain_validation_options[2].resource_record_name
-  type    = aws_acm_certificate.qa-teletracker-tv-cert-us-east-1.domain_validation_options[2].resource_record_type
-  zone_id = data.aws_route53_zone.teletracker-tv.id
-  records = [
-  aws_acm_certificate.qa-teletracker-tv-cert-us-east-1.domain_validation_options[2].resource_record_value]
-  ttl = 60
-}
+# resource "aws_route53_record" "qa-teletracker-tv-cert-validation-alt2" {
+#   name    = aws_acm_certificate.qa-teletracker-tv-cert-us-east-1.domain_validation_options[2].resource_record_name
+#   type    = aws_acm_certificate.qa-teletracker-tv-cert-us-east-1.domain_validation_options[2].resource_record_type
+#   zone_id = data.aws_route53_zone.teletracker-tv.id
+#   records = [
+#   aws_acm_certificate.qa-teletracker-tv-cert-us-east-1.domain_validation_options[2].resource_record_value]
+#   ttl = 60
+# }
 
-resource "aws_acm_certificate_validation" "qa-teletracker-tv-cert-validation" {
-  provider = "aws.us-east-1"
+# resource "aws_acm_certificate_validation" "qa-teletracker-tv-cert-validation" {
+#   provider = "aws.us-east-1"
 
-  certificate_arn = aws_acm_certificate.qa-teletracker-tv-cert-us-east-1.arn
-  validation_record_fqdns = [
-    aws_route53_record.qa-teletracker-tv-cert-validation.fqdn,
-    aws_route53_record.qa-teletracker-tv-cert-validation-alt1.fqdn,
-  aws_route53_record.qa-teletracker-tv-cert-validation-alt2.fqdn]
-}
+#   certificate_arn = aws_acm_certificate.qa-teletracker-tv-cert-us-east-1.arn
+#   validation_record_fqdns = [
+#     aws_route53_record.qa-teletracker-tv-cert-validation.fqdn,
+#     aws_route53_record.qa-teletracker-tv-cert-validation-alt1.fqdn,
+#   aws_route53_record.qa-teletracker-tv-cert-validation-alt2.fqdn]
+# }
 
 //resource "aws_route53_record" "" {
 //  name = ""
